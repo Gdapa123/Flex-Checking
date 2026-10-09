@@ -101,6 +101,7 @@ export default {
         'g-erreur-badge': v('g-erreur-badge'),
         'g-avert-tuile': v('g-avert-tuile'),
         blanc: v('blanc'),
+        logo: v('logo'),
         noir: v('noir'),
       },
       borderRadius: { puce: '6px', petit: '8px', moyen: '10px', champ: '12px', bouton: '14px', carte: '16px' },
