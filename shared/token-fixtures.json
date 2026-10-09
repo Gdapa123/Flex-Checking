@@ -1,0 +1,107 @@
+{
+  "description": "Cas de référence partagés par tokens.js et theme.py",
+  "cas": [
+    {
+      "nom": "AMP",
+      "principale": "#8F1C1F",
+      "secondaire": "#F7941D",
+      "attendu": {
+        "primary": "#8F1C1F",
+        "secondary": "#F7941D",
+        "primary_hover": "#7A181A",
+        "primary_soft": "#F2E4E4",
+        "secondary_soft": "#FEEFDD",
+        "on_primary": "#FFFFFF",
+        "on_secondary": "#141414",
+        "header": "#EFDFE0"
+      }
+    },
+    {
+      "nom": "PMD",
+      "principale": "#1A5E36",
+      "secondaire": "#FFF200",
+      "attendu": {
+        "primary": "#1A5E36",
+        "secondary": "#FFF200",
+        "primary_hover": "#16502E",
+        "primary_soft": "#E4ECE7",
+        "secondary_soft": "#FFFDD9",
+        "on_primary": "#FFFFFF",
+        "on_secondary": "#141414",
+        "header": "#DFE8E3"
+      }
+    },
+    {
+      "nom": "Public-AMP",
+      "principale": "#77421C",
+      "secondaire": "#F7941D",
+      "attendu": {
+        "primary": "#77421C",
+        "secondary": "#F7941D",
+        "primary_hover": "#653818",
+        "primary_soft": "#EFE8E4",
+        "secondary_soft": "#FEEFDD",
+        "on_primary": "#FFFFFF",
+        "on_secondary": "#141414",
+        "header": "#ECE5DF"
+      }
+    },
+    {
+      "nom": "Public-ASD",
+      "principale": "#06474F",
+      "secondaire": "#F37740",
+      "attendu": {
+        "primary": "#06474F",
+        "secondary": "#F37740",
+        "primary_hover": "#053C43",
+        "primary_soft": "#E1E9EA",
+        "secondary_soft": "#FDEBE2",
+        "on_primary": "#FFFFFF",
+        "on_secondary": "#141414",
+        "header": "#DCE5E6"
+      }
+    },
+    {
+      "nom": "Clair",
+      "principale": "#F5CB23",
+      "secondaire": "#FAEE8B",
+      "attendu": {
+        "primary": "#F5CB23",
+        "secondary": "#FAEE8B",
+        "primary_hover": "#D0AD1E",
+        "primary_soft": "#FEF9E5",
+        "secondary_soft": "#FEFCEE",
+        "on_primary": "#141414",
+        "on_secondary": "#141414",
+        "header": "#FEF8E0"
+      }
+    },
+    {
+      "nom": "Minuscules",
+      "principale": "#2f3a8f",
+      "secondaire": "#3cc4b0",
+      "attendu": {
+        "primary": "#2F3A8F",
+        "secondary": "#3CC4B0",
+        "primary_hover": "#28317A",
+        "primary_soft": "#E6E7F2",
+        "secondary_soft": "#E2F6F3",
+        "on_primary": "#FFFFFF",
+        "on_secondary": "#141414",
+        "header": "#E2E3EF"
+      }
+    }
+  ],
+  "contrastes": [
+    {
+      "a": "#8F1C1F",
+      "b": "#FFFFFF",
+      "ratio": 8.92
+    },
+    {
+      "a": "#FFF200",
+      "b": "#141414",
+      "ratio": 15.75
+    }
+  ]
+}

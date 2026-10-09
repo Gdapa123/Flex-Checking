@@ -1,0 +1,71 @@
+name: flex-checking
+
+x-backend: &backend
+  build: ./backend
+  env_file: .env
+  environment:
+    DB_HOST: mysql
+    DB_PORT: "3306"
+    REDIS_URL: redis://redis:6379/0
+  volumes:
+    - ./backend:/app
+    - ./shared:/shared:ro
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_started
+
+services:
+  mysql:
+    image: mysql:8.0
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00"]
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports: ["3307:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6380:6379"]
+
+  django:
+    <<: *backend
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    ports: ["8000:8000"]
+
+  celery:
+    <<: *backend
+    command: celery -A config worker -l info --concurrency 2
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_PROXY: http://django:8000
+    volumes:
+      - ./frontend:/app
+      - ./shared:/shared:ro
+      - frontend-node-modules:/app/node_modules
+    ports: ["5173:5173"]
+
+  proxy:
+    image: caddy:2-alpine
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/certs:/certs:ro
+    ports: ["443:443", "8443:8443"]
+    depends_on: [django, frontend]
+
+volumes:
+  mysql-data:
+  frontend-node-modules:

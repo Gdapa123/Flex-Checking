@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<script src="mde.js"></script>
+<style>
+body{margin:0;background:#FFFBF3;font-family:Poppins,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#A63A2D}a:hover{color:#8A2F25}
+*:focus-visible{outline:3px solid #A63A2D;outline-offset:2px}
+[data-fw]:focus-within{border-color:#A63A2D!important;box-shadow:0 0 0 3px #F6DCD7}
+@media (max-width:960px){[data-side]{display:none!important}}
+@keyframes inUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes scanline{0%{top:10%}50%{top:86%}100%{top:10%}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;color:#2A1714;font-family:Poppins,system-ui,sans-serif">
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px;background:#1B1D20;color:#ECEDEE;font-size:13px;flex:none">
+  <a href="Accueil.dc.html" style="color:#ECEDEE;text-decoration:none;display:flex;align-items:center;gap:6px;font-weight:600"><span style="font-size:16px">{{ i.arrowL }}</span>Parcours</a>
+  <span style="opacity:.5">Super admin · palette MDE</span>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="color:#9BA1A6;margin-right:4px">Écran</span>
+    <sc-for list="{{ jumps }}" as="j"><button onClick="{{ j.onClick }}" style="font:500 13px Poppins;height:32px;padding:0 10px;border-radius:8px;border:1px solid #2B3035;background:{{ j.bg }};color:{{ j.fg }};cursor:pointer">{{ j.label }}</button></sc-for>
+  </div>
+</div>
+
+<sc-if value="{{ vLogin }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:40px 16px;background:#1E1210;border-top:6px solid #A63A2D;overflow:hidden">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,#FFE9B5 0 1px,transparent 1px 18px);opacity:.05;pointer-events:none"></div>
+  <form onSubmit="{{ onLogin }}" style="position:relative;width:100%;max-width:400px;background:#FFFBF3;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:32px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:inUp .3s ease-out both">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div style="height:40px;width:112px;border:1px dashed #8C7670;border-radius:8px;display:flex;align-items:center;justify-content:center;font:500 11px ui-monospace,Menlo,monospace;color:#6B5550">LOGO MDE</div><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:#F5CB23;color:#2A1714;font-size:13px;font-weight:600"><span style="font-size:14px">{{ i.shield }}</span>Super admin</span></div>
+    <div style="display:flex;flex-direction:column;gap:4px"><h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.025em">Configuration globale</h1><p style="margin:0;font-size:15px;color:#6B5550">Accès réservé à l’équipe MDE Business School.</p></div>
+    <label style="display:flex;flex-direction:column;gap:8px;font-size:15px;font-weight:500">Email<div data-fw="1" style="height:48px;border:1px solid #8C7670;border-radius:10px;display:flex;background:#FFFFFF"><input type="email" value="direction.evenements@mde.ci" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 16px Poppins;padding:0 14px;color:#2A1714;border-radius:10px"></div></label>
+    <label style="display:flex;flex-direction:column;gap:8px;font-size:15px;font-weight:500">Mot de passe<div data-fw="1" style="height:48px;border:1px solid #8C7670;border-radius:10px;display:flex;background:#FFFFFF"><input type="password" value="motdepasse" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 16px Poppins;padding:0 14px;color:#2A1714;border-radius:10px"></div></label>
+    <button type="submit" style="height:52px;border:0;border-radius:10px;background:#A63A2D;color:#FFFFFF;font:600 16px Poppins;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:background .15s,transform .1s" style-hover="background:#8A2F25" style-active="transform:scale(.98)"><sc-if value="{{ loggingIn }}"><span style="width:18px;height:18px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite"></span></sc-if>{{ loginLabel }}</button>
+  </form>
+</div>
+</sc-if>
+
+<sc-if value="{{ vApp }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;min-height:0;border-top:6px solid #A63A2D">
+  <aside data-side="1" style="width:248px;flex:none;background:#FFFFFF;border-right:1px solid #EBDCCB;display:flex;flex-direction:column;padding:20px 16px;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:10px"><div style="height:40px;width:112px;border:1px dashed #8C7670;border-radius:8px;display:flex;align-items:center;justify-content:center;font:500 11px ui-monospace,Menlo,monospace;color:#6B5550">LOGO MDE</div><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#F5CB23;color:#2A1714;font-size:12px;font-weight:600"><span style="font-size:13px">{{ i.shield }}</span>Super admin</span></div>
+    <nav style="display:flex;flex-direction:column;gap:4px">
+      <sc-for list="{{ nav }}" as="n"><button onClick="{{ n.onClick }}" aria-current="{{ n.cur }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:10px;font-size:15px;font-weight:{{ n.fw }};background:{{ n.bg }};color:#2A1714;transition:background .15s" style-hover="background:#FFF4DA"><span style="font-size:20px;color:{{ n.ic }}">{{ n.icon }}</span>{{ n.label }}</button></sc-for>
+    </nav>
+    <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding-top:16px;border-top:1px solid #EBDCCB">
+      <div style="width:36px;height:36px;border-radius:50%;background:#FFE9B5;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600">AD</div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:14px;font-weight:600">Ange Diabaté</span><span style="font-size:13px;color:#6B5550">Direction des événements</span></div>
+      <button onClick="{{ onLogout }}" aria-label="Se déconnecter" style="width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:#6B5550;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ i.logout }}</button>
+    </div>
+  </aside>
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="position:relative;background:radial-gradient(80% 60% at 100% 0%,rgba(245,203,35,.22),transparent 70%),linear-gradient(165deg,#2A1714 0%,#5A231B 55%,#8A2F25 100%);color:#FFFBF3;padding:28px 32px 76px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;overflow:hidden">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,#FFE9B5 0 1px,transparent 1px 18px);opacity:.06;pointer-events:none"></div>
+      <div style="position:relative;display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;font-weight:500">MDE Émargement · configuration globale</span><h1 style="margin:0;font-size:36px;line-height:1.05;font-weight:800;letter-spacing:-0.035em">{{ title }}</h1><span style="width:40px;height:4px;border-radius:2px;background:#F5CB23"></span></div>
+      <sc-if value="{{ headerAction }}"><button onClick="{{ headerClick }}" style="position:relative;height:44px;padding:0 16px;border:0;border-radius:12px;background:#F5CB23;color:#2A1714;font:600 15px Poppins;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 8px 20px -10px rgba(0,0,0,.5);transition:background .15s" style-hover="background:#FAEE8B"><span style="font-size:18px">{{ i.plus }}</span>{{ headerAction }}</button></sc-if>
+    </header>
+
+    <sc-if value="{{ tOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;margin-top:-48px;padding:0 32px 40px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+        <sc-for list="{{ gkpis }}" as="k"><div style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:20px;display:flex;flex-direction:column;gap:8px;animation:inUp .3s ease-out both"><span style="font-size:15px;color:#6B5550;font-weight:500">{{ k.label }}</span><span style="font-size:40px;line-height:1;font-weight:700;letter-spacing:-0.03em;font-variant-numeric:tabular-nums">{{ k.value }}</span><span style="font-size:14px;color:#6B5550">{{ k.sub }}</span></div></sc-for>
+      </div>
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #EBDCCB;display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:17px;font-weight:600">Tous les événements</h2><span style="font-size:14px;color:#6B5550">{{ evCount }}</span></div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:860px;font-size:15px">
+          <thead><tr style="background:#FFF8EA"><th style="text-align:left;padding:12px 20px;font-size:13px;color:#6B5550;font-weight:600">Événement</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Date</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600;width:220px">Inscrits / capacité</th><th style="text-align:right;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Présents</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Statut</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Admins</th><th style="padding:12px 20px"></th></tr></thead>
+          <tbody><sc-for list="{{ evRows }}" as="e"><tr style="border-top:1px solid #F3E8DA">
+            <td style="padding:14px 20px"><div style="display:flex;align-items:center;gap:12px"><span style="width:6px;height:32px;border-radius:3px;background:{{ e.p }}"></span><div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ e.title }}</span><span style="font-size:13px;color:#6B5550">Programme {{ e.prog }}</span></div></div></td>
+            <td style="padding:14px 12px;white-space:nowrap">{{ e.date }} · {{ e.heure }}</td>
+            <td style="padding:14px 12px"><div style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;border-radius:3px;background:#F3E8DA;overflow:hidden"><span style="display:block;height:100%;width:{{ e.fill }};background:#A63A2D"></span></span><span style="font-variant-numeric:tabular-nums;font-size:14px;width:72px;text-align:right">{{ e.inscrits }} / {{ e.capacite }}</span></div></td>
+            <td style="padding:14px 12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ e.presents }}</td>
+            <td style="padding:14px 12px"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:{{ e.sbg }};color:{{ e.sfg }};font-size:13px;font-weight:600;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:{{ e.sfg }}"></span>{{ e.statut }}</span></td>
+            <td style="padding:14px 12px;font-size:14px;color:#6B5550">{{ e.admins }}</td>
+            <td style="padding:14px 20px;text-align:right"><button onClick="{{ e.open }}" style="height:36px;padding:0 12px;border:1px solid #8C7670;border-radius:8px;background:#FFFFFF;color:#2A1714;font:600 13px Poppins;cursor:pointer">Configurer</button></td>
+          </tr></sc-for></tbody>
+        </table></div>
+      </section>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ tProgs }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;margin-top:-48px;padding:0 32px 40px;display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:20px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ progList }}" as="p"><button onClick="{{ p.onClick }}" aria-pressed="{{ p.pressed }}" style="all:unset;box-sizing:border-box;cursor:pointer;background:#FFFFFF;border:{{ p.border }};border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;opacity:{{ p.op }};transition:border-color .15s">
+          <span style="display:flex;border-radius:8px;overflow:hidden;border:1px solid #EBDCCB;flex:none"><span style="width:22px;height:40px;background:{{ p.p }}"></span><span style="width:22px;height:40px;background:{{ p.s }}"></span></span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:16px;font-weight:600">{{ p.key }}</span><span style="font-size:13px;color:#6B5550;font-variant-numeric:tabular-nums">{{ p.p }} · {{ p.s }}</span></span>
+          <span style="display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:999px;background:{{ p.sbg }};color:{{ p.sfg }};font-size:12px;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.sfg }}"></span>{{ p.state }}</span>
+        </button></sc-for>
+      </div>
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:24px;display:flex;flex-direction:column;gap:24px;min-width:0;animation:inUp .25s ease-out both">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.02em">Programme {{ ed.key }}</h2><span style="font-size:14px;color:#6B5550">{{ ed.events }}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+          <sc-for list="{{ colorFields }}" as="c"><div style="display:flex;flex-direction:column;gap:8px"><label for="{{ c.id }}" style="font-size:15px;font-weight:500">{{ c.label }}</label><div data-fw="1" style="display:flex;align-items:center;gap:10px;height:48px;padding:0 6px 0 6px;border:1px solid #8C7670;border-radius:10px"><input type="color" aria-label="{{ c.label }}" value="{{ c.value }}" onChange="{{ c.onChange }}" style="width:36px;height:36px;border:0;padding:0;background:none;cursor:pointer"><input id="{{ c.id }}" value="{{ c.value }}" onChange="{{ c.onChange }}" style="flex:1;min-width:0;border:0;outline:none;font:500 16px ui-monospace,Menlo,monospace;color:#2A1714;background:transparent;text-transform:uppercase"></div><span style="font-size:13px;color:#6B5550">{{ c.hint }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:15px;font-weight:600">Tokens dérivés</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ derived }}" as="d"><div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 6px;border:1px solid #EBDCCB;border-radius:8px;font-size:13px"><span style="width:24px;height:24px;border-radius:6px;background:{{ d.c }};border:1px solid rgba(0,0,0,.08)"></span><span style="font-weight:500">{{ d.k }}</span><span style="font-family:ui-monospace,Menlo,monospace;color:#6B5550">{{ d.c }}</span></div></sc-for></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:15px;font-weight:600">Contrôle des contrastes</span>
+          <sc-for list="{{ checks }}" as="c"><div style="display:flex;align-items:center;gap:12px;font-size:15px;padding:10px 12px;border-radius:10px;background:{{ c.bg }}"><span style="font-size:18px;color:{{ c.fg }}">{{ c.icon }}</span><span style="flex:1">{{ c.label }}</span><span style="font-variant-numeric:tabular-nums;font-weight:600">{{ c.ratio }}</span><span style="font-size:13px;font-weight:600;color:{{ c.fg }};width:92px;text-align:right">{{ c.verdict }}</span></div></sc-for>
+          <sc-if value="{{ hasAlert }}"><div role="alert" style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;background:#FEF3F2;border:1px solid #F5C2BC;color:#7A1A10;font-size:15px;line-height:1.45"><span style="font-size:20px;color:#B42318">{{ i.alertCircle }}</span><span>La couleur principale ne permet pas un texte blanc lisible (4,5:1 minimum). Le texte des boutons passera automatiquement en #141414, ou choisissez une teinte plus foncée.</span></div></sc-if>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px"><span style="font-size:15px;font-weight:600">Aperçu en direct</span>
+          <div ref="{{ prevRef }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+            <div style="border:1px solid #E4E6E8;border-radius:12px;overflow:hidden;background:#F6F7F8;font-family:Poppins">
+              <div style="border-top:6px solid var(--p);background:linear-gradient(180deg,var(--hd),#F6F7F8);padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;color:#5F666C">Formulaire invité</span><span style="font-size:20px;font-weight:700;letter-spacing:-0.025em;color:#1B1D20">Graduation {{ ed.key }} 2026</span></div>
+              <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:10px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#EEF0F2;border-radius:10px;width:140px"><span style="height:30px;border-radius:7px;background:var(--p);color:var(--op);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">Mme</span><span style="height:30px;border-radius:7px;color:#1B1D20;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">M.</span></div><div style="height:40px;border-radius:10px;background:var(--p);color:var(--op);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center">Confirmer mon inscription</div><span style="align-self:flex-start;font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--ps);color:var(--p)">Élément actif</span></div>
+            </div>
+            <div style="border-radius:12px;overflow:hidden;background:#0B0C0D;border-top:6px solid var(--p);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;min-height:200px;font-family:Poppins">
+              <div style="position:relative;width:110px;height:110px">
+                <div style="position:absolute;left:0;top:0;width:28px;height:28px;border-top:3px solid var(--s);border-left:3px solid var(--s);border-top-left-radius:10px"></div><div style="position:absolute;right:0;top:0;width:28px;height:28px;border-top:3px solid var(--s);border-right:3px solid var(--s);border-top-right-radius:10px"></div><div style="position:absolute;left:0;bottom:0;width:28px;height:28px;border-bottom:3px solid var(--s);border-left:3px solid var(--s);border-bottom-left-radius:10px"></div><div style="position:absolute;right:0;bottom:0;width:28px;height:28px;border-bottom:3px solid var(--s);border-right:3px solid var(--s);border-bottom-right-radius:10px"></div>
+                <div style="position:absolute;left:8%;right:8%;height:2px;background:var(--s);box-shadow:0 0 10px var(--s);animation:scanline 2.4s ease-in-out infinite"></div>
+              </div>
+              <span style="font-size:12px;color:#9BA1A6">Cadre de visée · scan</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;padding-top:8px;border-top:1px solid #EBDCCB">
+          <button onClick="{{ askDeactivate }}" style="height:44px;padding:0 16px;border:1px solid #8C7670;border-radius:10px;background:#FFFFFF;color:#2A1714;font:600 15px Poppins;display:flex;align-items:center;gap:8px;cursor:pointer"><span style="font-size:18px">{{ i.power }}</span>{{ ed.toggleLabel }}</button>
+          <button onClick="{{ saveProg }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#A63A2D;color:#FFFFFF;font:600 15px Poppins;cursor:pointer;transition:background .15s" style-hover="background:#8A2F25">Enregistrer les couleurs</button>
+        </div>
+      </section>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ tEvents }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;margin-top:-48px;padding:0 32px 40px;display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:20px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ evList }}" as="e"><button onClick="{{ e.onClick }}" aria-pressed="{{ e.pressed }}" style="all:unset;box-sizing:border-box;cursor:pointer;background:#FFFFFF;border:{{ e.border }};border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px"><span style="width:6px;height:36px;border-radius:3px;background:{{ e.p }}"></span><span style="flex:1;display:flex;flex-direction:column"><span style="font-size:15px;font-weight:600">{{ e.title }}</span><span style="font-size:13px;color:#6B5550">{{ e.date }}</span></span></button></sc-for>
+      </div>
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:24px;display:flex;flex-direction:column;gap:20px;min-width:0">
+        <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.02em">{{ ev.title }}</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:15px;font-weight:500">Programme<select value="{{ ev.prog }}" onChange="{{ onEvProg }}" style="height:48px;border:1px solid #8C7670;border-radius:10px;padding:0 12px;font:400 16px Poppins;color:#2A1714;background:#FFFFFF"><option>AMP</option><option>PMD</option><option>Public-AMP</option><option>Public-ASD</option></select></label>
+          <sc-for list="{{ evFields }}" as="f"><label style="display:flex;flex-direction:column;gap:8px;font-size:15px;font-weight:500">{{ f.label }}<div data-fw="1" style="height:48px;border:1px {{ f.style }} #8C7670;border-radius:10px;display:flex"><input type="{{ f.type }}" value="{{ f.value }}" onChange="{{ f.onChange }}" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 16px Poppins;padding:0 14px;color:#2A1714;border-radius:10px"></div></label></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:500">Admins affectés</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <sc-for list="{{ evAdmins }}" as="a"><span style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 4px 0 12px;border-radius:999px;background:#FFF4DA;border:1px solid #EBDCCB;font-size:14px;font-weight:500">{{ a.name }}<button onClick="{{ a.remove }}" aria-label="{{ a.aria }}" style="width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:#6B5550;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ i.x }}</button></span></sc-for>
+            <select aria-label="Ajouter un admin" value="" onChange="{{ addEvAdmin }}" style="height:36px;border:1px dashed #8C7670;border-radius:999px;padding:0 12px;font:500 14px Poppins;color:#2A1714;background:#FFFFFF"><option value="">+ Affecter un admin</option><sc-for list="{{ freeAdmins }}" as="fa"><option value="{{ fa.id }}">{{ fa.name }}</option></sc-for></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:16px;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);background:#FFFBF3">
+          <div style="padding:8px;background:#FFFFFF;border:1px solid #EBDCCB;border-radius:10px">{{ evQr }}</div>
+          <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:10px;min-width:0">
+            <span style="font-size:15px;font-weight:600">Lien et QR code d’inscription</span>
+            <div style="display:flex;gap:8px"><div style="flex:1;min-width:0;height:44px;border:1px solid #EBDCCB;border-radius:10px;background:#FFFFFF;display:flex;align-items:center;padding:0 12px;font:500 14px ui-monospace,Menlo,monospace;color:#2A1714;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ ev.link }}</div><button onClick="{{ copyLink }}" style="height:44px;padding:0 14px;border:1px solid #8C7670;border-radius:10px;background:#FFFFFF;color:#2A1714;font:600 14px Poppins;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-size:16px">{{ i.copy }}</span>Copier</button></div>
+            <button onClick="{{ dlQr }}" style="align-self:flex-start;height:40px;padding:0 12px;border:0;background:transparent;color:#2A1714;font:600 14px Poppins;display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:underline;text-underline-offset:3px"><span style="font-size:16px">{{ i.download }}</span>Télécharger le QR code (PNG)</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px solid #EBDCCB"><button onClick="{{ saveEv }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#A63A2D;color:#FFFFFF;font:600 15px Poppins;cursor:pointer" style-hover="background:#8A2F25">Enregistrer l’événement</button></div>
+      </section>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ tAdmins }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;margin-top:-48px;padding:0 32px 40px;display:flex;flex-direction:column;gap:16px">
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #EBDCCB"><h2 style="margin:0;font-size:17px;font-weight:600">Comptes et affectation aux événements</h2></div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px;font-size:15px">
+          <thead><tr style="background:#FFF8EA"><th style="text-align:left;padding:12px 20px;font-size:13px;color:#6B5550;font-weight:600">Compte</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Rôle</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Statut</th><sc-for list="{{ evHeads }}" as="h"><th style="padding:12px 8px;font-size:12px;color:#6B5550;font-weight:600;text-align:center"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:16px;height:4px;border-radius:2px;background:{{ h.p }}"></span>{{ h.label }}</div></th></sc-for></tr></thead>
+          <tbody><sc-for list="{{ adminRows }}" as="a"><tr style="border-top:1px solid #F3E8DA">
+            <td style="padding:12px 20px"><div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:#FFE9B5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">{{ a.ini }}</span><div style="display:flex;flex-direction:column"><span style="font-weight:600">{{ a.name }}</span><span style="font-size:13px;color:#6B5550">{{ a.email }}</span></div></div></td>
+            <td style="padding:12px">{{ a.role }}</td>
+            <td style="padding:12px"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:{{ a.sbg }};color:{{ a.sfg }};font-size:13px;font-weight:600;white-space:nowrap"><span style="font-size:13px">{{ a.sicon }}</span>{{ a.status }}</span></td>
+            <sc-for list="{{ a.cells }}" as="c"><td style="padding:8px;text-align:center"><label style="display:inline-flex;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer"><input type="checkbox" aria-label="{{ c.aria }}" checked="{{ c.on }}" onChange="{{ c.toggle }}" style="width:18px;height:18px;accent-color:#A63A2D;cursor:pointer"></label></td></sc-for>
+          </tr></sc-for></tbody>
+        </table></div>
+      </section>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ tSettings }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;margin-top:-48px;padding:0 32px 40px;display:flex;flex-direction:column;gap:20px">
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:24px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-size:17px;font-weight:600">Modèles des emails</h2>
+          <div role="tablist" style="display:flex;gap:2px;padding:3px;background:#FFF4DA;border-radius:10px"><sc-for list="{{ mailTabs }}" as="t"><button role="tab" aria-selected="{{ t.on }}" onClick="{{ t.onClick }}" style="height:38px;padding:0 14px;border:0;border-radius:8px;background:{{ t.bg }};color:#2A1714;font:600 14px Poppins;cursor:pointer;box-shadow:{{ t.sh }}">{{ t.label }}</button></sc-for></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:20px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:15px;font-weight:500">Objet<div data-fw="1" style="height:48px;border:1px solid #8C7670;border-radius:10px;display:flex"><input value="{{ tpl.subject }}" onChange="{{ onSubject }}" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 16px Poppins;padding:0 14px;color:#2A1714;border-radius:10px"></div></label>
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:15px;font-weight:500">Contenu<textarea value="{{ tpl.body }}" onChange="{{ onBody }}" rows="10" style="border:1px solid #8C7670;border-radius:10px;padding:12px 14px;font:400 15px/1.6 Poppins;color:#2A1714;resize:vertical;outline:none" style-focus="border-color:#A63A2D;box-shadow:0 0 0 3px #F6DCD7"></textarea></label>
+            <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;color:#6B5550">Insérer une variable</span><div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ vars }}" as="v"><button onClick="{{ v.onClick }}" style="height:32px;padding:0 10px;border:1px solid #EBDCCB;border-radius:8px;background:#FFFBF3;color:#2A1714;font:500 13px ui-monospace,Menlo,monospace;cursor:pointer" style-hover="background:#FFE9B5">{{ v.label }}</button></sc-for></div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;color:#6B5550">Aperçu avec des données d’exemple</span>
+            <div style="border:1px solid #E4E6E8;border-radius:12px;overflow:hidden;background:#F6F7F8"><div style="border-top:6px solid #8F1C1F;padding:16px 20px;background:linear-gradient(180deg,#F1DDDD,#F6F7F8)"><span style="font-size:15px;font-weight:600;color:#1B1D20">{{ tpl.subjectPrev }}</span></div><div style="margin:0 12px 12px;background:#FFFFFF;border:1px solid #E4E6E8;border-radius:10px;padding:16px 18px;font-size:15px;line-height:1.6;color:#1B1D20;white-space:pre-wrap">{{ tpl.bodyPrev }}</div></div>
+          </div>
+        </div>
+      </section>
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:24px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between">
+        <div style="display:flex;flex-direction:column;gap:4px;max-width:520px"><h2 style="margin:0;font-size:17px;font-weight:600">Durée d’affichage des résultats de scan</h2><p style="margin:0;font-size:15px;color:#6B5550">Temps avant le retour automatique à la caméra. Toucher l’écran met le résultat en pause.</p></div>
+        <div role="radiogroup" style="display:flex;gap:4px;padding:4px;background:#FFF4DA;border-radius:10px"><sc-for list="{{ durs }}" as="d"><button role="radio" aria-checked="{{ d.on }}" onClick="{{ d.onClick }}" style="width:72px;height:44px;border:0;border-radius:8px;background:{{ d.bg }};color:{{ d.fg }};font:600 16px Poppins;cursor:pointer">{{ d.label }}</button></sc-for></div>
+      </section>
+      <div style="display:flex;justify-content:flex-end"><button onClick="{{ saveSettings }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#A63A2D;color:#FFFFFF;font:600 15px Poppins;cursor:pointer" style-hover="background:#8A2F25">Enregistrer les paramètres</button></div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ tLogs }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;margin-top:-48px;padding:0 32px 40px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+        <sc-for list="{{ exportsList }}" as="x"><div style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:20px;display:flex;flex-direction:column;gap:12px"><span style="width:40px;height:40px;border-radius:10px;background:#FFF4DA;display:flex;align-items:center;justify-content:center;font-size:20px">{{ x.icon }}</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">{{ x.label }}</span><span style="font-size:14px;color:#6B5550">{{ x.sub }}</span></div><div style="display:flex;gap:8px"><button onClick="{{ x.csv }}" style="height:40px;padding:0 12px;border:1px solid #8C7670;border-radius:8px;background:#FFFFFF;color:#2A1714;font:600 14px Poppins;cursor:pointer">CSV</button><button onClick="{{ x.xls }}" style="height:40px;padding:0 12px;border:1px solid #8C7670;border-radius:8px;background:#FFFFFF;color:#2A1714;font:600 14px Poppins;cursor:pointer">Excel</button></div></div></sc-for>
+      </div>
+      <section style="background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #EBDCCB;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-size:17px;font-weight:600">Journal d’activité</h2><select aria-label="Filtrer le journal" value="{{ logF }}" onChange="{{ onLogF }}" style="height:40px;border:1px solid #8C7670;border-radius:8px;padding:0 10px;font:500 14px Poppins;color:#2A1714;background:#FFFFFF"><option value="">Toutes les actions</option><option>Émargement</option><option>Configuration</option><option>Export</option><option>Compte</option></select></div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px;font-size:15px">
+          <thead><tr style="background:#FFF8EA"><th style="text-align:left;padding:12px 20px;font-size:13px;color:#6B5550;font-weight:600">Date</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Utilisateur</th><th style="text-align:left;padding:12px;font-size:13px;color:#6B5550;font-weight:600">Type</th><th style="text-align:left;padding:12px 20px 12px 12px;font-size:13px;color:#6B5550;font-weight:600">Détail</th></tr></thead>
+          <tbody><sc-for list="{{ logs }}" as="l"><tr style="border-top:1px solid #F3E8DA"><td style="padding:12px 20px;white-space:nowrap;font-variant-numeric:tabular-nums;color:#6B5550">{{ l.d }}</td><td style="padding:12px;white-space:nowrap">{{ l.u }}</td><td style="padding:12px"><span style="display:inline-flex;height:26px;align-items:center;padding:0 10px;border-radius:999px;background:#FFF4DA;font-size:13px;font-weight:600">{{ l.t }}</span></td><td style="padding:12px 20px 12px 12px">{{ l.x }}</td></tr></sc-for></tbody>
+        </table></div>
+      </section>
+    </div>
+    </sc-if>
+  </main>
+</div>
+</sc-if>
+
+<sc-if value="{{ dialog }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:50;background:rgba(42,23,20,.45);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease-out both" onClick="{{ closeDialog }}">
+  <div role="alertdialog" aria-modal="true" aria-labelledby="dlgT" onClick="{{ stop }}" style="width:100%;max-width:440px;background:#FFFFFF;border:1px solid #EFE3D5;border-radius:16px;box-shadow:0 1px 2px rgba(42,23,20,.05),0 12px 28px -14px rgba(42,23,20,.18);padding:24px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 64px rgba(42,23,20,.25);animation:scaleIn .2s ease-out both">
+    <div style="width:44px;height:44px;border-radius:10px;background:#FEF6EE;color:#B54708;display:flex;align-items:center;justify-content:center;font-size:22px">{{ i.alert }}</div>
+    <h2 id="dlgT" style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.015em">Désactiver le programme {{ ed.key }} ?</h2>
+    <p style="margin:0;font-size:15px;line-height:1.55;color:#6B5550">Les événements existants et leurs données restent consultables. Aucun nouvel événement ne pourra être créé avec ce programme tant qu’il est désactivé.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button onClick="{{ closeDialog }}" style="height:44px;padding:0 16px;border:1px solid #8C7670;border-radius:10px;background:#FFFFFF;color:#2A1714;font:600 15px Poppins;cursor:pointer">Annuler</button><button onClick="{{ confirmDeactivate }}" style="height:44px;padding:0 16px;border:0;border-radius:10px;background:#B42318;color:#FFFFFF;font:600 15px Poppins;cursor:pointer">Désactiver</button></div>
+  </div>
+</div>
+</sc-if>
+
+<div aria-live="polite" style="position:fixed;right:24px;bottom:24px;z-index:60;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none">
+  <sc-for list="{{ toasts }}" as="t"><div style="min-width:260px;max-width:420px;background:#2A1714;color:#FFFFFF;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 12px 32px rgba(42,23,20,.25);font-size:15px;animation:inUp .25s ease-out both"><span style="width:22px;height:22px;flex:none;border-radius:50%;background:#18794E;display:flex;align-items:center;justify-content:center;font-size:13px">{{ i.check }}</span>{{ t.msg }}</div></sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;login&quot;,&quot;overview&quot;,&quot;programs&quot;,&quot;deactivate&quot;,&quot;events&quot;,&quot;admins&quot;,&quot;settings&quot;,&quot;logs&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { ready: !!window.MDE, view: 'app', tab: 'overview', loggingIn: false, progs: null, edit: 'PMD', dialog: false, evId: 'pmd26', evs: null, admins: null, mailTab: 1, tpl: null, dur: 3, logF: '', toasts: [] };
+  componentDidMount() {
+    const go = () => {
+      const M = window.MDE;
+      this.setState({ ready: true,
+        progs: ['AMP', 'PMD', 'Public-AMP', 'Public-ASD'].map(k => ({ key: k, p: M.PROGRAMS[k].p, s: M.PROGRAMS[k].s, active: true })),
+        evs: M.EVENTS.filter(e => e.annee === 2026).map((e, k) => Object.assign({}, e, { dateISO: ['2026-11-14', '2026-11-27', '2026-12-05', '2026-12-12'][k], heureISO: e.heure.replace('h', ':'), limite: ['2026-11-07', '2026-11-20', '2026-11-28', '2026-12-05'][k], lieu: 'Lieu de la cérémonie · Abidjan', admins: [['a1', 'a2', 'a3'], ['a1', 'a4'], ['a5'], ['a5', 'a6']][k] })),
+        admins: [['a1', 'Mariam Koné', 'mariam.kone@mde.ci', 'Admin', 'Actif'], ['a2', 'Kouamé Brou', 'kouame.brou@mde.ci', 'Hôte scan', 'Actif'], ['a3', 'Inès Touré', 'ines.toure@mde.ci', 'Hôte scan', 'Actif'], ['a4', 'Serge Ouattara', 'serge.ouattara@mde.ci', 'Admin', 'Actif'], ['a5', 'Nadège Assi', 'nadege.assi@mde.ci', 'Admin', 'Invitation envoyée'], ['a6', 'Lacina Dosso', 'lacina.dosso@mde.ci', 'Hôte scan', 'Actif']].map(([id, name, email, role, status]) => ({ id, name, email, role, status })),
+        tpl: { 1: { subject: 'Votre invitation · Graduation {programme} {annee}', body: 'Bonjour {civilite} {prenom} {nom},\n\nVotre inscription à la Graduation {programme} {annee} est confirmée.\n\nRendez-vous le {date} à {lieu}. Présentez ce QR code à l’accueil : la lecture est automatique.\n\n{qr_code}\nCode de secours : {code}\n\nÀ très bientôt,\nMDE Business School' }, 2: { subject: 'Bienvenue · Le magazine de la Graduation {programme} {annee}', body: 'Bonjour {civilite} {prenom} {nom},\n\nVotre présence est enregistrée. Bienvenue à la Graduation {programme} {annee} !\n\nDécouvrez le magazine du programme :\n{lien_magazine}\n\nMDE Business School' } }
+      });
+      if (this.props.screen) this.jump(this.props.screen);
+    };
+    if (window.MDE) go(); else { const t = setInterval(() => { if (window.MDE) { clearInterval(t); go(); } }, 30); }
+  }
+  componentDidUpdate() { this.applyPrev(); }
+  applyPrev() { const M = window.MDE; if (!M || !this.prev || !this.state.progs) return; const p = this.state.progs.find(x => x.key === this.state.edit); if (p && /^#[0-9a-f]{6}$/i.test(p.p) && /^#[0-9a-f]{6}$/i.test(p.s)) M.applyTheme(this.prev, p.key, p); }
+  jump(k) { if (k === 'login') this.setState({ view: 'login' }); else this.setState({ view: 'app', tab: k === 'deactivate' ? 'programs' : k, dialog: k === 'deactivate' }); }
+  toast(msg) { const id = Math.random(); this.setState(s => ({ toasts: s.toasts.concat([{ id, msg }]).slice(-3) })); setTimeout(() => this.setState(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), 3600); }
+  renderVals() {
+    const M = window.MDE, s = this.state; if (!M || !s.progs) return {};
+    const i = M.icons(React);
+    const TABS = [['overview', 'Vue globale', i.globe], ['programs', 'Programmes', i.palette], ['events', 'Événements', i.calendar], ['admins', 'Comptes admins', i.users], ['settings', 'Paramètres', i.sliders], ['logs', 'Exports et journal', i.file]];
+    const TITLES = { overview: 'Vue globale', programs: 'Programmes', events: 'Événements', admins: 'Comptes admins', settings: 'Paramètres', logs: 'Exports et journal d’activité' };
+    const ACTIONS = { programs: 'Nouveau programme', events: 'Nouvel événement', admins: 'Inviter un admin' };
+    const ed = s.progs.find(p => p.key === s.edit) || s.progs[0];
+    const valid = c => /^#[0-9a-f]{6}$/i.test(c);
+    const P = valid(ed.p) ? ed.p : '#000000', S = valid(ed.s) ? ed.s : '#000000';
+    const t = M.theme(ed.key, { key: ed.key, p: P, s: S });
+    const cW = M.contrast(P, '#FFFFFF'), cOn = M.contrast(P, t.op), cSG = M.contrast(S, '#0B0C0D'), cOnS = M.contrast(S, t.os);
+    const chk = (label, r, min, info) => { const ok = r >= min; return { key: label, label, ratio: r.toFixed(1).replace('.', ',') + ':1', verdict: info || (ok ? (min >= 4.5 ? 'AA texte' : 'AA éléments') : 'Insuffisant'), icon: ok ? i.checkCircle : i.alertCircle, fg: ok ? '#18794E' : '#B42318', bg: ok ? '#F6FBF8' : '#FEF3F2' }; };
+    const updP = (k, v) => this.setState({ progs: s.progs.map(p => p.key === ed.key ? Object.assign({}, p, { [k]: v.startsWith('#') ? v : '#' + v }) : p) });
+    const ev = s.evs.find(e => e.id === s.evId) || s.evs[0];
+    const updE = (k, v) => this.setState({ evs: s.evs.map(e => e.id === ev.id ? Object.assign({}, e, { [k]: v }) : e) });
+    const tp = s.tpl[s.mailTab];
+    const SAMPLE = { '{civilite}': 'Mme', '{prenom}': 'Aya', '{nom}': 'KOUASSI', '{programme}': 'AMP', '{annee}': '2026', '{date}': 'samedi 14 novembre 2026', '{lieu}': 'Lieu de la cérémonie', '{qr_code}': '[ QR code ]', '{code}': '4827', '{lien_magazine}': 'https://mde.ci/magazine/amp-2026' };
+    const fill = x => Object.keys(SAMPLE).reduce((a, k) => a.split(k).join(SAMPLE[k]), x);
+    const LOGS = [['14/11/2026 19:04', 'Kouamé Brou', 'Émargement', 'M. Franck BAMBA · Présent · QR caméra · Graduation AMP 2026'], ['14/11/2026 19:02', 'Mariam Koné', 'Émargement', 'Annulation · Mme Awa AKA repasse au statut Inscrit'], ['14/11/2026 18:55', 'Mariam Koné', 'Export', 'Export Excel · 240 invités · Graduation AMP 2026'], ['13/11/2026 16:20', 'Ange Diabaté', 'Configuration', 'Durée d’affichage du scan : 3 s'], ['12/11/2026 10:12', 'Ange Diabaté', 'Compte', 'Invitation envoyée à nadege.assi@mde.ci'], ['10/11/2026 09:30', 'Ange Diabaté', 'Configuration', 'Couleurs du programme PMD mises à jour'], ['07/11/2026 23:59', 'Système', 'Configuration', 'Inscriptions fermées · Graduation AMP 2026']].map(([d, u, ty, x], k) => ({ key: k, d, u, t: ty, x })).filter(l => !s.logF || l.t === s.logF);
+    const qrSeed = ev.id.length * 13 + ev.prog.length;
+    return {
+      i, stop: e => e.stopPropagation(),
+      jumps: [['login', 'Connexion'], ['overview', 'Vue globale'], ['programs', 'Programmes'], ['deactivate', 'Dialogue'], ['events', 'Événements'], ['admins', 'Admins'], ['settings', 'Paramètres'], ['logs', 'Journal']].map(([k, l]) => { const on = k === 'login' ? s.view === 'login' : k === 'deactivate' ? s.dialog : (s.view === 'app' && s.tab === k && !s.dialog); return { key: k, label: l, bg: on ? '#ECEDEE' : 'transparent', fg: on ? '#1B1D20' : '#ECEDEE', onClick: () => this.jump(k) }; }),
+      vLogin: s.view === 'login', vApp: s.view === 'app', loggingIn: s.loggingIn, loginLabel: s.loggingIn ? 'Connexion…' : 'Se connecter',
+      onLogin: e => { e.preventDefault(); this.setState({ loggingIn: true }); setTimeout(() => this.setState({ loggingIn: false, view: 'app', tab: 'overview' }), 900); },
+      onLogout: () => this.setState({ view: 'login' }),
+      nav: TABS.map(([k, l, ic]) => ({ key: k, label: l, icon: ic, cur: s.tab === k ? 'page' : 'false', bg: s.tab === k ? '#FFE9B5' : 'transparent', fw: s.tab === k ? 600 : 500, ic: s.tab === k ? '#A63A2D' : '#6B5550', onClick: () => this.setState({ tab: k }) })),
+      title: TITLES[s.tab], headerAction: ACTIONS[s.tab] || '', headerClick: () => this.toast(ACTIONS[s.tab] + ' · formulaire ouvert'),
+      tOverview: s.tab === 'overview', tProgs: s.tab === 'programs', tEvents: s.tab === 'events', tAdmins: s.tab === 'admins', tSettings: s.tab === 'settings', tLogs: s.tab === 'logs',
+      gkpis: [{ key: 1, label: 'Événements à venir', value: 4, sub: 'dont 1 aujourd’hui' }, { key: 2, label: 'Inscrits cumulés', value: s.evs.reduce((a, e) => a + e.inscrits, 0), sub: 'sur ' + s.evs.reduce((a, e) => a + e.capacite, 0) + ' places' }, { key: 3, label: 'Présents aujourd’hui', value: 128, sub: 'Graduation AMP 2026' }, { key: 4, label: 'Comptes admins', value: s.admins.length, sub: '1 invitation en attente' }],
+      evCount: s.evs.length + ' événements 2026', 
+      evRows: s.evs.map(e => { const today = e.statut === 'Aujourd’hui'; return { key: e.id, title: 'Graduation ' + e.prog + ' ' + e.annee, prog: e.prog, p: (s.progs.find(p => p.key === e.prog) || {}).p, date: e.date, heure: e.heure, inscrits: e.inscrits, capacite: e.capacite, fill: Math.round(e.inscrits / e.capacite * 100) + '%', presents: e.presents || '—', statut: today ? 'En cours' : e.statut, sbg: today ? '#E7F3ED' : '#F3E8DA', sfg: today ? '#18794E' : '#2A1714', admins: e.admins.map(id => (s.admins.find(a => a.id === id) || {}).name.split(' ')[0]).join(', '), open: () => this.setState({ tab: 'events', evId: e.id }) }; }),
+      progList: s.progs.map(p => ({ key: p.key, p: p.p, s: p.s, pressed: p.key === ed.key ? 'true' : 'false', border: p.key === ed.key ? '2px solid #A63A2D' : '1px solid #EBDCCB', op: p.active ? 1 : 0.6, state: p.active ? 'Actif' : 'Désactivé', sbg: p.active ? '#E7F3ED' : '#F3E8DA', sfg: p.active ? '#18794E' : '#6B5550', onClick: () => this.setState({ edit: p.key }) })),
+      ed: { key: ed.key, events: s.evs.filter(e => e.prog === ed.key).length + ' événement(s) en 2026', toggleLabel: ed.active ? 'Désactiver le programme' : 'Réactiver le programme' },
+      colorFields: [{ key: 'p', id: 'cp', label: 'Couleur principale', value: ed.p, hint: 'Liseré, bouton principal, éléments actifs', onChange: e => updP('p', e.target.value) }, { key: 's', id: 'cs', label: 'Couleur secondaire', value: ed.s, hint: 'Cadre de visée, accents. Jamais en texte sur blanc.', onChange: e => updP('s', e.target.value) }],
+      derived: [['primary-hover', t.ph], ['primary-soft', t.ps], ['secondary-soft', t.ss], ['on-primary', t.op], ['on-secondary', t.os], ['en-tête', t.hd]].map(([k, c]) => ({ key: k, k, c })),
+      checks: [chk('Texte « on-primary » sur la principale', cOn, 4.5), chk('Principale en texte sur blanc', cW, 4.5), chk('Secondaire sur fond graphite (cadre de visée)', cSG, 3), chk('Texte « on-secondary » sur la secondaire', cOnS, 4.5)],
+      hasAlert: cW < 4.5, prevRef: el => { this.prev = el; this.applyPrev(); },
+      askDeactivate: () => { if (ed.active) this.setState({ dialog: true }); else { this.setState({ progs: s.progs.map(p => p.key === ed.key ? Object.assign({}, p, { active: true }) : p) }); this.toast('Programme ' + ed.key + ' réactivé'); } },
+      saveProg: () => this.toast('Couleurs du programme ' + ed.key + ' enregistrées'),
+      dialog: s.dialog, closeDialog: () => this.setState({ dialog: false }),
+      confirmDeactivate: () => { this.setState({ dialog: false, progs: s.progs.map(p => p.key === ed.key ? Object.assign({}, p, { active: false }) : p) }); this.toast('Programme ' + ed.key + ' désactivé'); },
+      evList: s.evs.map(e => ({ key: e.id, title: 'Graduation ' + e.prog + ' ' + e.annee, date: e.date, p: (s.progs.find(p => p.key === e.prog) || {}).p, pressed: e.id === ev.id ? 'true' : 'false', border: e.id === ev.id ? '2px solid #A63A2D' : '1px solid #EBDCCB', onClick: () => this.setState({ evId: e.id }) })),
+      ev: { title: 'Graduation ' + ev.prog + ' ' + ev.annee, prog: ev.prog, link: 'https://emargement.mde.ci/i/' + ev.prog.toLowerCase() + '-' + ev.annee },
+      onEvProg: e => updE('prog', e.target.value),
+      evFields: [['dateISO', 'Date', 'date'], ['heureISO', 'Heure', 'time'], ['capacite', 'Capacité', 'number'], ['limite', 'Date limite d’inscription', 'date'], ['lieu', 'Lieu', 'text']].map(([k, l, ty]) => ({ key: k, label: l, type: ty, value: ev[k], style: k === 'lieu' ? 'dashed' : 'solid', onChange: e => updE(k, e.target.value) })),
+      evAdmins: ev.admins.map(id => { const a = s.admins.find(x => x.id === id); return { key: id, name: a.name, aria: 'Retirer ' + a.name, remove: () => updE('admins', ev.admins.filter(x => x !== id)) }; }),
+      freeAdmins: s.admins.filter(a => !ev.admins.includes(a.id)).map(a => ({ key: a.id, id: a.id, name: a.name })),
+      addEvAdmin: e => { const v = e.target.value; if (v) updE('admins', ev.admins.concat([v])); },
+      evQr: M.qr(React, qrSeed, 132, '#2A1714'),
+      copyLink: () => this.toast('Lien d’inscription copié'), dlQr: () => this.toast('QR code téléchargé'), saveEv: () => this.toast('Événement enregistré'),
+      evHeads: s.evs.map(e => ({ key: e.id, label: e.prog, p: (s.progs.find(p => p.key === e.prog) || {}).p })),
+      adminRows: s.admins.map(a => ({ key: a.id, name: a.name, email: a.email, role: a.role, ini: a.name.split(' ').map(w => w[0]).join(''), status: a.status, sbg: a.status === 'Actif' ? '#E7F3ED' : '#FEF6EE', sfg: a.status === 'Actif' ? '#18794E' : '#B54708', sicon: a.status === 'Actif' ? i.check : i.clock,
+        cells: s.evs.map(e => ({ key: e.id, on: e.admins.includes(a.id), aria: a.name + ' · Graduation ' + e.prog, toggle: () => this.setState({ evs: this.state.evs.map(x => x.id === e.id ? Object.assign({}, x, { admins: x.admins.includes(a.id) ? x.admins.filter(y => y !== a.id) : x.admins.concat([a.id]) }) : x) }) })) })),
+      mailTabs: [1, 2].map(n => ({ key: n, label: 'Email n°' + n + (n === 1 ? ' · inscription' : ' · sur place'), on: s.mailTab === n ? 'true' : 'false', bg: s.mailTab === n ? '#FFFFFF' : 'transparent', sh: s.mailTab === n ? '0 1px 2px rgba(42,23,20,.12)' : 'none', onClick: () => this.setState({ mailTab: n }) })),
+      tpl: { subject: tp.subject, body: tp.body, subjectPrev: fill(tp.subject), bodyPrev: fill(tp.body) },
+      onSubject: e => this.setState({ tpl: Object.assign({}, s.tpl, { [s.mailTab]: Object.assign({}, tp, { subject: e.target.value }) }) }),
+      onBody: e => this.setState({ tpl: Object.assign({}, s.tpl, { [s.mailTab]: Object.assign({}, tp, { body: e.target.value }) }) }),
+      vars: Object.keys(SAMPLE).map(v => ({ key: v, label: v, onClick: () => this.setState({ tpl: Object.assign({}, s.tpl, { [s.mailTab]: Object.assign({}, tp, { body: tp.body + ' ' + v }) }) }) })),
+      durs: [2, 3, 5].map(d => ({ key: d, label: d + ' s', on: s.dur === d ? 'true' : 'false', bg: s.dur === d ? '#A63A2D' : 'transparent', fg: s.dur === d ? '#FFFFFF' : '#2A1714', onClick: () => this.setState({ dur: d }) })),
+      saveSettings: () => this.toast('Paramètres enregistrés'),
+      exportsList: [['Tous les invités', 'Tous événements · 565 lignes', i.users], ['Présences', 'Heure et mode d’émargement', i.userCheck], ['Suivi des emails', 'Emails n°1 et n°2', i.mail], ['Journal d’activité', '30 derniers jours', i.activity]].map(([l, sub, ic]) => ({ key: l, label: l, sub, icon: ic, csv: () => this.toast(l + ' · export CSV téléchargé'), xls: () => this.toast(l + ' · export Excel téléchargé') })),
+      logF: s.logF, onLogF: e => this.setState({ logF: e.target.value }), logs: LOGS,
+      toasts: s.toasts.map(x => ({ key: x.id, msg: x.msg }))
+    };
+  }
+}
+</script>
+</body>
+</html>

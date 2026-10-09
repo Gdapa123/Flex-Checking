@@ -1,0 +1,95 @@
+import { expect, test } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { DOSSIER_EMAILS } from '../playwright.config.js';
+
+const ADMIN = { email: 'mariam.kone@mde.ci', mdp: 'Admin-Demo-2026!' };
+
+/** Cherche, dans les emails écrits par Django, celui adressé à `dest` et contenant `motif`. */
+async function attendreEmail(dest, motif) {
+  for (let i = 0; i < 40; i++) {
+    if (fs.existsSync(DOSSIER_EMAILS)) {
+      for (const f of fs.readdirSync(DOSSIER_EMAILS)) {
+        const contenu = fs.readFileSync(path.join(DOSSIER_EMAILS, f), 'utf8');
+        if (contenu.includes(`To: ${dest}`) && motif.test(contenu)) return contenu;
+      }
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error(`Email introuvable pour ${dest}`);
+}
+
+async function connexion(page) {
+  await page.goto('/connexion');
+  await page.getByLabel('Email').fill(ADMIN.email);
+  await page.getByLabel('Mot de passe').fill(ADMIN.mdp);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Choisissez une cérémonie' })).toBeVisible();
+}
+
+test('inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export', async ({ page, request }) => {
+  // Événement ouvert aux inscriptions (Graduation PMD de l'année)
+  await connexion(page);
+  const evenements = await page.evaluate(() => fetch('/api/evenements/').then((r) => r.json()));
+  const ev = evenements.find((e) => e.programmeNom === 'PMD' && e.etatInscriptions === 'OUVERT');
+  expect(ev, 'un événement PMD ouvert doit exister (seed_demo)').toBeTruthy();
+  const email = `e2e.${Date.now()}@sib.ci`;
+
+  // 1. Inscription (contexte public, sans session)
+  const invite = await page.context().browser().newContext({ locale: 'fr-FR' });
+  const p = await invite.newPage();
+  await p.goto(`http://localhost:5174/i/${ev.slugInscription}`);
+  await expect(p.getByRole('heading', { name: ev.nomAffiche })).toBeVisible();
+  await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
+  await expect(p.getByText(/champs à corriger/)).toBeVisible(); // validation
+  await p.getByRole('radio', { name: 'Mme' }).click();
+  await p.getByLabel('Nom *', { exact: true }).fill('Kouassi');
+  await p.getByLabel('Prénom *', { exact: true }).fill('Aya');
+  await p.getByLabel('Email *').fill(email);
+  await p.getByLabel('Téléphone *').fill('0712345678');
+  await p.getByLabel(/J’accepte/).check();
+  await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
+  await expect(p.getByRole('heading', { name: 'Inscription réussie' })).toBeVisible();
+  await expect(p.getByText('Inscrit·e')).toBeVisible();
+  await invite.close();
+
+  // 2. Email n°1 : QR (pièce jointe) et code de secours
+  const email1 = await attendreEmail(email, /Code de secours/);
+  expect(email1).toContain('qr-code.png');
+  expect(email1).toContain('graduation.ics');
+  const code = /secours[^:]*:\s*(\d{4})/.exec(email1)[1];
+
+  // 3. Scan par code à 4 chiffres
+  await page.goto('/scan');
+  await page.getByRole('radio', { name: new RegExp(ev.nomAffiche) }).click();
+  await page.getByRole('radio', { name: 'Code 4 chiffres' }).click();
+  await page.getByRole('button', { name: 'Démarrer l’émargement' }).click();
+  for (const chiffre of code) await page.getByRole('button', { name: chiffre, exact: true }).click();
+  await expect(page.getByText('Présence enregistrée')).toBeVisible();
+  await expect(page.getByText('Mme Aya KOUASSI').first()).toBeVisible();
+  await expect(page.getByText(/Email n°2 envoyé/)).toBeVisible();
+
+  // 4. Pause au toucher puis retour automatique à l'attente
+  await page.getByText('Présence enregistrée').click(); // pause
+  await page.getByText(/touchez pour reprendre/).click();
+  await expect(page.getByText(/Présence enregistrée/)).toBeHidden({ timeout: 10_000 });
+
+  // 5. Email n°2 (magazine)
+  await attendreEmail(email, /Lire le magazine/);
+
+  // 6. Visible dans le tableau admin au statut Présent
+  await page.goto(`/admin/evenements/${ev.id}/invites?q=${encodeURIComponent(email)}`);
+  const ligne = page.getByRole('row', { name: /Aya KOUASSI/ });
+  await expect(ligne).toBeVisible();
+  await expect(ligne.getByText('Présent', { exact: true })).toBeVisible();
+  await expect(ligne.getByText('Code 4 chiffres')).toBeVisible();
+
+  // 7. Export CSV de la vue filtrée
+  const [telechargement] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'CSV' }).click()]);
+  const fichier = await telechargement.path();
+  const csv = fs.readFileSync(fichier, 'utf8');
+  expect(csv.charCodeAt(0)).toBe(0xfeff);
+  expect(csv).toContain(email);
+  expect(csv).toContain('Présent');
+  void request;
+});

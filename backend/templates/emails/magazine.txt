@@ -1,0 +1,13 @@
+{% autoescape off %}BIENVENUE À LA {{ nom_affiche|upper }}
+
+{{ badge_present }}
+
+{{ corps }}
+{% if lien_magazine %}
+Lire le magazine : {{ lien_magazine }}{% endif %}
+
+--
+{{ expediteur }}
+MDE Business School · Abidjan, Côte d’Ivoire
+Vous recevez cet email car votre présence a été enregistrée à l’accueil.
+{% endautoescape %}

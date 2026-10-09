@@ -1,0 +1,134 @@
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
+@import '@fontsource/poppins/800.css';
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply m-0 bg-fond font-sans text-texte antialiased;
+  }
+  a {
+    color: var(--lien);
+  }
+  a:hover {
+    color: var(--lien-survol);
+  }
+  *:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  [data-fw]:focus-within {
+    border-color: var(--focus-champ) !important;
+    box-shadow: 0 0 0 3px var(--focus-anneau);
+  }
+  button {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* En-tête en dégradé de la couleur du programme (invité, admin, emails) */
+  .entete-degrade {
+    position: relative;
+    overflow: hidden;
+    color: var(--op);
+    background: radial-gradient(80% 60% at 100% 0%, color-mix(in srgb, var(--s) 22%, transparent), transparent 70%),
+      linear-gradient(
+        165deg,
+        color-mix(in srgb, var(--p) 62%, #000) 0%,
+        var(--p) 55%,
+        color-mix(in srgb, var(--p) 82%, #fff) 100%
+      );
+  }
+  /* En-tête MDE fixe (super admin) */
+  .entete-mde {
+    position: relative;
+    overflow: hidden;
+    color: var(--mde-surface);
+    background: radial-gradient(80% 60% at 100% 0%, rgba(245, 203, 35, 0.22), transparent 70%),
+      linear-gradient(165deg, var(--mde-texte) 0%, var(--mde-sombre) 55%, var(--mde-bordeaux-survol) 100%);
+  }
+  .entete-mde-invalide {
+    background: radial-gradient(80% 60% at 100% 0%, rgba(245, 203, 35, 0.25), transparent 70%),
+      linear-gradient(165deg, var(--mde-texte) 0%, var(--mde-moyen) 60%, var(--mde-bordeaux) 100%);
+  }
+  /* Hachures très légères de l'en-tête */
+  .hachures::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(135deg, var(--hachure) 0 1px, transparent 1px 18px);
+    opacity: 0.06;
+    -webkit-mask-image: linear-gradient(200deg, #000, transparent 70%);
+    mask-image: linear-gradient(200deg, #000, transparent 70%);
+  }
+  .hachures-plein {
+    background: repeating-linear-gradient(135deg, var(--mde-creme) 0 1px, transparent 1px 18px);
+  }
+  /* En-têtes du scan (graphite teinté par le programme) */
+  .entete-scan {
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--p) 62%, var(--g-fond)) 0%,
+      color-mix(in srgb, var(--p) 22%, var(--g-surface)) 60%,
+      var(--g-surface) 100%
+    );
+  }
+  .fond-setup-scan {
+    background: radial-gradient(120% 50% at 80% 0%, color-mix(in srgb, var(--p) 55%, transparent), transparent 70%),
+      var(--g-fond);
+  }
+  /* Bouton principal : couleur pleine réservée aux actions principales */
+  .btn-principal {
+    color: var(--op);
+    background: linear-gradient(180deg, var(--p), var(--ph));
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.18) inset,
+      0 10px 22px -10px color-mix(in srgb, var(--p) 70%, transparent);
+    transition:
+      background 0.15s,
+      transform 0.1s,
+      opacity 0.15s;
+  }
+  .btn-principal:hover {
+    background: var(--ph);
+  }
+  .btn-principal:active {
+    transform: scale(0.97);
+  }
+  .squelette {
+    background: linear-gradient(90deg, var(--subtil) 0, var(--fond) 40%, var(--subtil) 80%);
+    background-size: 800px 100%;
+  }
+  .ligne-scan {
+    background: linear-gradient(90deg, transparent, var(--s), transparent);
+    box-shadow: 0 0 14px var(--s);
+  }
+  .barre-segment-mode-1 {
+    background: color-mix(in srgb, var(--p) 55%, #fff);
+  }
+  .barre-segment-mode-2 {
+    background: color-mix(in srgb, var(--p) 28%, #fff);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

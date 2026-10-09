@@ -1,0 +1,21 @@
+# Production : fichiers statiques du frontend (npm run build → frontend/dist) + API Django (gunicorn).
+# En-têtes de sécurité (CSP, HSTS) appliqués à l'application web.
+{$DOMAINE:emargement.mde.ci} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+		-Server
+	}
+	handle /api/* {
+		reverse_proxy django:8000
+	}
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}

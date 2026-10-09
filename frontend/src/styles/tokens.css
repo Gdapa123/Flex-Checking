@@ -1,0 +1,151 @@
+/*
+ * Tokens Flex’Checking, extraits de mde.js et de la page Design system.
+ * Seul fichier où figurent des valeurs de couleur.
+ */
+:root {
+  /* Univers programme (valeurs par défaut : AMP ; remplacées par ThemeScope) */
+  --p: #8f1c1f;
+  --s: #f7941d;
+  --ph: #7a181a;
+  --ps: #f2e4e4;
+  --ss: #feefdd;
+  --op: #ffffff;
+  --os: #141414;
+  --hd: #efdfe0;
+
+  /* Neutres · admin et invité */
+  --fond: #f6f7f8;
+  --surface: #ffffff;
+  --subtil: #eef0f2;
+  --bordure: #e4e6e8;
+  --bordure-carte: #eaecee;
+  --bordure-ligne: #eef0f2;
+  --champ: #868d93;
+  --champ-doux: #c9ced3;
+  --texte: #1b1d20;
+  --texte-2: #5f666c;
+  --texte-3: #3d4247;
+  --neutre: #b9bfc4;
+  --blanc: #ffffff;
+  --noir: #000000;
+
+  /* Graphite · scan */
+  --g-fond: #0b0c0d;
+  --g-surface: #1a1d20;
+  --g-eleve: #26292d;
+  --g-bordure: #2b3035;
+  --g-texte: #ecedee;
+  --g-texte-2: #9ba1a6;
+  --g-sombre: #111315;
+  --g-detect: #2db37a;
+  --g-detect-clair: #bff0d6;
+  --g-succes-clair: #8ce0b5;
+  --g-avert-clair: #fdba8c;
+  --g-erreur-clair: #fda29b;
+
+  /* Univers MDE (fixe) */
+  --mde-bordeaux: #a63a2d;
+  --mde-bordeaux-survol: #8a2f25;
+  --mde-jaune: #f5cb23;
+  --mde-jaune-clair: #faee8b;
+  --mde-creme: #ffe9b5;
+  --mde-surface: #fffbf3;
+  --mde-bordure: #ebdccb;
+  --mde-bordure-carte: #efe3d5;
+  --mde-bordure-ligne: #f3e8da;
+  --mde-champ: #8c7670;
+  --mde-texte: #2a1714;
+  --mde-texte-2: #6b5550;
+  --mde-survol: #fff4da;
+  --mde-entete: #fff8ea;
+  --mde-nuit: #1e1210;
+  --mde-focus: #f6dcd7;
+  --mde-sombre: #5a231b;
+  --mde-moyen: #6e2a20;
+
+  /* Statuts fixes (toujours icône + libellé) */
+  --succes: #18794e;
+  --succes-doux: #e7f3ed;
+  --succes-ligne: #bfe3cf;
+  --succes-fond: #f6fbf8;
+  --avert: #b54708;
+  --avert-doux: #fef0e6;
+  --avert-fond: #fef6ee;
+  --avert-bord: #f9dbc0;
+  --avert-texte: #7a2e0e;
+  --erreur: #b42318;
+  --erreur-doux: #fef3f2;
+  --erreur-bord: #f5c2bc;
+  --erreur-texte: #7a1a10;
+  --erreur-champ: #fffbfa;
+  --live: #3ccb7f;
+
+  /* Voiles des dialogues */
+  --voile: rgba(27, 29, 32, 0.24);
+  --voile-fort: rgba(27, 29, 32, 0.45);
+  --voile-mde: rgba(42, 23, 20, 0.45);
+  --voile-scan: rgba(0, 0, 0, 0.6);
+  --blanc-18: rgba(255, 255, 255, 0.18);
+  --blanc-24: rgba(255, 255, 255, 0.24);
+  --blanc-26: rgba(255, 255, 255, 0.26);
+  --blanc-60: rgba(255, 255, 255, 0.6);
+  --noir-16: rgba(0, 0, 0, 0.16);
+  --noir-20: rgba(0, 0, 0, 0.2);
+  --g-voile: rgba(11, 12, 13, 0.7);
+  --g-detect-doux: rgba(45, 179, 122, 0.12);
+  --g-detect-badge: rgba(45, 179, 122, 0.16);
+  --g-succes-badge: rgba(24, 121, 78, 0.25);
+  --g-avert-badge: rgba(181, 71, 8, 0.28);
+  --g-erreur-badge: rgba(180, 35, 24, 0.3);
+  --g-avert-tuile: rgba(181, 71, 8, 0.25);
+
+  /* Ombres */
+  --ombre-carte: 0 1px 2px rgba(16, 24, 40, 0.05), 0 12px 28px -14px rgba(16, 24, 40, 0.16);
+  --ombre-carte-mde: 0 1px 2px rgba(42, 23, 20, 0.05), 0 12px 28px -14px rgba(42, 23, 20, 0.18);
+  --ombre-flottant: 0 12px 32px rgba(27, 29, 32, 0.12);
+  --ombre-dialogue: 0 24px 64px rgba(42, 23, 20, 0.25);
+  --ombre-toast: 0 12px 32px rgba(27, 29, 32, 0.2);
+  --ombre-panneau: -16px 0 40px rgba(27, 29, 32, 0.12);
+  --ombre-blanc: 0 8px 20px -10px rgba(0, 0, 0, 0.45);
+  --ombre-scan: 0 10px 24px -14px rgba(0, 0, 0, 0.6);
+  --ombre-feuille: 0 -12px 32px rgba(0, 0, 0, 0.4);
+  --ombre-pastille: 0 0 0 8px rgba(255, 255, 255, 0.14), 0 12px 28px -10px rgba(0, 0, 0, 0.35);
+  --ombre-connexion: 0 24px 64px rgba(0, 0, 0, 0.35);
+  --ombre-onglet: 0 1px 2px rgba(42, 23, 20, 0.12);
+  --ombre-principal: 0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 10px 22px -10px color-mix(in srgb, var(--p) 70%, transparent);
+
+  /* Contexte (focus, liens) : par défaut univers programme */
+  --focus: var(--p);
+  --focus-champ: var(--p);
+  --focus-anneau: var(--ps);
+  --lien: var(--p);
+  --lien-survol: var(--ph);
+  --hachure: #ffffff;
+}
+
+/* Univers MDE : focus et liens bordeaux */
+.univers-mde {
+  /* les composants « programme » réutilisés dans le super admin prennent la palette MDE */
+  --p: var(--mde-bordeaux);
+  --ph: var(--mde-bordeaux-survol);
+  --ps: var(--mde-focus);
+  --s: var(--mde-jaune);
+  --ss: var(--mde-creme);
+  --op: #ffffff;
+  --os: var(--mde-texte);
+  --hd: var(--mde-entete);
+  --focus: var(--mde-bordeaux);
+  --focus-champ: var(--mde-bordeaux);
+  --focus-anneau: var(--mde-focus);
+  --lien: var(--mde-bordeaux);
+  --lien-survol: var(--mde-bordeaux-survol);
+  --hachure: var(--mde-creme);
+}
+
+/* Graphite : focus blanc */
+.univers-scan {
+  --focus: var(--g-texte);
+  --lien: var(--g-texte);
+  --lien-survol: var(--blanc);
+}

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<script src="mde.js"></script>
+<style>
+body{margin:0;background:#E4E6E8;font-family:Poppins,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ECEDEE}a:hover{color:#FFFFFF}
+*:focus-visible{outline:3px solid #ECEDEE;outline-offset:2px}
+@keyframes scanline{0%{top:8%}50%{top:90%}100%{top:8%}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes inUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="height:{{ rootH }};display:flex;flex-direction:column;font-family:Poppins,system-ui,sans-serif;overflow:hidden">
+
+<sc-if value="{{ showDev }}" hint-placeholder-val="{{ false }}">
+<div ref="{{ barRef }}" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px;background:#1B1D20;color:#ECEDEE;font-size:13px;flex:none">
+  <a href="Accueil.dc.html" style="color:#ECEDEE;text-decoration:none;display:flex;align-items:center;gap:6px;font-weight:600"><span style="font-size:16px">{{ i.arrowL }}</span>Parcours</a>
+  <div style="display:flex;gap:4px;align-items:center"><span style="color:#9BA1A6;margin-right:4px">Appareil</span>
+    <sc-for list="{{ devices }}" as="d"><button onClick="{{ d.onClick }}" style="font:500 13px Poppins;height:32px;padding:0 10px;border-radius:8px;border:1px solid #2B3035;background:{{ d.bg }};color:{{ d.fg }};cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-size:15px">{{ d.icon }}</span>{{ d.label }}</button></sc-for>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="color:#9BA1A6;margin-right:4px">Programme</span>
+    <sc-for list="{{ progs }}" as="pg"><button onClick="{{ pg.onClick }}" style="font:500 13px Poppins;height:32px;padding:0 10px;border-radius:8px;border:1px solid #2B3035;background:{{ pg.bg }};color:{{ pg.fg }};cursor:pointer;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:{{ pg.p }}"></span>{{ pg.label }}</button></sc-for>
+  </div>
+  <label style="display:flex;align-items:center;gap:6px"><span style="color:#9BA1A6">Écran</span>
+    <select value="{{ devScreen }}" onChange="{{ onDevScreen }}" style="font:500 13px Poppins;height:32px;border-radius:8px;background:#26292D;color:#ECEDEE;border:1px solid #2B3035;padding:0 8px">
+      <option value="setup">Choix événement et mode</option><option value="camera">Caméra · lecture auto</option><option value="detect">Détection</option><option value="success">Résultat · présence</option><option value="already">Résultat · déjà émargé</option><option value="invalid">Résultat · code invalide</option><option value="other">Résultat · autre événement</option><option value="code">Code à 4 chiffres</option><option value="search">Recherche par nom</option><option value="undo">Annuler le dernier</option><option value="perm">Caméra · autorisation</option><option value="denied">Caméra · refusée</option><option value="nocam">Aucune caméra</option><option value="offline">Hors ligne</option>
+    </select></label>
+  <button onClick="{{ toggleSim }}" style="font:500 13px Poppins;height:32px;padding:0 10px;border-radius:8px;border:1px solid #2B3035;background:transparent;color:#ECEDEE;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:{{ simDot }}"></span>{{ simLabel }}</button>
+</div>
+</sc-if>
+
+<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:{{ stagePad }};overflow:hidden">
+<div style="width:{{ fw }};height:{{ fh }};position:relative;flex:none">
+<div style="position:absolute;left:0;top:0;width:{{ dw }};height:{{ dh }};transform:scale({{ fs }});transform-origin:0 0;background:#0B0C0D;color:#ECEDEE;border-radius:{{ fr }};overflow:hidden;box-shadow:{{ fsh }};display:flex;flex-direction:column">
+
+<sc-if value="{{ vSetup }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;background:radial-gradient(120% 50% at 80% 0%,color-mix(in srgb,var(--p,#8F1C1F) 55%,transparent),transparent 70%),#0B0C0D">
+  <div style="width:100%;max-width:560px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:28px;box-sizing:border-box;animation:inUp .3s ease-out both">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="height:36px;width:104px;border:1px dashed #5F666C;border-radius:8px;display:flex;align-items:center;justify-content:center;font:500 11px ui-monospace,Menlo,monospace;color:#9BA1A6">LOGO MDE</div>
+      <span style="font-size:14px;color:#9BA1A6">Kouamé B. · Hôte</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px"><h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.028em">Démarrer l’émargement</h1><p style="margin:0;font-size:16px;color:#9BA1A6">Choisissez la cérémonie puis le mode de lecture.</p></div>
+    <div role="radiogroup" aria-label="Événement" style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:600;color:#9BA1A6">Événement</span>
+      <sc-for list="{{ events }}" as="e" hint-placeholder-count="4">
+        <button role="radio" aria-checked="{{ e.on }}" onClick="{{ e.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:14px;min-height:64px;padding:12px 16px;border-radius:14px;background:#1A1D20;box-shadow:0 10px 24px -14px rgba(0,0,0,.6);border:{{ e.border }};transition:border-color .15s">
+          <span style="width:12px;height:36px;border-radius:4px;background:{{ e.p }};flex:none"></span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">{{ e.title }}</span><span style="font-size:14px;color:#9BA1A6">{{ e.sub }}</span></span>
+          <span style="width:24px;height:24px;border-radius:50%;border:2px solid {{ e.ring }};background:{{ e.fill }};display:flex;align-items:center;justify-content:center;font-size:14px;color:#0B0C0D;flex:none">{{ e.mark }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div role="radiogroup" aria-label="Mode" style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:600;color:#9BA1A6">Mode d’émargement</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <sc-for list="{{ modes }}" as="m"><button role="radio" aria-checked="{{ m.on }}" onClick="{{ m.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:10px;padding:14px 16px;min-height:88px;border-radius:12px;background:#1A1D20;border:{{ m.border }}"><span style="font-size:22px;color:{{ m.ic }}">{{ m.icon }}</span><span style="font-size:15px;font-weight:600">{{ m.label }}</span></button></sc-for>
+      </div>
+    </div>
+    <button onClick="{{ onStart }}" style="height:56px;border:0;border-radius:12px;background:linear-gradient(180deg,var(--p,#8F1C1F),var(--ph,#7A1819));color:var(--op,#fff);box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 10px 22px -10px color-mix(in srgb,var(--p,#8F1C1F) 70%,transparent);font:600 17px Poppins;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s,transform .1s" style-hover="background:var(--ph)" style-active="transform:scale(.98)"><span style="font-size:20px">{{ i.scan }}</span>Démarrer l’émargement</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ vPhoneCam }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;background:linear-gradient(120deg,color-mix(in srgb,var(--p,#8F1C1F) 62%,#0B0C0D) 0%,color-mix(in srgb,var(--p,#8F1C1F) 22%,#1A1D20) 60%,#1A1D20 100%);border-bottom:1px solid #2B3035">
+    <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Graduation {{ prog }} 2026</div><div style="font-size:13px;color:#9BA1A6">Accueil principal · QR caméra</div></div>
+    <div style="text-align:right;line-height:1.1"><div style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{ present }}<span style="color:#9BA1A6;font-weight:500"> / 240</span></div><div style="font-size:12px;color:#9BA1A6">présents</div></div>
+    <button onClick="{{ openSettings }}" aria-label="Réglages" style="width:44px;height:44px;border-radius:10px;border:1px solid #2B3035;background:#26292D;color:#ECEDEE;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer">{{ i.sliders }}</button>
+  </div>
+  <sc-if value="{{ offline }}"><div role="status" style="display:flex;gap:10px;align-items:flex-start;padding:10px 16px;background:#B54708;color:#FFFFFF;font-size:14px;line-height:1.4"><span style="font-size:18px;margin-top:1px">{{ i.wifiOff }}</span><span><strong style="font-weight:600">Hors ligne.</strong> La lecture continue. 3 émargements seront synchronisés au retour du réseau.</span></div></sc-if>
+  <div style="flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#22262A 0%,#111315 60%,#0B0C0D 100%)">
+    <div style="position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;background:rgba(11,12,13,.7);border:1px solid #2B3035;font-size:13px;font-weight:500"><span style="width:8px;height:8px;border-radius:50%;background:#2DB37A;animation:blink 1.6s ease-in-out infinite"></span>Lecture automatique</span>
+      <span style="font-size:13px;color:#9BA1A6">{{ camLabel }}</span>
+    </div>
+    <div style="position:absolute;left:50%;top:44%;width:236px;height:236px;margin:-118px 0 0 -118px;border-radius:14px;background:{{ vfBg }};transition:background .15s;animation:breathe 2.8s ease-in-out infinite">
+      <div style="position:absolute;left:0;top:0;width:52px;height:52px;border-top:4px solid {{ vf }};border-left:4px solid {{ vf }};border-top-left-radius:14px;transition:border-color .15s"></div>
+      <div style="position:absolute;right:0;top:0;width:52px;height:52px;border-top:4px solid {{ vf }};border-right:4px solid {{ vf }};border-top-right-radius:14px;transition:border-color .15s"></div>
+      <div style="position:absolute;left:0;bottom:0;width:52px;height:52px;border-bottom:4px solid {{ vf }};border-left:4px solid {{ vf }};border-bottom-left-radius:14px;transition:border-color .15s"></div>
+      <div style="position:absolute;right:0;bottom:0;width:52px;height:52px;border-bottom:4px solid {{ vf }};border-right:4px solid {{ vf }};border-bottom-right-radius:14px;transition:border-color .15s"></div>
+      <sc-if value="{{ waiting }}"><div style="position:absolute;left:8%;right:8%;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--s,#F7941D),transparent);box-shadow:0 0 14px var(--s,#F7941D);animation:scanline 2.4s ease-in-out infinite"></div></sc-if>
+      <sc-if value="{{ detecting }}"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;color:#2DB37A;animation:pop .25s ease-out both">{{ i.qr }}</div></sc-if>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;top:calc(44% + 142px);display:flex;justify-content:center;text-align:center">
+      <sc-if value="{{ waiting }}"><p style="margin:0;font-size:16px;line-height:1.5;max-width:300px;color:#ECEDEE;text-wrap:pretty">Invitez la personne à tendre son téléphone avec le QR code : la lecture est automatique</p></sc-if>
+      <sc-if value="{{ detecting }}"><span style="display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 16px;border-radius:999px;background:rgba(45,179,122,.16);border:1px solid #2DB37A;font-size:15px;font-weight:600;color:#BFF0D6"><span style="width:16px;height:16px;border-radius:50%;border:2px solid #2DB37A;border-right-color:transparent;animation:spin .6s linear infinite"></span>QR code détecté · vérification…</span></sc-if>
+    </div>
+  </div>
+  <sc-if value="{{ hasLast }}"><div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#111315;border-top:1px solid #2B3035;font-size:14px"><span style="color:#9BA1A6">Dernier</span><span style="flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ last.name }}</span><span style="font-variant-numeric:tabular-nums;color:#9BA1A6">{{ last.heure }}</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:999px;background:rgba(24,121,78,.25);color:#8CE0B5;font-size:12px;font-weight:600"><span style="font-size:12px">{{ i.check }}</span>Présent</span></div></sc-if>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);background:#1A1D20;border-top:1px solid #2B3035;padding:6px 6px 10px">
+    <sc-for list="{{ tools }}" as="t"><button onClick="{{ t.onClick }}" aria-pressed="{{ t.pressed }}" style="all:unset;cursor:pointer;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;color:{{ t.fg }};background:{{ t.bg }};font-size:12px;font-weight:500;text-align:center" style-active="background:#26292D"><span style="font-size:22px">{{ t.icon }}</span>{{ t.label }}</button></sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ vTabletCam }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+  <div style="display:flex;align-items:center;gap:20px;padding:20px 32px;background:linear-gradient(120deg,color-mix(in srgb,var(--p,#8F1C1F) 62%,#0B0C0D) 0%,color-mix(in srgb,var(--p,#8F1C1F) 22%,#1A1D20) 60%,#1A1D20 100%);border-bottom:1px solid #2B3035">
+    <div style="height:40px;width:112px;border:1px dashed #5F666C;border-radius:8px;display:flex;align-items:center;justify-content:center;font:500 11px ui-monospace,Menlo,monospace;color:#9BA1A6">LOGO MDE</div>
+    <span style="font-size:20px;font-weight:600;flex:1">Graduation {{ prog }} 2026</span>
+    <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid #2B3035;font-size:15px"><span style="width:8px;height:8px;border-radius:50%;background:#2DB37A;animation:blink 1.6s ease-in-out infinite"></span>Lecture automatique</span>
+    <span style="font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{ present }}<span style="color:#9BA1A6;font-weight:500"> / 240</span></span>
+  </div>
+  <sc-if value="{{ offline }}"><div role="status" style="display:flex;gap:10px;align-items:center;padding:12px 32px;background:#B54708;color:#FFFFFF;font-size:16px"><span style="font-size:20px">{{ i.wifiOff }}</span>Hors ligne · la lecture continue, synchronisation au retour du réseau.</div></sc-if>
+  <div style="flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:center;gap:48px;padding:40px 64px;background:radial-gradient(ellipse at 72% 50%,#1D2124 0%,#0B0C0D 65%)">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <span style="font-size:20px;color:#9BA1A6">Bienvenue</span>
+      <h1 style="margin:0;font-size:76px;line-height:1;font-weight:700;letter-spacing:-0.035em;text-wrap:balance">Présentez votre QR code</h1>
+      <p style="margin:0;font-size:22px;line-height:1.45;color:#9BA1A6;max-width:520px">Tendez l’écran de votre téléphone face à la tablette. La lecture est automatique.</p>
+      <div style="height:48px;display:flex;align-items:center">
+        <sc-if value="{{ detecting }}"><span style="display:inline-flex;align-items:center;gap:12px;height:48px;padding:0 20px;border-radius:999px;background:rgba(45,179,122,.16);border:1px solid #2DB37A;font-size:18px;font-weight:600;color:#BFF0D6"><span style="width:18px;height:18px;border-radius:50%;border:2px solid #2DB37A;border-right-color:transparent;animation:spin .6s linear infinite"></span>QR code détecté · vérification…</span></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center">
+      <div style="position:relative;width:380px;height:380px;border-radius:16px;background:{{ vfBg }};transition:background .15s;animation:breathe 2.8s ease-in-out infinite">
+        <div style="position:absolute;left:0;top:0;width:84px;height:84px;border-top:5px solid {{ vf }};border-left:5px solid {{ vf }};border-top-left-radius:16px"></div>
+        <div style="position:absolute;right:0;top:0;width:84px;height:84px;border-top:5px solid {{ vf }};border-right:5px solid {{ vf }};border-top-right-radius:16px"></div>
+        <div style="position:absolute;left:0;bottom:0;width:84px;height:84px;border-bottom:5px solid {{ vf }};border-left:5px solid {{ vf }};border-bottom-left-radius:16px"></div>
+        <div style="position:absolute;right:0;bottom:0;width:84px;height:84px;border-bottom:5px solid {{ vf }};border-right:5px solid {{ vf }};border-bottom-right-radius:16px"></div>
+        <sc-if value="{{ waiting }}"><div style="position:absolute;left:8%;right:8%;height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--s,#F7941D),transparent);box-shadow:0 0 18px var(--s,#F7941D);animation:scanline 2.4s ease-in-out infinite"></div></sc-if>
+        <sc-if value="{{ detecting }}"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:96px;color:#2DB37A;animation:pop .25s ease-out both">{{ i.qr }}</div></sc-if>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;padding:20px 32px 28px;background:#111315;border-top:1px solid #2B3035;align-items:center">
+    <button onClick="{{ goCode }}" style="flex:1;height:76px;border-radius:12px;border:1px solid #2B3035;background:#1A1D20;color:#ECEDEE;font:600 20px Poppins;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer" style-active="background:#26292D"><span style="font-size:26px">{{ i.hash }}</span>Saisir mon code à 4 chiffres</button>
+    <button onClick="{{ goSearch }}" style="flex:1;height:76px;border-radius:12px;border:1px solid #2B3035;background:#1A1D20;color:#ECEDEE;font:600 20px Poppins;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer" style-active="background:#26292D"><span style="font-size:26px">{{ i.search }}</span>Rechercher mon nom</button>
+    <button onClick="{{ openSettings }}" aria-label="Espace hôte" style="width:76px;height:76px;border-radius:12px;border:1px solid #2B3035;background:transparent;color:#9BA1A6;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">{{ i.lock }}</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ vDesk }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;min-height:0">
+  <div style="display:flex;align-items:center;gap:20px;padding:14px 28px;background:linear-gradient(120deg,color-mix(in srgb,var(--p,#8F1C1F) 62%,#0B0C0D) 0%,color-mix(in srgb,var(--p,#8F1C1F) 22%,#1A1D20) 60%,#1A1D20 100%);border-bottom:1px solid #2B3035">
+    <div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:600">Graduation {{ prog }} 2026</div><div style="font-size:14px;color:#9BA1A6">Poste ordinateur · Accueil principal</div></div>
+    <div role="radiogroup" aria-label="Lecteur" style="display:flex;gap:4px;padding:4px;background:#0B0C0D;border:1px solid #2B3035;border-radius:10px">
+      <sc-for list="{{ deskModes }}" as="dm"><button role="radio" aria-checked="{{ dm.on }}" onClick="{{ dm.onClick }}" style="height:40px;padding:0 14px;border:0;border-radius:8px;background:{{ dm.bg }};color:{{ dm.fg }};font:600 14px Poppins;display:flex;align-items:center;gap:8px;cursor:pointer"><span style="font-size:18px">{{ dm.icon }}</span>{{ dm.label }}</button></sc-for>
+    </div>
+    <div style="text-align:right;line-height:1.1"><div style="font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{ present }}<span style="color:#9BA1A6;font-weight:500"> / 240</span></div><div style="font-size:13px;color:#9BA1A6">présents · {{ rate }}</div></div>
+    <button onClick="{{ openSettings }}" aria-label="Réglages" style="width:44px;height:44px;border-radius:10px;border:1px solid #2B3035;background:#26292D;color:#ECEDEE;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer">{{ i.sliders }}</button>
+  </div>
+  <sc-if value="{{ offline }}"><div role="status" style="display:flex;gap:10px;align-items:center;padding:10px 28px;background:#B54708;color:#FFFFFF;font-size:15px"><span style="font-size:18px">{{ i.wifiOff }}</span>Hors ligne · les émargements sont conservés sur ce poste et seront synchronisés.</div></sc-if>
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,1fr);gap:24px;padding:24px 28px">
+    <div style="display:flex;flex-direction:column;gap:16px;min-height:0">
+      <sc-if value="{{ deskDouchette }}">
+      <div style="background:#1A1D20;border:1px solid #2B3035;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><label for="dch" style="font-size:16px;font-weight:600">Scannez le QR code avec la douchette</label><span style="display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#8CE0B5"><span style="width:8px;height:8px;border-radius:50%;background:#2DB37A;animation:blink 1.6s ease-in-out infinite"></span>Champ actif en permanence</span></div>
+        <div style="display:flex;align-items:center;gap:12px;height:60px;padding:0 16px;border-radius:10px;background:#0B0C0D;border:2px solid var(--s,#F7941D)">
+          <span style="font-size:24px;color:#9BA1A6">{{ i.barcode }}</span>
+          <input id="dch" ref="{{ dchRef }}" value="{{ dchVal }}" onChange="{{ onDch }}" onKeyDown="{{ onDchKey }}" onBlur="{{ refocus }}" placeholder="En attente d’un scan…" autoComplete="off" style="flex:1;min-width:0;border:0;outline:none;background:transparent;color:#ECEDEE;font:500 20px ui-monospace,Menlo,monospace">
+          <sc-if value="{{ detecting }}"><span style="width:20px;height:20px;border-radius:50%;border:2px solid #2DB37A;border-right-color:transparent;animation:spin .6s linear infinite"></span></sc-if>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ deskWebcam }}">
+      <div style="position:relative;height:300px;border-radius:12px;border:1px solid #2B3035;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#22262A 0%,#0B0C0D 75%);display:flex;align-items:center;justify-content:center">
+        <span style="position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;background:rgba(11,12,13,.7);border:1px solid #2B3035;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:#2DB37A;animation:blink 1.6s ease-in-out infinite"></span>Webcam · lecture automatique</span>
+        <div style="position:relative;width:200px;height:200px;border-radius:14px;background:{{ vfBg }};animation:breathe 2.8s ease-in-out infinite">
+          <div style="position:absolute;left:0;top:0;width:44px;height:44px;border-top:4px solid {{ vf }};border-left:4px solid {{ vf }};border-top-left-radius:14px"></div>
+          <div style="position:absolute;right:0;top:0;width:44px;height:44px;border-top:4px solid {{ vf }};border-right:4px solid {{ vf }};border-top-right-radius:14px"></div>
+          <div style="position:absolute;left:0;bottom:0;width:44px;height:44px;border-bottom:4px solid {{ vf }};border-left:4px solid {{ vf }};border-bottom-left-radius:14px"></div>
+          <div style="position:absolute;right:0;bottom:0;width:44px;height:44px;border-bottom:4px solid {{ vf }};border-right:4px solid {{ vf }};border-bottom-right-radius:14px"></div>
+          <sc-if value="{{ waiting }}"><div style="position:absolute;left:8%;right:8%;height:2px;background:linear-gradient(90deg,transparent,var(--s,#F7941D),transparent);box-shadow:0 0 12px var(--s,#F7941D);animation:scanline 2.4s ease-in-out infinite"></div></sc-if>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ deskShowResult }}">
+      <div onClick="{{ togglePause }}" style="flex:1;min-height:240px;border-radius:12px;background:{{ res.bg }};color:#FFFFFF;padding:32px;display:flex;flex-direction:column;gap:12px;cursor:pointer;animation:inUp .2s ease-out both">
+        <div style="display:flex;align-items:center;gap:14px"><span style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:30px;animation:pop .3s ease-out both">{{ res.icon }}</span><span style="font-size:26px;font-weight:600">{{ res.title }}</span></div>
+        <sc-if value="{{ res.hasName }}"><div style="font-size:56px;line-height:1.05;font-weight:700;letter-spacing:-0.03em">{{ res.fullName }}</div></sc-if>
+        <div style="font-size:19px">{{ res.meta }}</div>
+        <sc-if value="{{ res.note }}"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.18);font-size:15px;font-weight:500"><span style="font-size:16px">{{ i.mail }}</span>{{ res.note }}</span></sc-if>
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px"><div style="height:6px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden"><div style="height:100%;width:{{ pct }};background:#FFFFFF"></div></div><span style="font-size:14px">{{ countdown }}</span></div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ deskIdle }}">
+      <div style="flex:1;min-height:240px;border-radius:12px;border:1px dashed #2B3035;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#9BA1A6;text-align:center;padding:24px">
+        <span style="font-size:40px;color:var(--s,#F7941D)">{{ i.scan }}</span><span style="font-size:20px;font-weight:600;color:#ECEDEE">En attente du prochain passage</span><span style="font-size:15px;max-width:380px">Le résultat s’affiche ici dès la lecture du QR code, sans aucune action.</span>
+      </div>
+      </sc-if>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <sc-for list="{{ deskTools }}" as="t"><button onClick="{{ t.onClick }}" style="height:48px;padding:0 16px;border-radius:10px;border:1px solid #2B3035;background:#1A1D20;color:#ECEDEE;font:500 15px Poppins;display:flex;align-items:center;gap:8px;cursor:pointer" style-hover="background:#26292D"><span style="font-size:18px">{{ t.icon }}</span>{{ t.label }}</button></sc-for>
+      </div>
+    </div>
+    <div style="background:#1A1D20;border:1px solid #2B3035;border-radius:12px;display:flex;flex-direction:column;min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2B3035"><span style="font-size:16px;font-weight:600">Derniers passages</span><span style="font-size:14px;color:#9BA1A6">{{ histCount }}</span></div>
+      <sc-if value="{{ histEmpty }}"><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#9BA1A6;padding:32px;text-align:center"><span style="font-size:32px">{{ i.inbox }}</span><span style="font-size:15px">Aucun passage pour le moment.</span></div></sc-if>
+      <div style="flex:1;overflow-y:auto">
+        <sc-for list="{{ history }}" as="h">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #26292D;animation:inUp .25s ease-out both">
+            <span style="font-size:14px;font-variant-numeric:tabular-nums;color:#9BA1A6;width:44px">{{ h.time }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.name }}</span><span style="font-size:13px;color:#9BA1A6">{{ h.mode }}</span></div>
+            <span style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;background:{{ h.bbg }};color:{{ h.bfg }};font-size:12px;font-weight:600;white-space:nowrap"><span style="font-size:12px">{{ h.icon }}</span>{{ h.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ vCode }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;border-top:6px solid var(--p,#8F1C1F);min-height:0">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #2B3035;background:#1A1D20"><button onClick="{{ backCam }}" aria-label="Retour" style="width:44px;height:44px;border-radius:10px;border:0;background:transparent;color:#ECEDEE;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ i.arrowL }}</button><span style="font-size:17px;font-weight:600">Code à 4 chiffres</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px 20px;overflow-y:auto">
+    <p style="margin:0;font-size:16px;color:#9BA1A6;text-align:center;max-width:340px">Le code figure dans l’email d’invitation, sous le QR code.</p>
+    <div style="display:flex;gap:12px" aria-live="polite">
+      <sc-for list="{{ boxes }}" as="b"><div style="width:{{ kb.box }};height:{{ kb.boxH }};border-radius:12px;background:#1A1D20;border:2px solid {{ b.border }};display:flex;align-items:center;justify-content:center;font-size:{{ kb.digit }};font-weight:700;font-variant-numeric:tabular-nums;transition:border-color .15s">{{ b.v }}</div></sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,{{ kb.key }});gap:12px">
+      <sc-for list="{{ keys }}" as="k"><button onClick="{{ k.onClick }}" aria-label="{{ k.aria }}" style="height:{{ kb.keyH }};border-radius:12px;border:1px solid #2B3035;background:{{ k.bg }};color:{{ k.fg }};font:600 {{ kb.keyF }} Poppins;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .08s,background .15s" style-active="transform:scale(.95)">{{ k.label }}</button></sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ vSearch }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;border-top:6px solid var(--p,#8F1C1F);min-height:0">
+  <div style="display:flex;flex-direction:column;gap:12px;padding:10px 16px 16px;border-bottom:1px solid #2B3035;background:#1A1D20">
+    <div style="display:flex;align-items:center;gap:8px;margin-left:-4px"><button onClick="{{ backCam }}" aria-label="Retour" style="width:44px;height:44px;border-radius:10px;border:0;background:transparent;color:#ECEDEE;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ i.arrowL }}</button><span style="font-size:17px;font-weight:600">Recherche par nom</span></div>
+    <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-radius:10px;background:#0B0C0D;border:1px solid #5F666C" data-fw="1">
+      <span style="font-size:20px;color:#9BA1A6">{{ i.search }}</span>
+      <input aria-label="Nom, prénom ou email" value="{{ q }}" onChange="{{ onQ }}" placeholder="Nom, prénom ou email" style="flex:1;min-width:0;border:0;outline:none;background:transparent;color:#ECEDEE;font:400 17px Poppins">
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;width:100%;max-width:760px;margin:0 auto">
+    <p style="margin:0;padding:12px 16px 4px;font-size:14px;color:#9BA1A6">{{ resultCount }}</p>
+    <sc-if value="{{ noResults }}"><div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:48px 24px;text-align:center"><span style="font-size:36px;color:#9BA1A6">{{ i.search }}</span><span style="font-size:17px;font-weight:600">Aucun invité trouvé</span><span style="font-size:15px;color:#9BA1A6;max-width:300px">Vérifiez l’orthographe ou essayez avec l’adresse email.</span></div></sc-if>
+    <sc-for list="{{ results }}" as="r" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1A1D20">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span><span style="font-size:14px;color:#9BA1A6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.sub }}</span></div>
+        <sc-if value="{{ r.isPresent }}"><span style="display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;background:rgba(24,121,78,.25);color:#8CE0B5;font-size:13px;font-weight:600;white-space:nowrap"><span style="font-size:13px">{{ i.check }}</span>Présent · {{ r.heure }}</span></sc-if>
+        <sc-if value="{{ r.isInscrit }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:#26292D;color:#ECEDEE;font-size:13px;font-weight:500"><span style="width:7px;height:7px;border-radius:50%;background:#9BA1A6"></span>Inscrit</span>
+        <button onClick="{{ r.onEmarger }}" style="height:44px;padding:0 16px;border:0;border-radius:10px;background:linear-gradient(180deg,var(--p,#8F1C1F),var(--ph,#7A1819));color:var(--op,#fff);box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 10px 22px -10px color-mix(in srgb,var(--p,#8F1C1F) 70%,transparent);font:600 15px Poppins;cursor:pointer;transition:transform .1s" style-active="transform:scale(.96)">{{ r.cta }}</button></sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ vCamState }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;border-top:6px solid var(--p,#8F1C1F)">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 24px;text-align:center;animation:inUp .3s ease-out both">
+    <div style="width:72px;height:72px;border-radius:16px;background:{{ cs.tileBg }};color:{{ cs.tileFg }};display:flex;align-items:center;justify-content:center;font-size:34px">{{ cs.icon }}</div>
+    <h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.02em;max-width:360px">{{ cs.title }}</h2>
+    <p style="margin:0;font-size:16px;line-height:1.55;color:#9BA1A6;max-width:340px">{{ cs.text }}</p>
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin-top:8px">
+      <sc-for list="{{ cs.actions }}" as="a"><button onClick="{{ a.onClick }}" style="height:52px;border-radius:12px;border:{{ a.border }};background:{{ a.bg }};color:{{ a.fg }};font:600 16px Poppins;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="font-size:20px">{{ a.icon }}</span>{{ a.label }}</button></sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showFullResult }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ togglePause }}" role="alert" style="position:absolute;inset:0;z-index:20;background:{{ res.bg }};color:#FFFFFF;display:flex;flex-direction:column;cursor:pointer;animation:fadeIn .15s ease-out both">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:{{ rs.gap }};padding:32px 24px">
+    <div style="width:{{ rs.icon }};height:{{ rs.icon }};border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:{{ rs.iconF }};animation:pop .3s ease-out both">{{ res.icon }}</div>
+    <div style="font-size:{{ rs.title }};font-weight:600;line-height:1.2;max-width:90%;text-wrap:balance">{{ res.title }}</div>
+    <sc-if value="{{ res.hasName }}"><div style="font-size:{{ rs.name }};font-weight:700;letter-spacing:-0.03em;line-height:1.02;max-width:95%;text-wrap:balance">{{ res.fullName }}</div></sc-if>
+    <div style="font-size:{{ rs.meta }};line-height:1.45;max-width:560px">{{ res.meta }}</div>
+    <sc-if value="{{ res.note }}"><span style="display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.18);font-size:{{ rs.note }};font-weight:500"><span style="font-size:18px">{{ i.mail }}</span>{{ res.note }}</span></sc-if>
+  </div>
+  <div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px">
+    <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden"><div style="height:100%;width:{{ pct }};background:#FFFFFF"></div></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:{{ rs.cd }}"><span style="font-size:18px">{{ cdIcon }}</span>{{ countdown }}</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ undoOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease-out both" onClick="{{ closeUndo }}">
+  <div role="dialog" aria-modal="true" aria-label="Annuler le dernier émargement" onClick="{{ stop }}" style="width:100%;max-width:520px;background:#1A1D20;border:1px solid #2B3035;border-bottom:0;border-radius:16px 16px 0 0;padding:24px 20px 28px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box;box-shadow:0 -12px 32px rgba(0,0,0,.4);animation:sheet .25s ease-out both">
+    <div style="width:40px;height:4px;border-radius:2px;background:#2B3035;align-self:center"></div>
+    <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em">Annuler le dernier émargement ?</h2>
+    <sc-if value="{{ hasLast }}">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:#0B0C0D;border:1px solid #2B3035"><span style="font-size:22px;color:#8CE0B5">{{ i.userCheck }}</span><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600">{{ last.name }}</div><div style="font-size:14px;color:#9BA1A6">{{ last.heure }} · {{ last.mode }}</div></div></div>
+      <p style="margin:0;font-size:15px;line-height:1.5;color:#9BA1A6">L’invité repassera au statut « Inscrit ». L’email n°2 déjà envoyé ne sera pas rappelé.</p>
+      <button onClick="{{ doUndo }}" style="height:52px;border:0;border-radius:12px;background:#B42318;color:#FFFFFF;font:600 16px Poppins;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="font-size:20px">{{ i.undo }}</span>Annuler l’émargement</button>
+    </sc-if>
+    <sc-if value="{{ noLast }}"><p style="margin:0;font-size:15px;color:#9BA1A6">Aucun émargement récent à annuler.</p></sc-if>
+    <button onClick="{{ closeUndo }}" style="height:52px;border-radius:12px;border:1px solid #2B3035;background:transparent;color:#ECEDEE;font:600 16px Poppins;cursor:pointer">Fermer</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ settingsOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease-out both" onClick="{{ closeSettings }}">
+  <div role="dialog" aria-modal="true" aria-label="Réglages" onClick="{{ stop }}" style="width:100%;max-width:520px;background:#1A1D20;border:1px solid #2B3035;border-bottom:0;border-radius:16px 16px 0 0;padding:24px 20px 28px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box;animation:sheet .25s ease-out both">
+    <h2 style="margin:0;font-size:20px;font-weight:700">Réglages du scan</h2>
+    <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:500">Durée d’affichage du résultat</span>
+      <div role="radiogroup" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:#0B0C0D;border:1px solid #2B3035;border-radius:10px">
+        <sc-for list="{{ durs }}" as="d"><button role="radio" aria-checked="{{ d.on }}" onClick="{{ d.onClick }}" style="height:44px;border:0;border-radius:8px;background:{{ d.bg }};color:{{ d.fg }};font:600 16px Poppins;cursor:pointer">{{ d.label }}</button></sc-for>
+      </div>
+    </div>
+    <button onClick="{{ toggleOffline }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:48px;font-size:15px"><span>Simuler une coupure réseau</span><span style="width:44px;height:26px;border-radius:13px;background:{{ offTrack }};position:relative;transition:background .15s"><span style="position:absolute;top:3px;left:{{ offKnob }};width:20px;height:20px;border-radius:50%;background:#FFFFFF;transition:left .15s"></span></span></button>
+    <button onClick="{{ goSetup }}" style="height:52px;border-radius:12px;border:1px solid #2B3035;background:transparent;color:#ECEDEE;font:600 16px Poppins;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="font-size:20px">{{ i.switchCam }}</span>Changer d’événement ou de mode</button>
+    <button onClick="{{ openUndoFromSettings }}" style="height:52px;border-radius:12px;border:1px solid #2B3035;background:transparent;color:#ECEDEE;font:600 16px Poppins;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="font-size:20px">{{ i.undo }}</span>Annuler le dernier émargement</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="position:absolute;left:16px;right:16px;bottom:96px;z-index:40;display:flex;justify-content:center;pointer-events:none"><div style="background:#ECEDEE;color:#0B0C0D;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:500;display:flex;gap:10px;align-items:center;box-shadow:0 12px 32px rgba(0,0,0,.4);animation:inUp .25s ease-out both"><span style="font-size:18px;color:#18794E">{{ i.checkCircle }}</span>{{ toast }}</div></div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;tablet&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;program&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;AMP&quot;,&quot;PMD&quot;,&quot;Public-AMP&quot;,&quot;Public-ASD&quot;,&quot;EMBA&quot;],&quot;default&quot;:&quot;AMP&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;setup&quot;,&quot;camera&quot;,&quot;detect&quot;,&quot;success&quot;,&quot;already&quot;,&quot;invalid&quot;,&quot;other&quot;,&quot;code&quot;,&quot;search&quot;,&quot;undo&quot;,&quot;perm&quot;,&quot;denied&quot;,&quot;nocam&quot;,&quot;offline&quot;,&quot;douchette&quot;,&quot;webcam&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;embedded&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { ready: !!window.MDE, device: null, program: null, view: 'camera', phase: 'wait', result: null, paused: false, progress: 0, dur: 3, present: 128, history: [], last: null, digits: '', q: '', undoOpen: false, settingsOpen: false, torch: false, front: false, offline: false, deskMode: 'douchette', sim: true, toast: null, fit: null, eventId: 'amp26', mode: 'QR caméra', ov: {}, dchVal: '', devScreen: 'camera' };
+  clock = 18 * 60 + 44; qi = 0; pi = 0;
+  componentDidMount() {
+    const go = () => {
+      const M = window.MDE; this.guests = M.guests(240, 128, 42); this.others = M.guests(12, 0, 7);
+      if (!this.props.embedded) { let d = null; try { d = new URLSearchParams(location.search).get('device') || sessionStorage.getItem('mde-scan-device'); sessionStorage.removeItem('mde-scan-device'); } catch (e) {} if (d === 'tablet' || d === 'desktop') { this.state.device = d; this.setState({ device: d }); setTimeout(() => this.fit(), 0); } }
+      this.setState({ ready: true });
+      const s = this.props.screen || (this.dev() === 'phone' ? 'setup' : (this.dev() === 'desktop' ? 'douchette' : 'camera'));
+      this.applyScreen(s);
+    };
+    if (window.MDE) go(); else { const t = setInterval(() => { if (window.MDE) { clearInterval(t); go(); } }, 30); }
+    this.onResize = () => this.fit(); window.addEventListener('resize', this.onResize); setTimeout(() => this.fit(), 0);
+  }
+  componentWillUnmount() { this.clearT(); clearTimeout(this.tt); window.removeEventListener('resize', this.onResize); }
+  componentDidUpdate() { this.theme(); }
+  dev() { return this.state.device || this.props.device || 'phone'; }
+  prog() { return this.state.program || this.props.program || 'AMP'; }
+  theme() { if (window.MDE && this.root) window.MDE.applyTheme(this.root, this.prog()); }
+  interactive() { return !this.props.screen; }
+  fit() {
+    if (this.props.embedded) return;
+    const D = { phone: [390, 844], tablet: [1180, 820], desktop: [1440, 900] }[this.dev()];
+    const bh = this.bar ? this.bar.offsetHeight : 52;
+    if (this.dev() === 'phone' && window.innerWidth < 520) { this.setState({ fit: { w: window.innerWidth, h: window.innerHeight - bh, s: 1, full: true } }); return; }
+    const s = Math.min(1, (window.innerWidth - 48) / D[0], (window.innerHeight - bh - 48) / D[1]);
+    this.setState({ fit: { w: D[0], h: D[1], s, full: false } });
+  }
+  toast(m) { clearTimeout(this.tt); this.setState({ toast: m }); this.tt = setTimeout(() => this.setState({ toast: null }), 2600); }
+  clearT() { clearTimeout(this.t1); clearTimeout(this.t2); clearInterval(this.iv); }
+  tm() { const m = this.clock; return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0'); }
+  isPresent(g) { const o = this.state.ov[g.id]; return o ? o.present : g.statut === 'Présent'; }
+  heureOf(g) { const o = this.state.ov[g.id]; return o && o.present ? o.heure : g.presenceH; }
+  nextGuest(pred) { const G = this.guests; for (let k = 0; k < G.length; k++) { const g = G[(this.pi + k) % G.length]; if (pred(g)) { this.pi = (this.pi + k + 1) % G.length; return g; } } return G[0]; }
+  outcome(type, g, mode) {
+    mode = mode || (this.dev() === 'desktop' && this.state.deskMode === 'douchette' ? 'Douchette' : 'QR caméra');
+    if (type === 's') g = g || this.nextGuest(x => !this.isPresent(x));
+    if (type === 'a') g = g || this.nextGuest(x => this.isPresent(x));
+    if (type === 'o') g = this.others[this.qi % this.others.length];
+    return { type, g, mode };
+  }
+  nextOutcome() { const P = ['s', 's', 'a', 's', 'i', 's', 's', 'o', 's', 'a']; const t = P[this.qi % P.length]; this.qi++; return this.outcome(t); }
+  loop() { this.clearT(); if (!this.interactive() || !this.state.sim) return; if (this.state.view !== 'camera' || this.state.undoOpen || this.state.settingsOpen) return; this.t1 = setTimeout(() => this.detect(this.nextOutcome()), 1900); }
+  detect(r) { this.clearT(); this.setState({ phase: 'detect', view: 'camera' }); this.t2 = setTimeout(() => this.show(r), 650); }
+  show(r, still) {
+    this.clearT();
+    const ov = Object.assign({}, this.state.ov); let present = this.state.present, last = this.state.last;
+    this.clock += 1;
+    const name = r.g ? r.g.civ + ' ' + r.g.prenom + ' ' + r.g.nomU : 'QR code non reconnu';
+    if (r.type === 's') { ov[r.g.id] = { present: true, heure: this.tm(), mode: r.mode }; present++; last = { id: r.g.id, name, heure: this.tm(), mode: r.mode }; }
+    if (r.type === 'a') r.first = this.heureOf(r.g) || '18h42', r.firstMode = (this.state.ov[r.g.id] || {}).mode || r.g.mode || 'QR caméra';
+    r.heure = this.tm();
+    const h = { key: 'h' + Date.now() + Math.random(), time: this.tm(), name, type: r.type, mode: r.mode };
+    this.setState({ phase: 'result', result: r, progress: still ? 0.35 : 0, paused: false, view: 'camera', ov, present, last, history: [h].concat(this.state.history).slice(0, 40) });
+    if (still) return;
+    this.iv = setInterval(() => {
+      if (this.state.paused) return;
+      const p = this.state.progress + 0.05 / this.state.dur;
+      if (p >= 1) { clearInterval(this.iv); this.setState({ phase: 'wait', progress: 0, result: null }, () => this.loop()); } else this.setState({ progress: p });
+    }, 50);
+  }
+  applyScreen(s) {
+    this.clearT();
+    const base = { undoOpen: false, settingsOpen: false, offline: false, digits: '', q: '', phase: 'wait', result: null, devScreen: s };
+    const still = !this.interactive();
+    if (!this.state.history.length && this.guests) {
+      const seed = this.guests.filter(g => g.statut === 'Présent').slice(0, 5).map((g, k) => ({ key: 'seed' + k, time: g.presenceH, name: g.civ + ' ' + g.prenom + ' ' + g.nomU, type: k === 2 ? 'a' : 's', mode: g.mode }));
+      base.history = seed; const g0 = this.guests.find(g => g.statut === 'Présent'); base.last = { id: g0.id, name: g0.civ + ' ' + g0.prenom + ' ' + g0.nomU, heure: '18h43', mode: 'QR caméra' };
+    }
+    if (s === 'douchette' || s === 'webcam') { this.setState(Object.assign(base, { view: 'camera', deskMode: s, device: this.state.device || (still ? null : 'desktop') }), () => this.loop()); return; }
+    if (['setup', 'code', 'search', 'perm', 'denied', 'nocam'].includes(s)) { this.setState(Object.assign(base, { view: s, digits: s === 'code' && still ? '48' : '', q: s === 'search' && still ? 'kou' : '' })); return; }
+    if (s === 'detect') { this.setState(Object.assign(base, { view: 'camera', phase: 'detect' })); if (!still) this.t2 = setTimeout(() => this.show(this.nextOutcome()), 650); return; }
+    if (['success', 'already', 'invalid', 'other'].includes(s)) { const t = { success: 's', already: 'a', invalid: 'i', other: 'o' }[s]; this.setState(Object.assign(base, { view: 'camera' }), () => this.show(this.outcome(t), still)); return; }
+    if (s === 'undo') { this.setState(Object.assign(base, { view: 'camera', undoOpen: true })); return; }
+    if (s === 'offline') { this.setState(Object.assign(base, { view: 'camera', offline: true }), () => this.loop()); return; }
+    this.setState(Object.assign(base, { view: 'camera' }), () => this.loop());
+  }
+  setView(v) { this.clearT(); this.setState({ view: v, phase: 'wait', result: null, digits: '', q: '', settingsOpen: false, undoOpen: false }, () => this.loop()); }
+  press(d) {
+    if (d === 'del') { this.setState({ digits: this.state.digits.slice(0, -1) }); return; }
+    if (d === 'ok') { if (this.state.digits.length === 4) this.validateCode(this.state.digits); return; }
+    if (this.state.digits.length >= 4) return;
+    const nd = this.state.digits + d; this.setState({ digits: nd });
+    if (nd.length === 4) setTimeout(() => this.validateCode(nd), 220);
+  }
+  validateCode(c) { const bad = c === '0000' || c[0] === '9'; this.setState({ digits: '' }); this.detect(bad ? this.outcome('i', null, 'Code 4 chiffres') : this.outcome('s', null, 'Code 4 chiffres')); }
+  doUndo() {
+    const l = this.state.last; if (!l) return;
+    const ov = Object.assign({}, this.state.ov); ov[l.id] = { present: false };
+    const h = { key: 'u' + Date.now(), time: this.tm(), name: l.name, type: 'u', mode: 'Annulation' };
+    this.setState({ ov, present: this.state.present - 1, last: null, undoOpen: false, history: [h].concat(this.state.history) }, () => this.loop());
+    this.toast('Émargement annulé · ' + l.name + ' est de nouveau Inscrit');
+  }
+  renderVals() {
+    const M = window.MDE; const embedded = !!this.props.embedded;
+    if (!M || !this.guests) return { rootH: embedded ? '100%' : '100vh', fw: '100%', fh: '100%', dw: '100%', dh: '100%', fs: 1 };
+    const i = M.icons(React), s = this.state, dev = this.dev(), prog = this.prog();
+    const f = s.fit || { w: 390, h: 844, s: 1 };
+    const D = { phone: [390, 844], tablet: [1180, 820], desktop: [1440, 900] }[dev];
+    const geo = embedded ? { fw: '100%', fh: '100%', dw: '100%', dh: '100%', fs: 1, fr: '0', fsh: 'none', stagePad: '0' }
+      : f.full ? { fw: f.w + 'px', fh: f.h + 'px', dw: f.w + 'px', dh: f.h + 'px', fs: 1, fr: '0', fsh: 'none', stagePad: '0' }
+      : { fw: Math.round(D[0] * f.s) + 'px', fh: Math.round(D[1] * f.s) + 'px', dw: D[0] + 'px', dh: D[1] + 'px', fs: f.s, fr: '16px', fsh: '0 24px 64px rgba(11,12,13,.28)', stagePad: '24px' };
+    const cam = s.view === 'camera';
+    const r = s.result; const g = r && r.g;
+    const RES = r ? {
+      s: { bg: '#18794E', icon: i.check, title: 'Présence enregistrée', meta: r.heure + ' · ' + r.mode + (g && g.entreprise ? ' · ' + g.entreprise : ''), note: 'Email n°2 envoyé · magazine du programme' },
+      a: { bg: '#B54708', icon: i.alert, title: 'Déjà émargé à ' + r.first, meta: 'Premier passage : ' + r.first + ' · ' + r.firstMode + ' · Accueil principal', note: '' },
+      i: { bg: '#B42318', icon: i.xCircle, title: 'Code invalide', meta: 'Ce code n’est pas reconnu. Proposez le code à 4 chiffres ou la recherche par nom.', note: '' },
+      o: { bg: '#B42318', icon: i.xCircle, title: 'Cet invité appartient à un autre événement', meta: 'Inscrit à la Graduation ' + (prog === 'PMD' ? 'AMP' : 'PMD') + ' 2026', note: '' }
+    }[r.type] : { bg: '#18794E', icon: null, title: '', meta: '', note: '' };
+    const res = Object.assign({ hasName: !!(r && r.type !== 'i'), fullName: g ? g.civ + ' ' + g.prenom + ' ' + g.nomU : '' }, RES);
+    const showRes = cam && s.phase === 'result';
+    const RS = dev === 'tablet' ? { icon: '132px', iconF: '68px', title: '38px', name: '84px', meta: '24px', note: '18px', cd: '18px', gap: '20px' } : { icon: '88px', iconF: '46px', title: '24px', name: '42px', meta: '17px', note: '15px', cd: '15px', gap: '14px' };
+    const left = Math.max(0, Math.ceil((1 - s.progress) * s.dur));
+    const KB = dev === 'tablet' ? { box: '88px', boxH: '104px', digit: '48px', key: '120px', keyH: '84px', keyF: '32px' } : { box: '64px', boxH: '76px', digit: '36px', key: '96px', keyH: '64px', keyF: '26px' };
+    const nz = x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const qq = nz(s.q.trim());
+    let list = this.guests.filter(x => !qq || nz(x.prenom + ' ' + x.nom + ' ' + x.email).includes(qq));
+    const total = list.length; list = list.slice().sort((a, b) => a.nom.localeCompare(b.nom)).slice(0, 25);
+    const BADGE = { s: ['rgba(24,121,78,.25)', '#8CE0B5', i.check, 'Présent'], a: ['rgba(181,71,8,.28)', '#FDBA8C', i.alert, 'Déjà émargé'], i: ['rgba(180,35,24,.3)', '#FDA29B', i.xCircle, 'Invalide'], o: ['rgba(180,35,24,.3)', '#FDA29B', i.xCircle, 'Autre événement'], u: ['#26292D', '#ECEDEE', i.undo, 'Annulé'] };
+    const CS = {
+      perm: { icon: i.camera, tileBg: '#26292D', tileFg: '#ECEDEE', title: 'Autoriser l’accès à la caméra', text: 'La caméra lit les QR codes automatiquement. Aucune image n’est enregistrée.', actions: [{ label: 'Autoriser la caméra', icon: i.camera, primary: 1, onClick: () => this.setView('camera') }, { label: 'Saisir un code à 4 chiffres', icon: i.hash, onClick: () => this.setView('code') }] },
+      denied: { icon: i.cameraOff, tileBg: 'rgba(181,71,8,.25)', tileFg: '#FDBA8C', title: 'Accès à la caméra refusé', text: 'Ouvrez les réglages du navigateur, autorisez la caméra pour ce site, puis réessayez. En attendant, utilisez le code ou la recherche.', actions: [{ label: 'Réessayer', icon: i.refresh, primary: 1, onClick: () => this.setView('perm') }, { label: 'Code à 4 chiffres', icon: i.hash, onClick: () => this.setView('code') }, { label: 'Recherche par nom', icon: i.search, onClick: () => this.setView('search') }] },
+      nocam: { icon: i.cameraOff, tileBg: '#26292D', tileFg: '#ECEDEE', title: 'Aucune caméra détectée', text: 'Branchez une douchette ou poursuivez avec le code à 4 chiffres et la recherche par nom.', actions: [{ label: 'Passer en mode Douchette', icon: i.barcode, primary: 1, onClick: () => { this.setState({ device: 'desktop', deskMode: 'douchette' }, () => { this.fit(); this.setView('camera'); }); } }, { label: 'Code à 4 chiffres', icon: i.hash, onClick: () => this.setView('code') }] }
+    }[s.view] || { actions: [] };
+    CS.actions = CS.actions.map((a, k) => Object.assign({ key: k, bg: a.primary ? 'var(--p)' : 'transparent', fg: a.primary ? 'var(--op)' : '#ECEDEE', border: a.primary ? '0' : '1px solid #2B3035' }, a));
+    const evs = M.EVENTS.filter(e => e.annee === 2026);
+    return {
+      i, prog, rootH: embedded ? '100%' : '100vh', showDev: !embedded, ...geo,
+      rootRef: el => { this.root = el; this.theme(); }, barRef: el => { this.bar = el; },
+      devices: [['phone', 'Téléphone', i.smartphone], ['tablet', 'Borne', i.tablet], ['desktop', 'Ordinateur', i.monitor]].map(([k, l, ic]) => ({ key: k, label: l, icon: ic, bg: dev === k ? '#ECEDEE' : 'transparent', fg: dev === k ? '#1B1D20' : '#ECEDEE', onClick: () => this.setState({ device: k }, () => { this.fit(); this.applyScreen(k === 'desktop' ? 'douchette' : 'camera'); }) })),
+      progs: M.ORDER.map(k => ({ key: k, label: k, p: M.PROGRAMS[k].p, bg: k === prog ? '#ECEDEE' : 'transparent', fg: k === prog ? '#1B1D20' : '#ECEDEE', onClick: () => this.setState({ program: k }) })),
+      devScreen: s.devScreen, onDevScreen: e => this.applyScreen(e.target.value),
+      simDot: s.sim ? '#2DB37A' : '#5F666C', simLabel: s.sim ? 'File simulée active' : 'File simulée en pause', toggleSim: () => this.setState({ sim: !s.sim }, () => s.sim ? this.clearT() : this.loop()),
+      vSetup: s.view === 'setup', vPhoneCam: cam && dev === 'phone', vTabletCam: cam && dev === 'tablet', vDesk: cam && dev === 'desktop',
+      vCode: s.view === 'code', vSearch: s.view === 'search', vCamState: ['perm', 'denied', 'nocam'].includes(s.view), cs: CS,
+      events: evs.map(e => { const on = s.eventId === e.id; return { key: e.id, title: 'Graduation ' + e.prog + ' ' + e.annee, sub: e.date + ' · ' + e.inscrits + ' inscrits', p: M.PROGRAMS[e.prog].p, on: on ? 'true' : 'false', border: on ? '2px solid #ECEDEE' : '2px solid #2B3035', ring: on ? '#ECEDEE' : '#5F666C', fill: on ? '#ECEDEE' : 'transparent', mark: on ? i.check : null, onClick: () => this.setState({ eventId: e.id, program: e.prog }) }; }),
+      modes: [['QR caméra', i.camera], ['Douchette', i.barcode], ['Code 4 chiffres', i.hash], ['Manuel', i.search]].map(([l, ic]) => { const on = s.mode === l; return { key: l, label: l, icon: ic, on: on ? 'true' : 'false', border: on ? '2px solid #ECEDEE' : '2px solid #2B3035', ic: on ? 'var(--s)' : '#9BA1A6', onClick: () => this.setState({ mode: l }) }; }),
+      onStart: () => { const m = s.mode; if (m === 'Douchette') { this.setState({ device: 'desktop' }, () => { this.fit(); this.applyScreen('douchette'); }); } else if (m === 'Code 4 chiffres') this.setView('code'); else if (m === 'Manuel') this.setView('search'); else this.applyScreen('camera'); },
+      present: s.present, rate: Math.round(s.present / 240 * 100) + ' %', offline: s.offline, camLabel: s.front ? 'Caméra avant' : 'Caméra arrière',
+      waiting: s.phase === 'wait', detecting: s.phase === 'detect', vf: s.phase === 'detect' ? '#2DB37A' : 'var(--s,#F7941D)', vfBg: s.phase === 'detect' ? 'rgba(45,179,122,.12)' : 'transparent',
+      hasLast: !!s.last, noLast: !s.last, last: s.last || {},
+      tools: [
+        { key: 'c', label: 'Code', icon: i.hash, onClick: () => this.setView('code') },
+        { key: 's', label: 'Rechercher', icon: i.search, onClick: () => this.setView('search') },
+        { key: 'u', label: 'Annuler', icon: i.undo, onClick: () => { this.clearT(); this.setState({ undoOpen: true }); } },
+        { key: 't', label: 'Torche', icon: i.flash, pressed: s.torch ? 'true' : 'false', onClick: () => { this.setState({ torch: !s.torch }); this.toast(s.torch ? 'Torche éteinte' : 'Torche allumée'); } },
+        { key: 'w', label: 'Caméra', icon: i.switchCam, onClick: () => { this.setState({ front: !s.front }); this.toast(s.front ? 'Caméra arrière' : 'Caméra avant'); } }
+      ].map(t => Object.assign({ fg: t.key === 't' && s.torch ? '#0B0C0D' : '#ECEDEE', bg: t.key === 't' && s.torch ? 'var(--s)' : 'transparent', pressed: 'false' }, t)),
+      goCode: () => this.setView('code'), goSearch: () => this.setView('search'),
+      deskModes: [['douchette', 'Douchette', i.barcode], ['webcam', 'Webcam', i.camera]].map(([k, l, ic]) => ({ key: k, label: l, icon: ic, on: s.deskMode === k ? 'true' : 'false', bg: s.deskMode === k ? 'var(--p)' : 'transparent', fg: s.deskMode === k ? 'var(--op)' : '#ECEDEE', onClick: () => this.setState({ deskMode: k }) })),
+      deskDouchette: s.deskMode === 'douchette', deskWebcam: s.deskMode === 'webcam', deskShowResult: showRes, deskIdle: !showRes,
+      dchRef: el => { this.dch = el; if (el && this.interactive() && document.activeElement !== el && !s.undoOpen && !s.settingsOpen) setTimeout(() => el && el.focus({ preventScroll: true }), 0); },
+      dchVal: s.dchVal, onDch: e => this.setState({ dchVal: e.target.value }),
+      onDchKey: e => { if (e.key === 'Enter') { const v = s.dchVal.trim(); this.setState({ dchVal: '' }); this.detect(v.length < 4 ? this.outcome('i', null, 'Douchette') : this.outcome('s', null, 'Douchette')); } },
+      refocus: e => { const el = e.target; if (this.interactive()) setTimeout(() => { if (!this.state.undoOpen && !this.state.settingsOpen && this.state.view === 'camera' && el) el.focus({ preventScroll: true }); }, 120); },
+      deskTools: [{ key: 'c', label: 'Code à 4 chiffres', icon: i.hash, onClick: () => this.setView('code') }, { key: 's', label: 'Recherche par nom', icon: i.search, onClick: () => this.setView('search') }, { key: 'u', label: 'Annuler le dernier', icon: i.undo, onClick: () => { this.clearT(); this.setState({ undoOpen: true }); } }],
+      history: s.history.slice(0, 14).map(h => { const b = BADGE[h.type]; return Object.assign({}, h, { bbg: b[0], bfg: b[1], icon: b[2], label: b[3] }); }),
+      histEmpty: !s.history.length, histCount: s.history.length + ' passages',
+      showFullResult: showRes && dev !== 'desktop', res, rs: RS, pct: Math.round(s.progress * 100) + '%',
+      countdown: s.paused ? 'En pause · touchez pour reprendre' : 'Retour à la caméra dans ' + left + ' s · touchez pour mettre en pause', cdIcon: s.paused ? i.play : i.pause,
+      togglePause: () => { if (this.interactive()) this.setState({ paused: !s.paused }); },
+      backCam: () => this.setView('camera'),
+      boxes: [0, 1, 2, 3].map(k => ({ key: k, v: s.digits[k] || '', border: k === s.digits.length ? 'var(--s,#F7941D)' : (s.digits[k] ? '#5F666C' : '#2B3035') })),
+      kb: KB,
+      keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].map(k => ({ key: k, label: k === 'del' ? i.backspace : k === 'ok' ? i.check : k, aria: k === 'del' ? 'Effacer' : k === 'ok' ? 'Valider' : k, bg: k === 'ok' && s.digits.length === 4 ? 'var(--p)' : '#1A1D20', fg: k === 'ok' && s.digits.length === 4 ? 'var(--op)' : '#ECEDEE', onClick: () => this.press(k) })),
+      q: s.q, onQ: e => this.setState({ q: e.target.value }),
+      resultCount: qq ? total + (total > 1 ? ' résultats' : ' résultat') : 'Tous les invités · ' + this.guests.length,
+      noResults: total === 0,
+      results: list.map(x => { const p = this.isPresent(x); return { key: x.id, name: x.civ + ' ' + x.prenom + ' ' + x.nomU, sub: (x.entreprise || 'Particulier') + ' · ' + x.email, isPresent: p, isInscrit: !p, heure: this.heureOf(x), cta: dev === 'tablet' ? 'C’est moi' : 'Émarger', onEmarger: () => this.show(this.outcome('s', x, 'Manuel')) }; }),
+      undoOpen: s.undoOpen, closeUndo: () => this.setState({ undoOpen: false }, () => this.loop()), doUndo: () => this.doUndo(), stop: e => e.stopPropagation(),
+      settingsOpen: s.settingsOpen, openSettings: () => { this.clearT(); this.setState({ settingsOpen: true }); }, closeSettings: () => this.setState({ settingsOpen: false }, () => this.loop()),
+      durs: [2, 3, 5].map(d => ({ key: d, label: d + ' s', on: s.dur === d ? 'true' : 'false', bg: s.dur === d ? 'var(--p)' : 'transparent', fg: s.dur === d ? 'var(--op)' : '#ECEDEE', onClick: () => this.setState({ dur: d }) })),
+      toggleOffline: () => this.setState({ offline: !s.offline }), offTrack: s.offline ? '#B54708' : '#2B3035', offKnob: s.offline ? '21px' : '3px',
+      goSetup: () => this.setView('setup'), openUndoFromSettings: () => this.setState({ settingsOpen: false, undoOpen: true }),
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

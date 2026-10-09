@@ -1,0 +1,66 @@
+{% extends "emails/base.html" %}
+{% block preheader %}Votre QR code et votre code de secours pour la {{ nom_affiche }}.{% endblock %}
+{% block contenu %}
+{% if paragraphes_avant %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
+  <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#1B1D20;">
+    {% for p in paragraphes_avant %}<p style="margin:{% if forloop.first %}0{% else %}12px 0 0 0{% endif %};color:{% if forloop.first %}#1B1D20{% else %}#3D4247{% endif %};">{{ p }}</p>{% endfor %}
+  </td></tr>
+</table>
+<div style="height:16px;line-height:16px;font-size:16px;">&nbsp;</div>
+{% endif %}
+
+<!-- Carte QR code + code de secours -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
+  <tr><td align="center" class="police" style="padding:28px 24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;text-align:center;">
+    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;"><tr><td style="padding:12px;">
+      <img src="{{ qr_src }}" width="200" height="200" alt="QR code d’accès" style="display:block;width:200px;height:200px;">
+    </td></tr></table>
+    <p style="margin:16px 0 4px 0;font-size:14px;color:#5F666C;">Code de secours</p>
+    <p style="margin:0;font-size:40px;line-height:1.1;font-weight:700;letter-spacing:7px;color:#1B1D20;">{{ code }}</p>
+    <p style="margin:4px auto 0 auto;font-size:14px;line-height:1.5;color:#5F666C;max-width:320px;">À donner à l’accueil si le QR code ne peut pas être lu.</p>
+  </td></tr>
+</table>
+<div style="height:16px;line-height:16px;font-size:16px;">&nbsp;</div>
+
+{% if paragraphes_apres %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
+  <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#3D4247;">
+    {% for p in paragraphes_apres %}<p style="margin:{% if forloop.first %}0{% else %}12px 0 0 0{% endif %};">{{ p }}</p>{% endfor %}
+  </td></tr>
+</table>
+<div style="height:16px;line-height:16px;font-size:16px;">&nbsp;</div>
+{% endif %}
+
+<!-- Infos pratiques -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
+  <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;color:#1B1D20;">
+    <p style="margin:0 0 14px 0;font-size:16px;font-weight:600;">Infos pratiques</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr><td width="32" valign="middle" style="padding:0 0 12px 0;"><img src="{{ ic.calendar }}" width="20" height="20" alt="" style="display:block;"></td><td valign="middle" style="padding:0 0 12px 0;font-size:16px;color:#1B1D20;">{{ date_longue }}</td></tr>
+      <tr><td width="32" valign="middle" style="padding:0 0 12px 0;"><img src="{{ ic.clock }}" width="20" height="20" alt="" style="display:block;"></td><td valign="middle" style="padding:0 0 12px 0;font-size:16px;color:#1B1D20;">{{ heure_debut }} · accueil dès {{ heure_accueil }}</td></tr>
+      <tr><td width="32" valign="middle"><img src="{{ ic.mapPin }}" width="20" height="20" alt="" style="display:block;"></td><td valign="middle" style="font-size:16px;color:#1B1D20;">{{ lieu }}</td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+      <tr>
+        <td class="bouton-col" width="50%" style="padding:0 6px 0 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr>
+            <td align="center" bgcolor="{{ t.primary }}" style="background:{{ t.primary }};border-radius:10px;">
+              <a href="{{ lien_agenda }}" style="display:block;padding:13px 12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;color:{{ t.on_primary }};text-decoration:none;border-radius:10px;"><img src="{{ ic.calendarPlus }}" width="18" height="18" alt="" style="vertical-align:-3px;margin-right:8px;">Ajouter à l’agenda</a>
+            </td></tr></table>
+        </td>
+        {% if lien_carte %}
+        <td class="bouton-col" width="50%" style="padding:0 0 0 6px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr>
+            <td align="center" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #868D93;border-radius:10px;">
+              <a href="{{ lien_carte }}" style="display:block;padding:12px 12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;color:#1B1D20;text-decoration:none;border-radius:10px;"><img src="{{ ic.navigation }}" width="18" height="18" alt="" style="vertical-align:-3px;margin-right:8px;">Enregistrer l’itinéraire</a>
+            </td></tr></table>
+        </td>
+        {% endif %}
+      </tr>
+    </table>
+    <p style="margin:12px 0 0 0;font-size:13px;line-height:1.5;color:#5F666C;">Le fichier d’agenda (.ics) et votre QR code sont également joints à cet email.</p>
+  </td></tr>
+</table>
+{% endblock %}
+{% block mention %}Vous recevez cet email suite à votre inscription à la {{ nom_affiche }}.{% endblock %}

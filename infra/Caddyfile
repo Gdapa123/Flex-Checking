@@ -1,0 +1,16 @@
+# HTTPS local (certificats mkcert) : la caméra est bloquée en HTTP hors localhost.
+# 443 : https://flex-checking.localhost — 8443 : https://<IP du poste sur le réseau local>:8443 (téléphones)
+{
+	auto_https off
+}
+
+https://flex-checking.localhost:443, https://:8443 {
+	tls /certs/flex-checking.pem /certs/flex-checking-key.pem
+	encode gzip
+	handle /api/* {
+		reverse_proxy django:8000
+	}
+	handle {
+		reverse_proxy frontend:5173
+	}
+}
