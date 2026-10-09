@@ -36,7 +36,13 @@ export const schemaInvite = z.object({
   fonction: z.string().trim().max(120).optional().default(''),
 });
 
-export const schemaInscription = schemaInvite.extend({
+/** Tous les champs sont obligatoires, entreprise et fonction comprises (inscription et ajout manuel). */
+export const schemaInviteComplet = schemaInvite.extend({
+  entreprise: z.string().trim().min(2, 'Indiquez votre entreprise.').max(120, '120 caractères maximum.'),
+  fonction: z.string().trim().min(2, 'Indiquez votre fonction.').max(120, '120 caractères maximum.'),
+});
+
+export const schemaInscription = schemaInviteComplet.extend({
   consentementDonnees: z.literal(true, {
     errorMap: () => ({ message: 'Votre accord est nécessaire pour recevoir votre invitation.' }),
   }),

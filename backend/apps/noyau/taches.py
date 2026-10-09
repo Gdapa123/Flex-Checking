@@ -4,6 +4,7 @@ L'état des tâches est conservé dans le cache (clé `tache:<id>`) avec le prop
 seul l'admin qui l'a lancée puisse la consulter et télécharger le fichier produit.
 """
 
+import time
 import uuid
 from pathlib import Path
 
@@ -36,8 +37,22 @@ def _terminer(tache_id, **resultat):
     cache.set(f"tache:{tache_id}", etat, DUREE)
 
 
+def purger_exports(age_max_s=DUREE):
+    """Supprime les fichiers d'export oubliés (données personnelles) plus vieux que `age_max_s`."""
+    if not DOSSIER.exists():
+        return 0
+    limite = time.time() - age_max_s
+    n = 0
+    for f in DOSSIER.iterdir():
+        if f.is_file() and f.stat().st_mtime < limite:
+            f.unlink(missing_ok=True)
+            n += 1
+    return n
+
+
 def ecrire_fichier(contenu, extension):
     DOSSIER.mkdir(parents=True, exist_ok=True)
+    purger_exports()
     nom = f"{uuid.uuid4().hex}.{extension}"
     (DOSSIER / nom).write_bytes(contenu)
     return nom

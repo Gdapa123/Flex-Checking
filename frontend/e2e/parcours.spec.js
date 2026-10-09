@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DOSSIER_EMAILS } from '../playwright.config.js';
 
-const ADMIN = { email: 'mariam.kone@mde.ci', mdp: 'Admin-Demo-2026!' };
+const ADMIN = { email: 'mariam.kone@mde.ci', mdp: process.env.DEMO_MOT_DE_PASSE_ADMIN };
 
 /** Cherche, dans les emails écrits par Django, celui adressé à `dest` et contenant `motif`. */
 async function attendreEmail(dest, motif) {
@@ -20,6 +20,7 @@ async function attendreEmail(dest, motif) {
 }
 
 async function connexion(page) {
+  expect(ADMIN.mdp, 'définir DEMO_MOT_DE_PASSE_ADMIN (fichier .env ou CI)').toBeTruthy();
   await page.goto('/connexion');
   await page.getByLabel('Email').fill(ADMIN.email);
   await page.getByLabel('Mot de passe').fill(ADMIN.mdp);
@@ -40,13 +41,17 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
   const p = await invite.newPage();
   await p.goto(`http://localhost:5174/i/${ev.slugInscription}`);
   await expect(p.getByRole('heading', { name: ev.nomAffiche })).toBeVisible();
+  await expect(p.getByRole('heading', { name: 'Comment ça se passe ?' })).toBeVisible();
+  await p.getByRole('button', { name: 'Commencer mon inscription' }).click();
   await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
   await expect(p.getByText(/champs à corriger/)).toBeVisible(); // validation
   await p.getByRole('radio', { name: 'Mme' }).click();
-  await p.getByLabel('Nom *', { exact: true }).fill('Kouassi');
-  await p.getByLabel('Prénom *', { exact: true }).fill('Aya');
-  await p.getByLabel('Email *').fill(email);
-  await p.getByLabel('Téléphone *').fill('0712345678');
+  await p.getByLabel('Nom', { exact: true }).fill('Kouassi');
+  await p.getByLabel('Prénom', { exact: true }).fill('Aya');
+  await p.getByLabel('Email', { exact: true }).fill(email);
+  await p.getByLabel('Téléphone', { exact: true }).fill('0712345678');
+  await p.getByLabel('Entreprise', { exact: true }).fill('SIB');
+  await p.getByLabel('Fonction', { exact: true }).fill('Directrice financière');
   await p.getByLabel(/J’accepte/).check();
   await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
   await expect(p.getByRole('heading', { name: 'Inscription réussie' })).toBeVisible();

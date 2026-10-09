@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, messageErreur } from '../../lib/api';
-import { erreursParChamp, formaterTelephone, schemaInvite } from '../../lib/schemas';
+import { erreursParChamp, formaterTelephone, schemaInviteComplet } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
 import Champ from '../../components/ui/Champ';
 import Icon from '../../components/ui/Icon';
@@ -8,12 +8,12 @@ import PanneauLateral from '../../components/ui/PanneauLateral';
 import Segmente from '../../components/ui/Segmente';
 
 const CHAMPS = [
-  ['nom', 'Nom *', 'Kouassi'],
-  ['prenom', 'Prénom *', 'Aya'],
-  ['email', 'Email *', 'nom@entreprise.ci'],
-  ['telephone', 'Téléphone (+225) *', '07 12 34 56 78'],
-  ['entreprise', 'Entreprise · facultatif', ''],
-  ['fonction', 'Fonction · facultatif', ''],
+  ['nom', 'Nom', 'ANZOUA'],
+  ['prenom', 'Prénom', 'George'],
+  ['email', 'Email', 'nom@entreprise.ci'],
+  ['telephone', 'Téléphone (+225)', '07 12 34 56 78'],
+  ['entreprise', 'Entreprise', 'MDE Business School'],
+  ['fonction', 'Fonction', 'Directeur des SI'],
 ];
 
 /** A6 · Ajout manuel d'un invité (source MANUEL, email n°1 envoyé sauf si décoché). */
@@ -32,7 +32,7 @@ export default function PanneauAjout({ evenement, onFermer, onAjoute }) {
   const [envoi, setEnvoi] = useState(false);
 
   const soumettre = async () => {
-    const er = erreursParChamp(schemaInvite.safeParse(v));
+    const er = erreursParChamp(schemaInviteComplet.safeParse(v));
     setErreurs(er);
     if (Object.keys(er).length) return;
     setEnvoi(true);
@@ -62,6 +62,7 @@ export default function PanneauAjout({ evenement, onFermer, onAjoute }) {
         </button>
       </div>
       <div className="flex flex-1 flex-col gap-[18px] overflow-y-auto px-6 py-5">
+        <p className="m-0 text-[14px] text-texte-2">Tous les champs sont obligatoires.</p>
         {erreurs.general && (
           <p role="alert" className="m-0 rounded-moyen bg-erreur-doux p-3 text-[14px] text-erreur-texte">
             {erreurs.general}
@@ -69,7 +70,7 @@ export default function PanneauAjout({ evenement, onFermer, onAjoute }) {
         )}
         <div className="flex flex-col gap-2">
           <span id="aj-civ" className="text-[15px] font-medium">
-            Civilité *
+            Civilité
           </span>
           <Segmente
             labelledBy="aj-civ"

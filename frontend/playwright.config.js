@@ -1,5 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'node:fs';
 import path from 'node:path';
+
+// Mots de passe des comptes de démonstration : variables d'environnement (CI) ou fichier .env local
+// (jamais commité). Aucun mot de passe n'est écrit dans les tests.
+const fichierEnv = path.resolve('../.env');
+if (fs.existsSync(fichierEnv)) {
+  for (const ligne of fs.readFileSync(fichierEnv, 'utf8').split('\n')) {
+    const m = /^(DEMO_[A-Z_]+)=(.*)$/.exec(ligne.trim());
+    // mêmes règles que django-environ : guillemets entourants retirés
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim().replace(/^(['"])(.*)\1$/, '$2');
+  }
+}
 
 /**
  * Parcours de bout en bout : un backend Django dédié (port 8001, emails écrits dans des fichiers,

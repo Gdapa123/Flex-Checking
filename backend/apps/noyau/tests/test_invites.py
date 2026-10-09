@@ -61,6 +61,8 @@ def test_ajout_manuel(client_admin, evenement):
             "prenom": "Franck",
             "email": "franck@sib.ci",
             "telephone": "0707070707",
+            "entreprise": "SIB",
+            "fonction": "Auditeur",
             "envoyerInvitation": False,
         },
         format="json",
@@ -75,6 +77,17 @@ def test_ajout_manuel(client_admin, evenement):
         format="json",
     )
     assert r.status_code in (400, 409)
+
+
+def test_ajout_manuel_exige_entreprise_et_fonction(client_admin, evenement):
+    r = client_admin.post(
+        url(evenement),
+        {"civilite": "M", "nom": "Bamba", "prenom": "Franck", "email": "f2@sib.ci", "telephone": "0707070707"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert r.json()["entreprise"] == ["Indiquez votre entreprise."]
+    assert r.json()["fonction"] == ["Indiquez votre fonction."]
 
 
 def test_modification_et_historique(client_admin, evenement, peuple):
@@ -135,6 +148,8 @@ def test_export_selection_async(client_admin, evenement):
     assert t["statut"] == "TERMINEE" and t["nb"] == 60
     f = client_admin.get(t["telechargement"])
     assert f.status_code == 200
+    # fichier à usage unique : supprimé après téléchargement
+    assert client_admin.get(t["telechargement"]).status_code == 404
 
 
 def test_qr_png(client_admin, peuple):
@@ -163,3 +178,19 @@ def test_export_neutralise_les_formules(client_admin, evenement):
     valeurs = [c.value for row in load_workbook(io.BytesIO(xlsx)).active.iter_rows() for c in row]
     assert '\'=HYPERLINK("http://evil","Clic")' in valeurs
     assert not any(isinstance(v, str) and v.startswith("=") for v in valeurs)
+
+
+def test_purge_des_exports_anciens(tmp_path, monkeypatch):
+    import os
+    import time
+
+    from apps.noyau import taches
+
+    monkeypatch.setattr(taches, "DOSSIER", tmp_path)
+    vieux, recent = tmp_path / "vieux.xlsx", tmp_path / "recent.xlsx"
+    vieux.write_bytes(b"x")
+    recent.write_bytes(b"x")
+    il_y_a_7h = time.time() - 7 * 3600
+    os.utime(vieux, (il_y_a_7h, il_y_a_7h))
+    assert taches.purger_exports() == 1
+    assert not vieux.exists() and recent.exists()

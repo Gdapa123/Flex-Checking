@@ -1,7 +1,8 @@
 """Gestion des invités d'un événement (admin) et de tous les événements (super admin)."""
 
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.text import slugify
@@ -24,7 +25,7 @@ from .serializers import (
     ModificationInviteSerializer,
     invites_annotes,
 )
-from .taches import DOSSIER, SEUIL_ASYNCHRONE, creer_tache, lire_tache, tache_action_groupee, tache_export
+from .taches import DOSSIER, DUREE, SEUIL_ASYNCHRONE, creer_tache, lire_tache, tache_action_groupee, tache_export
 
 PARAMS_LISTE = [
     OpenApiParameter("q", str, description="Nom, prénom, email, téléphone, entreprise ou code"),
@@ -57,6 +58,12 @@ def invite_visible(user, pk):
 def _nom_export(evenement=None):
     base = f"invites-{slugify(evenement.programme.nom)}-{evenement.annee}" if evenement else "invites-tous-evenements"
     return f"{base}-{timezone.localtime():%Y%m%d-%H%M}"
+
+
+MIMES_EXPORT = {
+    "csv": "text/csv; charset=utf-8",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
 
 
 def reponse_fichier(contenu, mime, nom):
@@ -395,9 +402,16 @@ class TacheFichierView(APIView):
         if not tache or tache.get("proprietaire") != request.user.pk or not tache.get("fichier"):
             raise Http404
         chemin = DOSSIER / tache["fichier"]
-        if not chemin.exists():
-            raise Http404
-        return FileResponse(chemin.open("rb"), as_attachment=True, filename=tache["nom"])
+        # fichier à usage unique : supprimé dès le téléchargement (données personnelles)
+        try:
+            contenu = chemin.read_bytes()
+        except FileNotFoundError:  # déjà téléchargé (requête concurrente) ou purgé
+            raise Http404 from None
+        chemin.unlink(missing_ok=True)
+        tache.pop("fichier", None)
+        cache.set(f"tache:{tache_id}", tache, DUREE)
+        mime = MIMES_EXPORT.get(chemin.suffix.lstrip("."), "application/octet-stream")
+        return reponse_fichier(contenu, mime, tache["nom"])
 
 
 class AnnulerPresenceSerializer(serializers.Serializer):

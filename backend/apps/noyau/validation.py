@@ -17,6 +17,15 @@ def valider_nom(valeur, libelle):
     return valeur
 
 
+def valider_texte_obligatoire(valeur, message, maximum=120):
+    valeur = (valeur or "").strip()
+    if len(valeur) < 2:
+        raise serializers.ValidationError(message)
+    if len(valeur) > maximum:
+        raise serializers.ValidationError(f"{maximum} caractères maximum.")
+    return valeur
+
+
 def valider_email(valeur):
     valeur = (valeur or "").strip().lower()
     if not valeur:

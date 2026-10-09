@@ -27,36 +27,44 @@ export function lienAgenda(slug) {
 export function EnteteInvite({ ev, variante = 'formulaire', children }) {
   const logoBlanc = ev.tokens?.op === '#FFFFFF';
   return (
-    <header className="entete-degrade hachures px-5 pb-16 pt-[22px]">
-      <div className="relative mx-auto flex max-w-[560px] flex-col gap-[22px]">
-        <div className="flex items-center justify-between gap-3">
-          <Logo variante={logoBlanc ? 'blanc' : 'rouge'} hauteur={38} />
-          <span className="inline-flex h-[30px] items-center gap-2 rounded-full border border-blanc-24 bg-noir-20 px-3 text-[13px] font-semibold">
-            <span className="h-2 w-2 rounded-full bg-s" />
-            Invitation personnelle
-          </span>
-        </div>
+    <header className="entete-degrade hachures px-5 pb-11 pt-3.5 sm:pb-16 sm:pt-[22px]">
+      <div className="relative mx-auto flex max-w-[560px] flex-col gap-3.5 sm:gap-[22px]">
+        <Logo variante={logoBlanc ? 'blanc' : 'rouge'} hauteur={32} />
         {variante === 'formulaire' ? (
           <>
-            <div className="flex flex-col gap-2.5">
-              <p className="m-0 text-[14px] font-medium">MDE Business School présente</p>
-              <h1 className="m-0 text-[clamp(34px,10vw,44px)] font-extrabold leading-none tracking-[-0.04em] [text-wrap:balance]">
+            <div className="flex flex-col gap-1.5 sm:gap-2.5">
+              <p className="m-0 text-[13.5px] font-medium sm:text-[15px]">MDE vous invite à la cérémonie de</p>
+              <h1 className="m-0 text-[clamp(25px,7.4vw,30px)] font-extrabold leading-[1.05] tracking-[-0.035em] [text-wrap:balance] sm:text-[44px] sm:leading-none sm:tracking-[-0.04em]">
                 {ev.nomAffiche}
               </h1>
               <span className="h-1 w-14 rounded-sm bg-s" />
             </div>
-            <dl className="m-0 grid grid-cols-3 overflow-hidden rounded-bouton border border-blanc-26 bg-noir-16">
-              <div className="flex min-w-0 flex-col gap-0.5 border-r border-blanc-26 px-3 py-2.5">
-                <dt className="text-[12px]">Date</dt>
-                <dd className="m-0 text-[15px] font-bold tabular-nums">{dateBandeau(ev.date)}</dd>
+            {/* Mobile : bloc compact avec icônes (date · heure, puis lieu) */}
+            <div className="flex flex-col gap-1 rounded-bouton border border-blanc-26 bg-noir-16 px-3 py-2 text-[13.5px] font-semibold sm:hidden">
+              <span className="flex items-center gap-2">
+                <Icon nom="calendar" className="text-[15px] opacity-80" />
+                <span className="tabular-nums">
+                  {dateBandeau(ev.date)} · {heureTexte(ev.heureDebut)}
+                </span>
+              </span>
+              <span className="flex items-start gap-2">
+                <Icon nom="mapPin" className="mt-[3px] text-[15px] opacity-80" />
+                <span className="leading-snug">{ev.lieu}</span>
+              </span>
+            </div>
+            {/* Tablette et ordinateur : date et heure côte à côte, le lieu sur toute la largeur */}
+            <dl className="m-0 hidden sm:grid grid-cols-2 overflow-hidden rounded-bouton border border-blanc-26 bg-noir-16">
+              <div className="flex min-w-0 flex-col gap-0.5 border-r border-blanc-26 px-3 py-1.5 sm:py-2.5">
+                <dt className="text-[11px] sm:text-[12px]">Date</dt>
+                <dd className="m-0 text-[14px] font-bold sm:text-[15px] tabular-nums">{dateBandeau(ev.date)}</dd>
               </div>
-              <div className="flex min-w-0 flex-col gap-0.5 border-r border-blanc-26 px-3 py-2.5">
-                <dt className="text-[12px]">Heure</dt>
-                <dd className="m-0 text-[15px] font-bold tabular-nums">{heureTexte(ev.heureDebut)}</dd>
+              <div className="flex min-w-0 flex-col gap-0.5 px-3 py-1.5 sm:py-2.5">
+                <dt className="text-[11px] sm:text-[12px]">Heure</dt>
+                <dd className="m-0 text-[14px] font-bold sm:text-[15px] tabular-nums">{heureTexte(ev.heureDebut)}</dd>
               </div>
-              <div className="flex min-w-0 flex-col gap-0.5 px-3 py-2.5">
-                <dt className="text-[12px]">Lieu</dt>
-                <dd className="m-0 truncate text-[15px] font-bold" title={ev.lieu}>
+              <div className="col-span-2 flex min-w-0 flex-col gap-0.5 border-t border-blanc-26 px-3 py-1.5 sm:py-2.5">
+                <dt className="text-[11px] sm:text-[12px]">Lieu</dt>
+                <dd className="m-0 text-[13px] font-bold leading-snug sm:text-[15px] sm:[text-wrap:balance]">
                   {ev.lieu}
                 </dd>
               </div>

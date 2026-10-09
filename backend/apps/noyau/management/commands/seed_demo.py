@@ -1,6 +1,8 @@
 """Données de démonstration (idempotent) : `python manage.py seed_demo`."""
 
+import os
 import random
+import secrets
 import unicodedata
 from datetime import date, datetime, time, timedelta
 
@@ -142,13 +144,16 @@ POSTES = {
     ModeEmargement.MANUEL: ("Accueil principal", Appareil.TELEPHONE),
 }
 
-SUPER_ADMIN = ("Ange Diabaté", "direction.evenements@mde.ci", "FlexChecking-2026!")
+SUPER_ADMIN = ("Ange Diabaté", "direction.evenements@mde.ci")
 ADMINS = [
     ("Mariam Koné", "mariam.kone@mde.ci"),
     ("Kouamé Brou", "kouame.brou@mde.ci"),
     ("Inès Touré", "ines.toure@mde.ci"),
 ]
-MDP_ADMIN = "Admin-Demo-2026!"
+# Les mots de passe ne sont JAMAIS écrits dans le code : ils viennent de l'environnement
+# (fichier .env local, non commité) ou sont tirés au hasard et affichés une seule fois.
+ENV_MDP_SUPER_ADMIN = "DEMO_MOT_DE_PASSE_SUPER_ADMIN"
+ENV_MDP_ADMIN = "DEMO_MOT_DE_PASSE_ADMIN"
 LIEU = "Sofitel Abidjan Hôtel Ivoire · Cocody, Abidjan"
 CARTE = "https://maps.google.com/?q=Sofitel+Abidjan+Hotel+Ivoire"
 
@@ -168,8 +173,23 @@ def quart(dt):
 class Command(BaseCommand):
     help = "Crée les données de démonstration (idempotent)."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reinitialiser-mots-de-passe",
+            action="store_true",
+            help="Réapplique les mots de passe (variables DEMO_*) aux comptes de démonstration existants.",
+        )
+
+    def mot_de_passe(self, variable):
+        valeur = os.environ.get(variable, "").strip()
+        if valeur:
+            return valeur, False
+        return secrets.token_urlsafe(12), True
+
     @transaction.atomic
     def handle(self, *args, **options):
+        self.reinitialiser = options.get("reinitialiser_mots_de_passe", False)
+        self.mdp_generes = []
         self.rng = random.Random(2026)
         self.inscrit = Statut.objects.get(code=statuts.INSCRIT)
         self.present = Statut.objects.get(code=statuts.PRESENT)
@@ -180,8 +200,10 @@ class Command(BaseCommand):
             progs[nom].lien_magazine = f"https://mde.ci/magazine/{nom.lower()}"
             progs[nom].save()
 
-        sa = self.compte(*SUPER_ADMIN, role=Role.SUPER_ADMIN)
-        admins = [self.compte(nom, email, MDP_ADMIN) for nom, email in ADMINS]
+        mdp_sa, sa_genere = self.mot_de_passe(ENV_MDP_SUPER_ADMIN)
+        mdp_admin, admin_genere = self.mot_de_passe(ENV_MDP_ADMIN)
+        sa = self.compte(*SUPER_ADMIN, mdp_sa, role=Role.SUPER_ADMIN, genere=sa_genere)
+        admins = [self.compte(nom, email, mdp_admin, genere=admin_genere) for nom, email in ADMINS]
 
         maintenant = timezone.localtime()
         aujourd_hui = maintenant.date()
@@ -234,10 +256,19 @@ class Command(BaseCommand):
             )
         )
 
-    def compte(self, nom, email, mdp, role=Role.ADMIN):
+    def compte(self, nom, email, mdp, role=Role.ADMIN, genere=False):
         admin = Admin.objects.filter(email=email).first()
         if admin is None:
             admin = Admin.objects.create_user(email, nom, mdp, role=role)
+        elif self.reinitialiser:
+            admin.set_password(mdp)
+            admin.save(update_fields=["password"])
+        else:
+            return admin
+        if genere:
+            self.stdout.write(
+                self.style.WARNING(f"Mot de passe généré pour {email} : {mdp} (noté nulle part ailleurs)")
+            )
         return admin
 
     def evenement(self, prog, d, debut, accueil, capacite, ouvertes=True, limite=None):

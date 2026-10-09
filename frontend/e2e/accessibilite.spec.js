@@ -25,7 +25,8 @@ test('accessibilité des écrans principaux', async ({ page }) => {
   await page.getByRole('link', { name: 'Aller sur mde.ci' }).waitFor();
   await page.goto('/super/connexion');
   await page.getByLabel('Email').fill('direction.evenements@mde.ci');
-  await page.getByLabel('Mot de passe').fill('FlexChecking-2026!');
+  expect(process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN, 'définir DEMO_MOT_DE_PASSE_SUPER_ADMIN (fichier .env ou CI)').toBeTruthy();
+  await page.getByLabel('Mot de passe').fill(process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN);
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.getByRole('heading', { name: 'Vue globale' }).waitFor();
 

@@ -63,12 +63,16 @@ Ouvrez http://localhost:5173 (la caméra fonctionne sur `localhost` même en HTT
 
 ## 3. Comptes de démonstration (`seed_demo`) — à changer en production
 
+Aucun mot de passe n’est écrit dans le dépôt. `seed_demo` lit `DEMO_MOT_DE_PASSE_SUPER_ADMIN` et `DEMO_MOT_DE_PASSE_ADMIN` dans `.env` ; si elles sont vides, il génère des mots de passe aléatoires et les affiche une seule fois dans le terminal. Pour appliquer de nouveaux mots de passe à des comptes existants : `python manage.py seed_demo --reinitialiser-mots-de-passe`. Ne lancez jamais `seed_demo` en production.
+
 | Rôle | Email | Mot de passe | Événements |
 |---|---|---|---|
-| Super admin | direction.evenements@mde.ci | `FlexChecking-2026!` | tous |
-| Admin | mariam.kone@mde.ci | `Admin-Demo-2026!` | AMP et PMD de l’année |
-| Admin | kouame.brou@mde.ci | `Admin-Demo-2026!` | AMP de l’année |
-| Admin | ines.toure@mde.ci | `Admin-Demo-2026!` | PMD, Public-AMP, Public-ASD |
+| Super admin | direction.evenements@mde.ci | `DEMO_MOT_DE_PASSE_SUPER_ADMIN` | tous |
+| Admin | mariam.kone@mde.ci | `DEMO_MOT_DE_PASSE_ADMIN` | AMP et PMD de l’année |
+| Admin | kouame.brou@mde.ci | `DEMO_MOT_DE_PASSE_ADMIN` | AMP de l’année |
+| Admin | ines.toure@mde.ci | `DEMO_MOT_DE_PASSE_ADMIN` | PMD, Public-AMP, Public-ASD |
+
+Les tests Playwright lisent les mêmes variables (fichier `.env` en local, mots de passe éphémères générés à chaque exécution en CI).
 
 `seed_demo` est idempotent. Il crée :
 - **Graduation AMP {année}** le jour même (en cours) : accueil 2 h avant l’heure de lancement, 40 invités dont 24 présents, modes, postes et heures variés, 2 emails en échec ;
@@ -112,6 +116,9 @@ npm run e2e                               # Playwright : parcours complet + audi
 
 Le test Playwright démarre son propre Django (port 8001, emails écrits dans `frontend/.emails-e2e/`, Celery
 synchrone) et son propre Vite (port 5174) ; MySQL et Redis doivent tourner et `seed_demo` avoir été exécuté.
+
+Intégration continue : `.github/workflows/ci.yml` (GitHub Actions) exécute ces contrôles à chaque envoi sur `main`
+et à chaque pull request : backend (ruff + pytest sur MySQL), frontend (lint, Vitest, build), puis Playwright.
 
 Mesures (pile Docker, serveur de dev) : un émargement répond en ~50 ms ; l’email n°2 part en arrière-plan (Celery).
 
@@ -195,6 +202,12 @@ Les contradictions entre le design et le cahier des charges sont listées dans `
   magazine, activation de l’email n°2, suppression si aucun événement) ; aperçu en direct sur trois supports
   (invité, scan, email).
 - **Lien d’inscription** : `amp-2026-x7k2q9` (lisible + 6 caractères aléatoires), régénérable.
+- **Écran de présentation** : en ouvrant le lien, l’invité voit d’abord les étapes (inscription et réception du QR
+  code et du code, scan le jour de la graduation, réception du lien du magazine si l’email n°2 est actif), puis
+  « Commencer mon inscription ».
+- **Champs obligatoires** : tous les champs du formulaire d’inscription et de l’ajout manuel (entreprise et fonction
+  comprises) sont obligatoires, côté client et côté API ; formulaire mobile compacté pour tenir sur un écran.
+- **Exports lourds** : le fichier produit par Celery est supprimé dès son téléchargement ; les fichiers oubliés sont purgés après 6 h.
 - **CSV** : UTF-8 avec BOM, séparateur « ; » (ouverture directe dans Excel en français).
 - **Journal** : aucune donnée personnelle d’invité stockée ; les libellés (noms) sont reconstitués à l’affichage.
 - **Logo** : le logo Flex’Checking fourni (monogramme MDE) remplace l’emplacement « LOGO MDE » ; version blanche

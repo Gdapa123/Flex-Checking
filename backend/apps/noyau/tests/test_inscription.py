@@ -23,6 +23,7 @@ def payload(**kw):
         "prenom": "Aya",
         "email": "aya.kouassi@sib.ci",
         "telephone": "07 12 34 56 78",
+        "fonction": "Directrice financière",
         "entreprise": "SIB",
         "consentementDonnees": True,
     }
@@ -137,3 +138,13 @@ def test_agenda_ics(client, evenement):
     r = client.get(url(evenement, "agenda.ics"))
     assert r.status_code == 200 and r["Content-Type"].startswith("text/calendar")
     assert b"BEGIN:VEVENT" in r.content
+
+
+@pytest.mark.parametrize(
+    "champ,message", [("entreprise", "Indiquez votre entreprise."), ("fonction", "Indiquez votre fonction.")]
+)
+def test_entreprise_et_fonction_obligatoires(client, evenement, champ, message):
+    for valeur in (None, "", " "):
+        corps = payload(**{champ: valeur}) if valeur is not None else {k: v for k, v in payload().items() if k != champ}
+        r = client.post(url(evenement, "inscription/"), corps, content_type="application/json")
+        assert r.status_code == 400 and r.json()[champ] == [message], (valeur, r.content)

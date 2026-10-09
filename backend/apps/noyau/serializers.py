@@ -19,7 +19,7 @@ from .models import (
 )
 from .services import etat_inscriptions, statut_evenement
 from .theme import deriver_tokens
-from .validation import valider_couleur, valider_email, valider_nom, valider_telephone
+from .validation import valider_couleur, valider_email, valider_nom, valider_telephone, valider_texte_obligatoire
 
 
 def tokens_programme(programme):
@@ -252,11 +252,34 @@ class InviteEcritureSerializer(serializers.Serializer):
         return valider_telephone(v)
 
 
-class InscriptionSerializer(InviteEcritureSerializer):
+class ChampsProfessionnelsObligatoires(serializers.Serializer):
+    """Entreprise et fonction obligatoires (inscription publique et ajout manuel)."""
+
+    entreprise = serializers.CharField(
+        max_length=120,
+        allow_blank=True,
+        error_messages={"required": "Indiquez votre entreprise.", "null": "Indiquez votre entreprise."},
+    )
+    fonction = serializers.CharField(
+        max_length=120,
+        allow_blank=True,
+        error_messages={"required": "Indiquez votre fonction.", "null": "Indiquez votre fonction."},
+    )
+
+    def validate_entreprise(self, v):
+        return valider_texte_obligatoire(v, "Indiquez votre entreprise.")
+
+    def validate_fonction(self, v):
+        return valider_texte_obligatoire(v, "Indiquez votre fonction.")
+
+
+class InscriptionSerializer(ChampsProfessionnelsObligatoires, InviteEcritureSerializer):
+    """Formulaire public : tous les champs sont obligatoires."""
+
     consentement_donnees = serializers.BooleanField(default=False)
 
 
-class AjoutInviteSerializer(InviteEcritureSerializer):
+class AjoutInviteSerializer(ChampsProfessionnelsObligatoires, InviteEcritureSerializer):
     envoyer_invitation = serializers.BooleanField(default=True)
 
 

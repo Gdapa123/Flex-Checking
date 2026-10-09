@@ -69,6 +69,7 @@ class EvenementPublicView(APIView):
                 "lieu": ev.lieu,
                 "lienCarte": ev.lien_carte,
                 "dateLimiteInscription": ev.date_limite_inscription,
+                "magazineActif": bool(ev.programme.magazine_actif and ev.programme.lien_magazine),
                 "etat": services.etat_inscriptions(ev),
             }
         )

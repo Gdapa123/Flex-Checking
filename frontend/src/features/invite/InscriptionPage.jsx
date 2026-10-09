@@ -12,6 +12,7 @@ import Squelette from '../../components/ui/Squelette';
 import { ToastProvider } from '../../components/ui/Toasts';
 import EtatCarte from './EtatCarte';
 import LienInvalide from './LienInvalide';
+import Presentation from './Presentation';
 import { CLE_CONFIRMATION, EnteteInvite, useEvenementPublic } from './commun';
 
 const VIDE = {
@@ -30,23 +31,21 @@ const LIBELLES = {
   prenom: 'Prénom',
   email: 'Email',
   telephone: 'Téléphone',
+  entreprise: 'Entreprise',
+  fonction: 'Fonction',
   consentementDonnees: 'Consentement',
 };
-const ORDRE = ['civilite', 'nom', 'prenom', 'email', 'telephone', 'consentementDonnees'];
+const ORDRE = ['civilite', 'nom', 'prenom', 'email', 'telephone', 'entreprise', 'fonction', 'consentementDonnees'];
 
-const GROUPES = [
-  [
-    { k: 'nom', req: true, ac: 'family-name', ph: 'Kouassi' },
-    { k: 'prenom', req: true, ac: 'given-name', ph: 'Aya' },
-  ],
-  [
-    { k: 'email', req: true, type: 'email', im: 'email', ac: 'email', ph: 'nom@entreprise.ci' },
-    { k: 'telephone', req: true, type: 'tel', im: 'tel', ac: 'tel-national', ph: '07 12 34 56 78', prefixe: '+225' },
-  ],
-  [
-    { k: 'entreprise', ac: 'organization', ph: 'Orange Côte d’Ivoire' },
-    { k: 'fonction', ac: 'organization-title', ph: 'Directrice financière' },
-  ],
+// Tous les champs sont obligatoires. `demi` = demi-largeur sur mobile (deux champs par ligne) ;
+// Email et Téléphone prennent toute la largeur.
+const CHAMPS = [
+  { k: 'nom', demi: true, ac: 'family-name', ph: 'ANZOUA' },
+  { k: 'prenom', demi: true, ac: 'given-name', ph: 'George' },
+  { k: 'email', type: 'email', im: 'email', ac: 'email', ph: 'nom@entreprise.ci' },
+  { k: 'telephone', type: 'tel', im: 'tel', ac: 'tel-national', ph: '07 12 34 56 78', prefixe: '+225' },
+  { k: 'entreprise', demi: true, ac: 'organization', ph: 'MDE Business School' },
+  { k: 'fonction', demi: true, ac: 'organization-title', ph: 'Directeur des SI' },
 ];
 const NOMS_CHAMPS = {
   nom: 'Nom',
@@ -104,6 +103,24 @@ function Formulaire({ ev, slug }) {
   const [envoi, setEnvoi] = useState(false);
   const [erreursServeur, setErreursServeur] = useState({});
   const [etat, setEtat] = useState(ev.etat !== 'OUVERT' ? ev.etat : null);
+  // Écran de présentation des étapes avant le formulaire (une fois par session et par lien)
+  const cleCommence = `fc-commence-${slug}`;
+  const [commence, setCommence] = useState(() => {
+    try {
+      return sessionStorage.getItem(cleCommence) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const commencer = () => {
+    try {
+      sessionStorage.setItem(cleCommence, '1');
+    } catch {
+      /* stockage indisponible : l'état en mémoire suffit */
+    }
+    setCommence(true);
+    window.scrollTo(0, 0);
+  };
   const resume = useRef(null);
 
   const erreurs = useMemo(
@@ -190,10 +207,19 @@ function Formulaire({ ev, slug }) {
     el?.focus();
   };
 
+  if (!commence) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <EnteteInvite ev={ev} />
+        <Presentation ev={ev} onCommencer={commencer} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <EnteteInvite ev={ev} />
-      <main className="relative mx-auto -mt-10 flex w-full max-w-[560px] flex-1 flex-col gap-4 px-3 pb-8">
+      <main className="relative mx-auto -mt-8 flex w-full max-w-[560px] flex-1 flex-col gap-3 px-3 pb-2 sm:-mt-10 sm:gap-4 sm:pb-8">
         {erreursServeur.general && (
           <div
             role="alert"
@@ -232,29 +258,35 @@ function Formulaire({ ev, slug }) {
           </div>
         )}
 
-        <section className="flex animate-in-up flex-col gap-6 rounded-carte border border-bordure-carte bg-surface px-5 py-6 shadow-carte">
-          <div className="flex flex-col gap-1">
-            <h2 className="m-0 text-[20px] font-semibold tracking-[-0.01em]">Vos informations</h2>
-            <p className="m-0 text-[15px] text-texte-2">Les champs marqués * sont obligatoires.</p>
+        <section className="flex animate-in-up flex-col gap-4 rounded-carte border border-bordure-carte bg-surface px-4 py-4 shadow-carte sm:gap-6 sm:px-5 sm:py-6">
+          <div className="flex items-baseline justify-between gap-1 sm:flex-col sm:items-start">
+            <h2 className="m-0 text-[17px] font-semibold tracking-[-0.01em] sm:text-[20px]">Vos informations</h2>
+            <p className="m-0 text-[12.5px] text-texte-2 sm:text-[15px]">
+              <span className="sm:hidden">Champs obligatoires</span>
+              <span className="hidden sm:inline">Tous les champs sont obligatoires.</span>
+            </p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span id="civ-label" className="text-[15px] font-medium">
-              Civilité *
-            </span>
-            <div
-              className={`max-w-[240px] rounded-moyen border ${soumis && erreurs.civilite ? 'border-erreur' : 'border-transparent'}`}
-            >
-              <Segmente
-                labelledBy="civ-label"
-                grille
-                valeur={v.civilite || null}
-                onChange={(c) => maj('civilite', c)}
-                options={[
-                  { value: 'MME', label: 'Mme' },
-                  { value: 'M', label: 'M.' },
-                ]}
-              />
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-x-4 gap-y-2 sm:flex-col sm:items-start">
+              <span id="civ-label" className="text-[13px] font-medium sm:text-[15px]">
+                Civilité
+              </span>
+              <div
+                className={`w-[148px] flex-none rounded-moyen border sm:w-[176px] ${soumis && erreurs.civilite ? 'border-erreur' : 'border-transparent'}`}
+              >
+                <Segmente
+                  labelledBy="civ-label"
+                  grille
+                  taille="sm"
+                  valeur={v.civilite || null}
+                  onChange={(c) => maj('civilite', c)}
+                  options={[
+                    { value: 'MME', label: 'Mme' },
+                    { value: 'M', label: 'M.' },
+                  ]}
+                />
+              </div>
             </div>
             {soumis && erreurs.civilite && (
               <p className="m-0 flex items-center gap-1.5 text-[14px] text-erreur">
@@ -264,42 +296,37 @@ function Formulaire({ ev, slug }) {
             )}
           </div>
 
-          {GROUPES.map((g, gi) => (
-            <div
-              key={gi}
-              className="grid gap-x-4 gap-y-5"
-              style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))' }}
-            >
-              {g.map((f) => {
-                const err = visible(f.k) ? erreurs[f.k] : '';
-                const valide = !err && touche[f.k] && !erreurs[f.k] && String(v[f.k]).trim().length > 0;
-                return (
-                  <Champ
-                    key={f.k}
-                    id={`champ-${f.k}`}
-                    label={NOMS_CHAMPS[f.k] + (f.req ? ' *' : '')}
-                    note={f.req ? '' : 'facultatif'}
-                    type={f.type || 'text'}
-                    inputMode={f.im || 'text'}
-                    autoComplete={f.ac}
-                    placeholder={f.ph}
-                    prefixe={f.prefixe}
-                    value={v[f.k]}
-                    required={f.req}
-                    erreur={err}
-                    valide={valide}
-                    onChange={(e) => maj(f.k, f.k === 'telephone' ? formaterTelephone(e.target.value) : e.target.value)}
-                    onBlur={() => setTouche((t) => ({ ...t, [f.k]: 1 }))}
-                  />
-                );
-              })}
-            </div>
-          ))}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:gap-x-4 sm:gap-y-5">
+            {CHAMPS.map((f) => {
+              const err = visible(f.k) ? erreurs[f.k] : '';
+              const valide = !err && touche[f.k] && !erreurs[f.k] && String(v[f.k]).trim().length > 0;
+              return (
+                <Champ
+                  key={f.k}
+                  id={`champ-${f.k}`}
+                  className={f.demi ? '' : 'col-span-2 sm:col-span-1'}
+                  label={NOMS_CHAMPS[f.k]}
+                  type={f.type || 'text'}
+                  inputMode={f.im || 'text'}
+                  autoComplete={f.ac}
+                  placeholder={f.ph}
+                  prefixe={f.prefixe}
+                  value={v[f.k]}
+                  required
+                  erreur={err}
+                  valide={valide}
+                  compact
+                  onChange={(e) => maj(f.k, f.k === 'telephone' ? formaterTelephone(e.target.value) : e.target.value)}
+                  onBlur={() => setTouche((t) => ({ ...t, [f.k]: 1 }))}
+                />
+              );
+            })}
+          </div>
 
           <div className="flex flex-col gap-2">
             <label
               htmlFor="champ-consentement"
-              className="flex cursor-pointer items-start gap-3 text-[14px] leading-[1.5] text-texte-3"
+              className="flex cursor-pointer items-start gap-2.5 text-[12px] leading-[1.4] text-texte-3 sm:gap-3 sm:text-[14px] sm:leading-[1.5]"
             >
               <input
                 id="champ-consentement"
@@ -308,12 +335,17 @@ function Formulaire({ ev, slug }) {
                 onChange={(e) => maj('consentementDonnees', e.target.checked)}
                 aria-invalid={soumis && !!erreurs.consentementDonnees}
                 aria-describedby={soumis && erreurs.consentementDonnees ? 'consentement-erreur' : undefined}
-                className="mt-0.5 h-[22px] w-[22px] flex-none cursor-pointer accent-p"
+                className="mt-0.5 h-5 w-5 flex-none cursor-pointer accent-p sm:h-[22px] sm:w-[22px]"
               />
-              <span>
+              {/* version courte sur mobile, mêmes mentions légales */}
+              <span className="sm:hidden">
+                J’accepte que MDE Business School traite mes données pour mon inscription (RGPD, loi ivoirienne n°
+                2013-450).
+              </span>
+              <span className="hidden sm:inline">
                 J’accepte que MDE Business School traite mes données pour gérer mon inscription et mon accueil à la
                 cérémonie, conformément au RGPD et à la loi ivoirienne n° 2013-450 relative à la protection des données
-                à caractère personnel. *
+                à caractère personnel.
               </span>
             </label>
             {soumis && erreurs.consentementDonnees && (
@@ -324,18 +356,18 @@ function Formulaire({ ev, slug }) {
             )}
           </div>
         </section>
-        <p className="m-0 px-2 text-center text-[14px] leading-[1.5] text-texte-2">
+        <p className="m-0 hidden px-2 text-center text-[14px] leading-[1.5] text-texte-2 sm:block">
           Votre invitation, avec votre QR code et votre code à 4 chiffres, vous sera envoyée par email.
         </p>
       </main>
 
-      <div className="sticky bottom-0 z-10 -mt-7 bg-gradient-to-b from-transparent via-fond via-45% to-fond px-4 pb-4 pt-6">
+      <div className="sticky bottom-0 z-10 -mt-7 bg-gradient-to-b from-transparent via-fond via-45% to-fond px-4 pb-3 pt-5 sm:pb-4 sm:pt-6">
         <div className="mx-auto max-w-[560px]">
           <button
             type="button"
             onClick={soumettre}
             aria-busy={envoi}
-            className={`btn-principal flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 pl-5 pr-2 text-[16px] font-semibold active:scale-[.98] ${envoi ? 'opacity-[.85]' : ''}`}
+            className={`btn-principal flex h-[52px] w-full sm:h-14 cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 pl-5 pr-2 text-[16px] font-semibold active:scale-[.98] ${envoi ? 'opacity-[.85]' : ''}`}
           >
             {envoi && <Spinner />}
             <span className="flex-1 text-left">{envoi ? 'Envoi en cours…' : 'Confirmer mon inscription'}</span>

@@ -7,8 +7,8 @@ const OK = {
   prenom: 'Aya',
   email: 'aya.kouassi@sib.ci',
   telephone: '07 12 34 56 78',
-  entreprise: '',
-  fonction: '',
+  entreprise: 'MDE Business School',
+  fonction: 'Directeur des SI',
   consentementDonnees: true,
 };
 
@@ -22,6 +22,11 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
     expect(e.prenom).toBe('Indiquez votre prénom.');
     expect(e.email).toBe('Adresse email invalide, par exemple nom@entreprise.ci.');
     expect(e.telephone).toBe('Le numéro doit comporter 10 chiffres, par exemple 07 12 34 56 78.');
+  });
+  it('exige entreprise et fonction (tous les champs sont obligatoires)', () => {
+    const e = erreursParChamp(schemaInscription.safeParse({ ...OK, entreprise: ' ', fonction: '' }));
+    expect(e.entreprise).toBe('Indiquez votre entreprise.');
+    expect(e.fonction).toBe('Indiquez votre fonction.');
   });
   it('exige le consentement', () => {
     expect(erreurChamp(schemaInscription, 'consentementDonnees', { ...OK, consentementDonnees: false })).toMatch(/accord/);
