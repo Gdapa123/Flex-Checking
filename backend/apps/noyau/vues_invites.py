@@ -15,7 +15,7 @@ from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visible
 
 from . import emails, exports, services, statuts
 from .exceptions import ErreurMetier
-from .filtres import PaginationInvites, compteurs_invites, filtrer_invites, trier_invites
+from .filtres import PaginationInvites, compteurs_invites, filtrer_invites, filtrer_par_evenement, trier_invites
 from .journal import journaliser
 from .models import Appareil, Invite, ModeEmargement, Source, TypeEmail
 from .qr import qr_png
@@ -145,11 +145,7 @@ class TousInvitesView(ListeInvitesBase):
         summary="Tous les invités (super admin)",
     )
     def get(self, request):
-        base = Invite.objects.all()
-        if request.query_params.get("evenement"):
-            base = base.filter(evenement_id=request.query_params["evenement"])
-        if request.query_params.get("programme"):
-            base = base.filter(evenement__programme_id=request.query_params["programme"])
+        base = filtrer_par_evenement(Invite.objects.all(), request.query_params)
         return self.paginer(request, invites_annotes(base))
 
 

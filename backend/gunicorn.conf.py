@@ -6,6 +6,7 @@ threads par worker. Repère : 2 workers par cœur, et MySQL `max_connections` su
 workers × threads (voir docker-compose.prod.yml).
 """
 
+import logging
 import multiprocessing
 import os
 
@@ -24,3 +25,13 @@ loglevel = os.environ.get("LOG_LEVEL", "info")
 # Uvicorn ne réécrit pas l'adresse du client d'après X-Forwarded-For (en-tête falsifiable) : l'IP réelle
 # est déterminée par Django (NUM_PROXIES = nombre de proxys de confiance, Caddy = 1).
 forwarded_allow_ips = os.environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1")
+
+
+def post_worker_init(worker):
+    """Aucune donnée personnelle dans le journal d'accès : chaînes de requête (`?q=` recherche d'invités)
+    masquées avant écriture, emails et téléphones également."""
+    from apps.noyau.logs import MasquerDonneesPersonnelles, MasquerParametresUrl
+
+    acces = logging.getLogger("uvicorn.access")
+    acces.addFilter(MasquerParametresUrl())
+    acces.addFilter(MasquerDonneesPersonnelles())

@@ -72,7 +72,7 @@ export default function Journal() {
                   type="button"
                   disabled={!!enCours}
                   onClick={() => exporter(type, fmt)}
-                  className="flex h-10 cursor-pointer items-center gap-1.5 rounded-petit border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol disabled:opacity-60"
+                  className="flex h-10 cursor-pointer items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol disabled:opacity-60"
                 >
                   {enCours === `${type}-${fmt}` && <Spinner taille={14} />}
                   {fmt === 'csv' ? 'CSV' : 'Excel'}
@@ -182,7 +182,7 @@ export default function Journal() {
                 aria-label="Page précédente"
                 disabled={page <= 1}
                 onClick={() => maj({ page: page - 1 })}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-petit border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
               >
                 <Icon nom="chevL" />
               </button>
@@ -191,7 +191,7 @@ export default function Journal() {
                 aria-label="Page suivante"
                 disabled={page >= data.pages}
                 onClick={() => maj({ page: page + 1 })}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-petit border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
               >
                 <Icon nom="chevR" />
               </button>

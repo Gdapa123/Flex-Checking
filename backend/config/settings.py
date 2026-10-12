@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "apps.noyau.middleware.SanteMiddleware",  # contrôle de santé, indépendant de l'en-tête Host
     "apps.noyau.mesures.MesuresMiddleware",  # durée et statut de chaque requête API (graphiques techniques)
     "django.middleware.security.SecurityMiddleware",
     "apps.noyau.middleware.EnTetesSecuriteMiddleware",
@@ -131,7 +132,7 @@ CACHES = {
 # --- Django REST Framework ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.comptes.authentication.CookieJWTAuthentication"],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PERMISSION_CLASSES": ["apps.comptes.permissions.CompteUtilisable"],
     "DEFAULT_RENDERER_CLASSES": ["djangorestframework_camel_case.render.CamelCaseJSONRenderer"],
     "DEFAULT_PARSER_CLASSES": [
         "djangorestframework_camel_case.parser.CamelCaseJSONParser",
@@ -190,6 +191,8 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
     "USER_ID_FIELD": "id",
+    # Chaque jeton porte une empreinte du mot de passe : un changement ou une réinitialisation du mot de
+    # passe invalide aussitôt toutes les sessions ouvertes (API, rafraîchissement, WebSocket).
 }
 JWT_COOKIE_ACCESS = "fc_access"
 JWT_COOKIE_REFRESH = "fc_refresh"

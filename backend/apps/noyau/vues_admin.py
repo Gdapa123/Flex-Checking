@@ -6,7 +6,6 @@ from datetime import time
 from django.db.models import Count, ProtectedError
 from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.utils.text import slugify
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
@@ -15,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
+from apps.comptes.authentication import nouvelle_version_session
 from apps.comptes.models import Admin
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 
@@ -22,6 +22,7 @@ from . import caches, exports
 from .analytique import analytique, technique
 from .emails import Source, rendre
 from .exceptions import ErreurMetier
+from .filtres import filtrer_par_evenement
 from .journal import CATEGORIES, journaliser
 from .journal_texte import precharger_cibles
 from .models import Evenement, Invite, JournalActivite, Parametres, Programme, TypeEmail
@@ -37,6 +38,7 @@ from .serializers import (
     evenements_annotes,
 )
 from .statistiques import statistiques
+from .validation import date_iso, entier
 from .vues_invites import exporter, reponse_fichier
 
 
@@ -237,7 +239,8 @@ class AdminViewSet(
         mdp = mot_de_passe_temporaire()
         admin.set_password(mdp)
         admin.doit_changer_mot_de_passe = True
-        admin.save(update_fields=["password", "doit_changer_mot_de_passe"])
+        nouvelle_version_session(admin)  # toutes les sessions ouvertes du compte sont fermées
+        admin.save(update_fields=["password", "doit_changer_mot_de_passe", "version_session"])
         journaliser(request.user, "ADMIN_MOT_DE_PASSE", admin)
         return Response({"motDePasseTemporaire": mdp})
 
@@ -306,8 +309,7 @@ class JournalView(APIView):
     def get(self, request):
         qs = filtrer_journal(request.query_params)
         taille = 50
-        page = request.query_params.get("page", "")
-        page = max(1, int(page)) if page.isdigit() else 1
+        page = max(1, entier(request.query_params.get("page")) or 1)
         total = qs.count()
         entrees = list(qs[(page - 1) * taille : page * taille])
         ser = JournalSerializer(entrees, many=True, context={"cibles": precharger_cibles(entrees)})
@@ -318,15 +320,15 @@ def filtrer_journal(params):
     qs = JournalActivite.objects.select_related("auteur").order_by("-date")
     if params.get("auteur") == "systeme":
         qs = qs.filter(auteur__isnull=True)
-    elif (params.get("auteur") or "").isdigit():
-        qs = qs.filter(auteur_id=params["auteur"])
+    elif (auteur := entier(params.get("auteur"))) is not None:
+        qs = qs.filter(auteur_id=auteur)
     if params.get("categorie"):
         qs = qs.filter(action__in=[a for a, c in CATEGORIES.items() if c == params["categorie"]])
     if params.get("action"):
         qs = qs.filter(action=params["action"])
-    if du := parse_date(params.get("du") or ""):
+    if du := date_iso(params.get("du")):
         qs = qs.filter(date__date__gte=du)
-    if au := parse_date(params.get("au") or ""):
+    if au := date_iso(params.get("au")):
         qs = qs.filter(date__date__lte=au)
     return qs
 
@@ -348,11 +350,7 @@ class ExportGlobalView(APIView):
         fmt = request.query_params.get("format", "xlsx")
         if fmt not in ("xlsx", "csv"):
             raise ErreurMetier("FORMAT", "Format attendu : xlsx ou csv.", status=400)
-        invites = Invite.objects.all()
-        if request.query_params.get("evenement"):
-            invites = invites.filter(evenement_id=request.query_params["evenement"])
-        if request.query_params.get("programme"):
-            invites = invites.filter(evenement__programme_id=request.query_params["programme"])
+        invites = filtrer_par_evenement(Invite.objects.all(), request.query_params)
         if type_export == "invites":
             return exporter(request, invites, fmt)
         if type_export == "presences":

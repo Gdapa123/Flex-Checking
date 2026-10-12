@@ -613,7 +613,7 @@ function DispositionTelephone({ evenement, reglages, compteurs, enLigne, enAtten
           type="button"
           onClick={outils.reglages}
           aria-label="Réglages"
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border border-g-bordure bg-g-eleve text-[20px] text-g-texte"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-g-bordure bg-g-eleve text-[20px] text-g-texte"
         >
           <Icon nom="sliders" />
         </button>
@@ -670,7 +670,7 @@ function DispositionTelephone({ evenement, reglages, compteurs, enLigne, enAtten
             onClick={outils[t.cle]}
             aria-pressed={t.cle === 'torche' ? !!t.presse : undefined}
             aria-disabled={t.cle === 'torche' && !t.dispo ? true : undefined}
-            className={`flex min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-moyen border-0 text-[12px] font-medium active:bg-g-eleve ${t.presse ? 'bg-s text-g-fond' : 'bg-transparent text-g-texte'} ${t.cle === 'torche' && !t.dispo ? 'opacity-50' : ''}`}
+            className={`flex min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-bouton border-0 text-[12px] font-medium active:bg-g-eleve ${t.presse ? 'bg-s text-g-fond' : 'bg-transparent text-g-texte'} ${t.cle === 'torche' && !t.dispo ? 'opacity-50' : ''}`}
           >
             <Icon nom={t.icone} className="text-[22px]" />
             {t.label}
@@ -718,7 +718,7 @@ function DispositionBorne({ evenement, reglages, compteurs, enLigne, enAttente, 
         <button
           type="button"
           onClick={outils.code}
-          className="flex h-[76px] flex-1 cursor-pointer items-center justify-center gap-3 rounded-[12px] border border-g-bordure bg-g-surface text-[20px] font-semibold text-g-texte active:bg-g-eleve"
+          className="flex h-[76px] flex-1 cursor-pointer items-center justify-center gap-3 rounded-bouton border border-g-bordure bg-g-surface text-[20px] font-semibold text-g-texte active:bg-g-eleve"
         >
           <Icon nom="hash" className="text-[26px]" />
           Saisir mon code à 4 chiffres
@@ -726,7 +726,7 @@ function DispositionBorne({ evenement, reglages, compteurs, enLigne, enAttente, 
         <button
           type="button"
           onClick={outils.recherche}
-          className="flex h-[76px] flex-1 cursor-pointer items-center justify-center gap-3 rounded-[12px] border border-g-bordure bg-g-surface text-[20px] font-semibold text-g-texte active:bg-g-eleve"
+          className="flex h-[76px] flex-1 cursor-pointer items-center justify-center gap-3 rounded-bouton border border-g-bordure bg-g-surface text-[20px] font-semibold text-g-texte active:bg-g-eleve"
         >
           <Icon nom="search" className="text-[26px]" />
           Rechercher mon nom
@@ -735,7 +735,7 @@ function DispositionBorne({ evenement, reglages, compteurs, enLigne, enAttente, 
           type="button"
           onClick={outils.reglages}
           aria-label="Espace hôte"
-          className="flex h-[76px] w-[76px] cursor-pointer items-center justify-center rounded-[12px] border border-g-bordure bg-transparent text-[24px] text-g-texte-2"
+          className="flex h-[76px] w-[76px] cursor-pointer items-center justify-center rounded-bouton border border-g-bordure bg-transparent text-[24px] text-g-texte-2"
         >
           <Icon nom="lock" />
         </button>
@@ -803,7 +803,7 @@ function DispositionOrdinateur(props) {
           type="button"
           onClick={outils.reglages}
           aria-label="Réglages"
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border border-g-bordure bg-g-eleve text-[20px] text-g-texte"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-g-bordure bg-g-eleve text-[20px] text-g-texte"
         >
           <Icon nom="sliders" />
         </button>
@@ -876,7 +876,7 @@ function DispositionOrdinateur(props) {
                 key={t.cle}
                 type="button"
                 onClick={outils[t.cle]}
-                className="flex h-12 cursor-pointer items-center gap-2 rounded-moyen border border-g-bordure bg-g-surface px-4 text-[15px] font-medium text-g-texte hover:bg-g-eleve"
+                className="flex h-12 cursor-pointer items-center gap-2 rounded-bouton border border-g-bordure bg-g-surface px-4 text-[15px] font-medium text-g-texte hover:bg-g-eleve"
               >
                 <Icon nom={t.icone} className="text-[18px]" />
                 {t.label}

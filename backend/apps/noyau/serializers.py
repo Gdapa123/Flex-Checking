@@ -19,7 +19,14 @@ from .models import (
 )
 from .services import etat_inscriptions, statut_evenement
 from .theme import deriver_tokens
-from .validation import valider_couleur, valider_email, valider_nom, valider_telephone, valider_texte_obligatoire
+from .validation import (
+    sans_controle,
+    valider_couleur,
+    valider_email,
+    valider_nom,
+    valider_telephone,
+    valider_texte_obligatoire,
+)
 
 
 def tokens_programme(programme):
@@ -250,6 +257,12 @@ class InviteEcritureSerializer(serializers.Serializer):
 
     def validate_telephone(self, v):
         return valider_telephone(v)
+
+    def validate_entreprise(self, v):
+        return sans_controle(v)  # CharField retire déjà les espaces de début et de fin
+
+    def validate_fonction(self, v):
+        return sans_controle(v)
 
 
 class ChampsProfessionnelsObligatoires(serializers.Serializer):

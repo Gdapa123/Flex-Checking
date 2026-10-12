@@ -92,7 +92,7 @@ function BarreLaterale({ ev }) {
             to={l.to}
             end={l.fin}
             className={({ isActive }) =>
-              `flex h-11 items-center gap-3 rounded-moyen px-3 text-[15px] no-underline transition-colors hover:bg-fond hover:text-texte ${
+              `flex h-11 items-center gap-3 rounded-bouton px-3 text-[15px] no-underline transition-colors hover:bg-fond hover:text-texte ${
                 isActive && !l.externe ? 'bg-ps font-semibold text-p' : 'font-medium text-texte'
               }`
             }
@@ -120,7 +120,7 @@ function BarreLaterale({ ev }) {
             await deconnexion();
             naviguer('/connexion');
           }}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[20px] text-texte-2 hover:bg-fond"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[20px] text-texte-2 hover:bg-fond"
         >
           <Icon nom="logout" />
         </button>
@@ -177,7 +177,7 @@ function BoutonRapport({ ev }) {
       type="button"
       onClick={generer}
       disabled={enCours}
-      className="flex h-11 cursor-pointer items-center gap-2 rounded-[12px] border border-blanc-24 bg-noir-20 px-4 text-[15px] font-semibold text-inherit hover:bg-noir-16 disabled:opacity-70"
+      className="flex h-11 cursor-pointer items-center gap-2 rounded-bouton border border-blanc-24 bg-noir-20 px-4 text-[15px] font-semibold text-inherit hover:bg-noir-16 disabled:opacity-70"
     >
       {enCours ? <Spinner taille={16} /> : <Icon nom="download" className="text-[18px]" />}
       Rapport PDF
@@ -217,7 +217,7 @@ function Page({ ev, titre, children }) {
           <BoutonRapport ev={ev} />
           <Link
             to="/scan"
-            className="flex h-11 items-center gap-2 rounded-[12px] bg-surface px-4 text-[15px] font-semibold text-texte no-underline shadow-blanc hover:bg-fond hover:text-texte"
+            className="flex h-11 items-center gap-2 rounded-bouton bg-surface px-4 text-[15px] font-semibold text-texte no-underline shadow-blanc hover:bg-fond hover:text-texte"
           >
             <Icon nom="scan" className="text-[18px]" />
             Ouvrir le scan
@@ -234,7 +234,7 @@ function Page({ ev, titre, children }) {
               to={to}
               end
               className={({ isActive }) =>
-                `rounded-moyen px-3 py-2 text-[14px] font-semibold no-underline ${isActive ? 'bg-surface text-texte' : 'text-op hover:text-op'}`
+                `rounded-bouton px-3 py-2 text-[14px] font-semibold no-underline ${isActive ? 'bg-surface text-texte' : 'text-op hover:text-op'}`
               }
             >
               {l}

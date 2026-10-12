@@ -56,7 +56,7 @@ export default function PanneauAjout({ evenement, onFermer, onAjoute }) {
           type="button"
           onClick={onFermer}
           aria-label="Fermer"
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[22px] text-texte"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[22px] text-texte"
         >
           <Icon nom="x" />
         </button>

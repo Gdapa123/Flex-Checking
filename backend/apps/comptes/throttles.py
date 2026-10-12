@@ -26,6 +26,14 @@ class CacheDeSecours:
         return self._appel("set", cle, valeur, duree)
 
 
+def email_soumis(request):
+    """Adresse email du corps de la requête, normalisée. Un corps JSON qui n'est pas un objet (liste,
+    nombre…) donne une adresse vide au lieu d'une erreur serveur avant même la validation."""
+    from apps.noyau.validation import donnees_objet
+
+    return str(donnees_objet(request).get("email", "")).strip().lower()
+
+
 class LimiteSensible(SimpleRateThrottle):
     cache = CacheDeSecours()
 
@@ -34,7 +42,7 @@ class ConnexionThrottle(LimiteSensible):
     scope = "connexion"
 
     def get_cache_key(self, request, view):
-        email = str(request.data.get("email", "")).strip().lower()
+        email = email_soumis(request)
         cle = hashlib.sha256(f"{self.get_ident(request)}:{email}".encode()).hexdigest()
         return self.cache_format % {"scope": self.scope, "ident": cle}
 
@@ -45,7 +53,7 @@ class ConnexionCompteThrottle(LimiteSensible):
     scope = "connexion_compte"
 
     def get_cache_key(self, request, view):
-        email = str(request.data.get("email", "")).strip().lower()
+        email = email_soumis(request)
         if not email:
             return None
         return self.cache_format % {"scope": self.scope, "ident": hashlib.sha256(email.encode()).hexdigest()}

@@ -12,6 +12,7 @@ from apps.comptes.permissions import EstSuperAdmin
 
 from .erreurs import enregistrer
 from .models import ErreurTechnique, SourceErreur
+from .validation import donnees_objet, entier
 
 
 class SignalementThrottle(AnonRateThrottle):
@@ -93,7 +94,7 @@ class ErreursView(APIView):
         if p.get("source") in SourceErreur.values:
             qs = qs.filter(source=p["source"])
         taille = 30
-        page = max(1, int(p["page"])) if (p.get("page") or "").isdigit() else 1
+        page = max(1, entier(p.get("page")) or 1)
         total = qs.count()
         return Response(
             {
@@ -114,7 +115,8 @@ class ErreurDetailView(APIView):
         erreur = ErreurTechnique.objects.filter(pk=pk).first()
         if erreur is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        erreur.resolue = serializers.BooleanField().to_internal_value(request.data.get("resolue", False))
+        donnees = donnees_objet(request)
+        erreur.resolue = serializers.BooleanField().to_internal_value(donnees.get("resolue", False))
         erreur.resolue_le = timezone.now() if erreur.resolue else None
         erreur.save(update_fields=["resolue", "resolue_le"])
         return Response(ErreurSerializer(erreur).data)
@@ -125,7 +127,7 @@ class ErreursActionView(APIView):
 
     @extend_schema(request=None, responses={200: None})
     def post(self, request):
-        action = request.data.get("action")
+        action = donnees_objet(request).get("action")
         if action == "resoudre_tout":
             n = ErreurTechnique.objects.filter(resolue=False).update(resolue=True, resolue_le=timezone.now())
         elif action == "supprimer_resolues":

@@ -90,12 +90,28 @@ def test_refus_date_limite(client, programme):
     assert r.json()["code"] == "DATE_LIMITE"
 
 
-def test_refus_deja_inscrit(client, evenement):
-    nouvel_invite(evenement)
+def test_deja_inscrit_meme_reponse_et_invitation_renvoyee(client, evenement):
+    """Le formulaire public ne révèle pas qu'une adresse est inscrite : même réponse qu'une inscription,
+    sans donnée enregistrée (nom saisi renvoyé), et l'invitation repart vers la vraie adresse."""
+    nouvel_invite(evenement, prenom="Aya", nom="Kouassi")
+    mail.outbox.clear()
     r = client.post(
-        url(evenement, "inscription/"), payload(email="AYA.Kouassi@sib.ci"), content_type="application/json"
+        url(evenement, "inscription/"),
+        payload(email="AYA.Kouassi@sib.ci", prenom="Autre", nom="Personne"),
+        content_type="application/json",
     )
-    assert r.status_code == 409 and r.json()["code"] == "DEJA_INSCRIT"
+    assert r.status_code == 201 and r.json()["invite"]["prenom"] == "Autre"
+    assert Invite.objects.filter(evenement=evenement).count() == 1
+    assert len(mail.outbox) == 1 and mail.outbox[0].to == ["aya.kouassi@sib.ci"]
+
+
+def test_renvois_automatiques_limites(client, evenement):
+    nouvel_invite(evenement)
+    mail.outbox.clear()
+    for _ in range(5):
+        r = client.post(url(evenement, "inscription/"), payload(), content_type="application/json")
+        assert r.status_code == 201
+    assert len(mail.outbox) == 3  # pas d'envoi en rafale vers la boîte d'un tiers
 
 
 def test_refus_sans_consentement(client, evenement):

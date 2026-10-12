@@ -51,8 +51,18 @@
 		}
 	}
 
+	# Aucune donnée personnelle dans les logs : la recherche du tableau des invités (?q= nom, email,
+	# téléphone) est masquée, ainsi que le Referer (URL de la page, qui peut contenir cette recherche).
 	log {
 		output stdout
-		format json
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					replace q [masqué]
+				}
+				request>headers>Referer delete
+			}
+		}
 	}
 }

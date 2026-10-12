@@ -11,7 +11,9 @@ FORMAT = "%Y%m%dT%H%M%SZ"
 
 
 def _echapper(texte):
-    return texte.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+    texte = texte.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+    # tout saut de ligne (y compris un retour chariot seul) est échappé : jamais de propriété injectée
+    return texte.replace("\r\n", "\\n").replace("\r", "\\n").replace("\n", "\\n")
 
 
 def _utc(dt):

@@ -32,7 +32,7 @@ export function EnteteInvite({ ev, variante = 'formulaire', children }) {
               <span className="h-1 w-14 rounded-sm bg-s" />
             </div>
             {/* Mobile : bloc compact avec icônes (date · heure, puis lieu) */}
-            <div className="flex flex-col gap-1 rounded-bouton border border-blanc-26 bg-noir-16 px-3 py-2 text-[13.5px] font-semibold sm:hidden">
+            <div className="flex flex-col gap-1 rounded-bloc border border-blanc-26 bg-noir-16 px-3 py-2 text-[13.5px] font-semibold sm:hidden">
               <span className="flex items-center gap-2">
                 <Icon nom="calendar" className="text-[15px] opacity-80" />
                 <span className="tabular-nums">
@@ -45,7 +45,7 @@ export function EnteteInvite({ ev, variante = 'formulaire', children }) {
               </span>
             </div>
             {/* Tablette et ordinateur : date et heure côte à côte, le lieu sur toute la largeur */}
-            <dl className="m-0 hidden sm:grid grid-cols-2 overflow-hidden rounded-bouton border border-blanc-26 bg-noir-16">
+            <dl className="m-0 hidden sm:grid grid-cols-2 overflow-hidden rounded-bloc border border-blanc-26 bg-noir-16">
               <div className="flex min-w-0 flex-col gap-0.5 border-r border-blanc-26 px-3 py-1.5 sm:py-2.5">
                 <dt className="text-[11px] sm:text-[12px]">Date</dt>
                 <dd className="m-0 text-[14px] font-bold sm:text-[15px] tabular-nums">{dateBandeau(ev.date)}</dd>

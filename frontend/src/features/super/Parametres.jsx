@@ -119,7 +119,7 @@ export default function Parametres() {
                 role="tab"
                 aria-selected={onglet === n}
                 onClick={() => setOnglet(n)}
-                className={`h-[38px] cursor-pointer rounded-petit border-0 px-3.5 text-[14px] font-semibold text-mde-texte ${onglet === n ? 'bg-surface shadow-onglet' : 'bg-transparent'}`}
+                className={`h-[38px] cursor-pointer rounded-bouton border-0 px-3.5 text-[14px] font-semibold text-mde-texte ${onglet === n ? 'bg-surface shadow-onglet' : 'bg-transparent'}`}
               >
                 Email n°{n} · {n === 1 ? 'inscription' : 'sur place'}
               </button>
@@ -154,7 +154,7 @@ export default function Parametres() {
                     key={v}
                     type="button"
                     onClick={() => inserer(v)}
-                    className="h-8 cursor-pointer rounded-petit border border-mde-bordure bg-mde-surface px-2.5 font-mono text-[13px] font-medium text-mde-texte hover:bg-mde-creme"
+                    className="h-8 cursor-pointer rounded-bouton border border-mde-bordure bg-mde-surface px-2.5 font-mono text-[13px] font-medium text-mde-texte hover:bg-mde-creme"
                   >
                     {v}
                   </button>

@@ -362,7 +362,7 @@ export default function TableauDeBord({ ev }) {
               <button
                 type="button"
                 onClick={() => naviguer(`/admin/evenements/${ev.id}/invites?email1=ECHEC`)}
-                className="h-10 cursor-pointer rounded-petit border border-avert bg-surface px-3.5 text-[14px] font-semibold text-avert"
+                className="h-10 cursor-pointer rounded-bouton border border-avert bg-surface px-3.5 text-[14px] font-semibold text-avert"
               >
                 Voir
               </button>

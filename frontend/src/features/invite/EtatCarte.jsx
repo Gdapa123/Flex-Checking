@@ -73,7 +73,7 @@ export default function EtatCarte({ ev, etat, email, onAutreAdresse }) {
         ) : (
           <a
             href={CONTACT}
-            className="flex h-12 items-center rounded-moyen border border-champ bg-surface px-5 text-[16px] font-semibold text-texte no-underline hover:bg-fond hover:text-texte"
+            className="flex h-12 items-center rounded-bouton border border-champ bg-surface px-5 text-[16px] font-semibold text-texte no-underline hover:bg-fond hover:text-texte"
           >
             Contacter MDE
           </a>

@@ -130,7 +130,7 @@ export default function Evenements() {
                 type="button"
                 aria-pressed={on}
                 onClick={() => naviguer(`/super/evenements/${e.id}`)}
-                className={`box-border flex cursor-pointer items-center gap-3 rounded-[12px] bg-surface px-4 py-3.5 text-left text-mde-texte ${on ? 'border-2 border-mde-bordeaux' : 'border border-mde-bordure'}`}
+                className={`box-border flex cursor-pointer items-center gap-3 rounded-bouton bg-surface px-4 py-3.5 text-left text-mde-texte ${on ? 'border-2 border-mde-bordeaux' : 'border border-mde-bordure'}`}
               >
                 <span className="h-9 w-1.5 rounded-[3px]" style={{ background: e.tokens.p }} />
                 <span className="flex flex-1 flex-col">

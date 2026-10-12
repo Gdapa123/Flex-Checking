@@ -122,7 +122,7 @@ export default function VueGlobale() {
                     <td className="px-5 py-3.5 text-right">
                       <Link
                         to={`/super/evenements/${e.id}`}
-                        className="inline-flex h-9 items-center rounded-petit border border-mde-champ bg-surface px-3 text-[13px] font-semibold text-mde-texte no-underline hover:bg-mde-survol hover:text-mde-texte"
+                        className="inline-flex h-9 items-center rounded-bouton border border-mde-champ bg-surface px-3 text-[13px] font-semibold text-mde-texte no-underline hover:bg-mde-survol hover:text-mde-texte"
                       >
                         Configurer
                       </Link>

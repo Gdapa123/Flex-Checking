@@ -118,7 +118,7 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
           onClick={onFermer}
           aria-label="Fermer"
           data-autofocus
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[22px] text-texte hover:bg-subtil"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[22px] text-texte hover:bg-subtil"
         >
           <Icon nom="x" />
         </button>

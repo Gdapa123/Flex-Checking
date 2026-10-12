@@ -24,7 +24,7 @@ export default function LienInvalide() {
           </p>
           <a
             href="https://mde.ci"
-            className="mt-2 flex h-[52px] items-center gap-2 rounded-moyen bg-mde-bordeaux px-6 text-[16px] font-semibold text-blanc no-underline transition-colors hover:bg-mde-bordeaux-survol hover:text-blanc"
+            className="mt-2 flex h-[52px] items-center gap-2 rounded-bouton bg-mde-bordeaux px-6 text-[16px] font-semibold text-blanc no-underline transition-colors hover:bg-mde-bordeaux-survol hover:text-blanc"
           >
             Aller sur mde.ci
             <Icon nom="external" className="text-[18px]" />

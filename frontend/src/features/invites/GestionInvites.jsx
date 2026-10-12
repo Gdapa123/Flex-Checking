@@ -481,7 +481,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               onClick={() =>
                 definirFiltre({ q: '', statut: '', mode: '', magazine: '', email1: '', evenement: '', programme: '' })
               }
-              className="flex h-11 cursor-pointer items-center gap-1.5 rounded-moyen border-0 bg-transparent px-3 text-[14px] font-semibold text-inherit underline underline-offset-[3px]"
+              className="flex h-11 cursor-pointer items-center gap-1.5 rounded-bouton border-0 bg-transparent px-3 text-[14px] font-semibold text-inherit underline underline-offset-[3px]"
             >
               <Icon nom="x" className="text-[16px]" />
               Réinitialiser
@@ -494,7 +494,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                 type="button"
                 onClick={() => exporter(fmt)}
                 disabled={!!exportEnCours}
-                className={`flex h-11 cursor-pointer items-center gap-2 rounded-moyen border bg-surface px-3.5 text-[14px] font-semibold disabled:opacity-60 ${mde ? 'border-mde-champ text-mde-texte hover:bg-mde-survol' : 'border-champ text-texte hover:bg-fond'}`}
+                className={`flex h-11 cursor-pointer items-center gap-2 rounded-bouton border bg-surface px-3.5 text-[14px] font-semibold disabled:opacity-60 ${mde ? 'border-mde-champ text-mde-texte hover:bg-mde-survol' : 'border-champ text-texte hover:bg-fond'}`}
               >
                 {exportEnCours === fmt ? <Spinner taille={14} /> : <Icon nom="download" className="text-[16px]" />}
                 {fmt === 'csv' ? 'CSV' : 'Excel'}
@@ -504,7 +504,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               <button
                 type="button"
                 onClick={() => setAjout(true)}
-                className="btn-principal flex h-11 cursor-pointer items-center gap-2 rounded-moyen border-0 px-4 text-[14px] font-semibold"
+                className="btn-principal flex h-11 cursor-pointer items-center gap-2 rounded-bouton border-0 px-4 text-[14px] font-semibold"
               >
                 <Icon nom="plus" className="text-[18px]" />
                 Ajouter un invité
@@ -522,7 +522,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               type="button"
               onClick={() => actionGroupee('VALIDER')}
               disabled={!!actionEnCours}
-              className="btn-principal flex h-10 cursor-pointer items-center gap-2 rounded-petit border-0 px-3.5 text-[14px] font-semibold disabled:opacity-60"
+              className="btn-principal flex h-10 cursor-pointer items-center gap-2 rounded-bouton border-0 px-3.5 text-[14px] font-semibold disabled:opacity-60"
             >
               {actionEnCours === 'VALIDER' ? <Spinner taille={14} /> : <Icon nom="userCheck" className="text-[16px]" />}
               Valider la présence
@@ -531,7 +531,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               type="button"
               onClick={() => actionGroupee('RENVOYER')}
               disabled={!!actionEnCours}
-              className="flex h-10 cursor-pointer items-center gap-2 rounded-petit border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
+              className="flex h-10 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
             >
               {actionEnCours === 'RENVOYER' ? <Spinner taille={14} /> : <Icon nom="send" className="text-[16px]" />}
               Renvoyer l’invitation
@@ -540,7 +540,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               type="button"
               onClick={() => exporter('xlsx', true)}
               disabled={!!exportEnCours}
-              className="flex h-10 cursor-pointer items-center gap-2 rounded-petit border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
+              className="flex h-10 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
             >
               {exportEnCours === 'selection' ? (
                 <Spinner taille={14} />
@@ -714,7 +714,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                 onClick={() =>
                   definirFiltre({ q: '', statut: '', mode: '', magazine: '', email1: '', evenement: '', programme: '' })
                 }
-                className="h-11 cursor-pointer rounded-moyen border border-champ bg-surface px-4 text-[15px] font-semibold text-texte"
+                className="h-11 cursor-pointer rounded-bouton border border-champ bg-surface px-4 text-[15px] font-semibold text-texte"
               >
                 Réinitialiser les filtres
               </button>
@@ -753,7 +753,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               aria-label="Page précédente"
               disabled={page <= 1}
               onClick={() => majUrl({ page: page - 1 })}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-petit border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
             >
               <Icon nom="chevL" />
             </button>
@@ -768,7 +768,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                   type="button"
                   aria-current={p === page ? 'page' : undefined}
                   onClick={() => majUrl({ page: p })}
-                  className={`h-10 min-w-10 cursor-pointer rounded-petit border text-[14px] font-semibold tabular-nums ${
+                  className={`h-10 min-w-10 cursor-pointer rounded-bouton border text-[14px] font-semibold tabular-nums ${
                     p === page
                       ? mde
                         ? 'border-mde-bordeaux bg-mde-bordeaux text-blanc'
@@ -785,7 +785,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               aria-label="Page suivante"
               disabled={page >= pages}
               onClick={() => majUrl({ page: page + 1 })}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-petit border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
             >
               <Icon nom="chevR" />
             </button>
@@ -827,8 +827,8 @@ export function BoutonPresence({ invite, onClick, court = false, grand = false }
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-petit border bg-surface font-semibold transition-transform active:scale-[.96] ${
-        grand ? 'h-11 rounded-moyen px-4 text-[15px]' : 'h-9 px-3 text-[13px]'
+      className={`inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-bouton border bg-surface font-semibold transition-transform active:scale-[.96] ${
+        grand ? 'h-11 rounded-bouton px-4 text-[15px]' : 'h-9 px-3 text-[13px]'
       } ${inscrit ? 'border-champ text-texte' : 'border-erreur-bord text-erreur'}`}
     >
       {grand && <Icon nom={inscrit ? 'userCheck' : 'undo'} className="text-[18px]" />}

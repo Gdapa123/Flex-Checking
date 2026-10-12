@@ -99,7 +99,7 @@ export function FeuilleChoix({ ouvert, titre, sousTitre, onFermer, children }) {
             type="button"
             onClick={onFermer}
             aria-label="Fermer"
-            className="flex h-10 w-10 flex-none cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[20px] text-texte-2 hover:bg-surface"
+            className="flex h-10 w-10 flex-none cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[20px] text-texte-2 hover:bg-surface"
           >
             <Icon nom="x" />
           </button>

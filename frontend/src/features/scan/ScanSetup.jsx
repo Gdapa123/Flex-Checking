@@ -54,14 +54,14 @@ export default function ScanSetup() {
 
         <div role="radiogroup" aria-label="Événement" className="flex flex-col gap-2">
           <span className="text-[14px] font-semibold text-g-texte-2">Événement</span>
-          {isLoading && [1, 2].map((k) => <Squelette key={k} className="h-16 !rounded-bouton opacity-20" />)}
+          {isLoading && [1, 2].map((k) => <Squelette key={k} className="h-16 !rounded-bloc opacity-20" />)}
           {error && (
             <p className="m-0 text-[15px] text-g-erreur-clair">
               Impossible de charger les événements. Vérifiez le réseau.
             </p>
           )}
           {evenements?.length === 0 && (
-            <p className="m-0 rounded-bouton bg-g-surface p-4 text-[15px] text-g-texte-2">
+            <p className="m-0 rounded-bloc bg-g-surface p-4 text-[15px] text-g-texte-2">
               Aucune cérémonie à venir ne vous est affectée. Contactez la direction des événements.
             </p>
           )}
@@ -144,7 +144,7 @@ export default function ScanSetup() {
                   role="radio"
                   aria-checked={on}
                   onClick={() => setR({ ...r, mode: m.value })}
-                  className={`box-border flex min-h-[88px] cursor-pointer flex-col gap-2.5 rounded-[12px] border-2 bg-g-surface px-4 py-3.5 text-left text-g-texte ${on ? 'border-g-texte' : 'border-g-bordure'}`}
+                  className={`box-border flex min-h-[88px] cursor-pointer flex-col gap-2.5 rounded-bouton border-2 bg-g-surface px-4 py-3.5 text-left text-g-texte ${on ? 'border-g-texte' : 'border-g-bordure'}`}
                 >
                   <span className={`text-[22px] ${on ? 'text-s' : 'text-g-texte-2'}`}>
                     <Icon nom={m.icone} />
@@ -175,7 +175,7 @@ export default function ScanSetup() {
           type="button"
           onClick={demarrer}
           disabled={!choisi}
-          className="btn-principal flex h-14 cursor-pointer items-center justify-center gap-2.5 rounded-[12px] border-0 text-[17px] font-semibold active:scale-[.98] disabled:opacity-50"
+          className="btn-principal flex h-14 cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 text-[17px] font-semibold active:scale-[.98] disabled:opacity-50"
         >
           <Icon nom="scan" className="text-[20px]" />
           Démarrer l’émargement

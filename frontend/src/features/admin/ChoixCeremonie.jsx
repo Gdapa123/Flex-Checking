@@ -41,7 +41,7 @@ export default function ChoixCeremonie() {
                 naviguer('/connexion');
               }}
               aria-label="Se déconnecter"
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[20px] text-texte-2 hover:bg-subtil"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[20px] text-texte-2 hover:bg-subtil"
             >
               <Icon nom="logout" />
             </button>

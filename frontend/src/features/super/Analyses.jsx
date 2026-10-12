@@ -84,7 +84,7 @@ export default function Analyses() {
               role="tab"
               aria-selected={f.onglet === v}
               onClick={() => maj({ onglet: v })}
-              className={`flex h-10 cursor-pointer items-center gap-2 rounded-petit border-0 px-4 text-[15px] font-semibold ${f.onglet === v ? 'bg-mde-texte text-surface' : 'bg-transparent text-mde-texte-2 hover:text-mde-texte'}`}
+              className={`flex h-10 cursor-pointer items-center gap-2 rounded-bouton border-0 px-4 text-[15px] font-semibold ${f.onglet === v ? 'bg-mde-texte text-surface' : 'bg-transparent text-mde-texte-2 hover:text-mde-texte'}`}
             >
               <Icon nom={i} className="text-[17px]" />
               {l}
@@ -95,7 +95,7 @@ export default function Analyses() {
           type="button"
           onClick={exporter}
           disabled={export_}
-          className="flex h-11 cursor-pointer items-center gap-2 rounded-[12px] border border-mde-champ bg-surface px-4 text-[15px] font-semibold text-mde-texte shadow-carte-mde hover:bg-mde-survol disabled:opacity-70"
+          className="flex h-11 cursor-pointer items-center gap-2 rounded-bouton border border-mde-champ bg-surface px-4 text-[15px] font-semibold text-mde-texte shadow-carte-mde hover:bg-mde-survol disabled:opacity-70"
         >
           {export_ ? <Spinner taille={16} /> : <Icon nom="download" className="text-[18px]" />}
           Rapport PDF (activité et technique)

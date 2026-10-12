@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.noyau.journal import journaliser
 
+from .authentication import emettre_jetons, jeton_revoque, nouvelle_version_session
 from .models import Admin
 from .throttles import ConnexionCompteThrottle, ConnexionThrottle
 
@@ -89,7 +90,7 @@ class ConnexionView(APIView):
         admin.save(update_fields=["derniere_connexion"])
         journaliser(admin, "CONNEXION", admin)
         response = Response(MoiSerializer(admin).data)
-        _poser_cookies(response, RefreshToken.for_user(admin))
+        _poser_cookies(response, emettre_jetons(admin))
         get_token(request)
         return response
 
@@ -106,10 +107,10 @@ class RafraichirView(APIView):
         try:
             ancien = RefreshToken(raw)
             admin = Admin.objects.get(pk=ancien["user_id"])
-            if not admin.actif:
-                raise TokenError("inactif")
+            if not admin.actif or jeton_revoque(ancien, admin):
+                raise TokenError("inactif ou mot de passe changé")
             ancien.blacklist()
-            nouveau = RefreshToken.for_user(admin)
+            nouveau = emettre_jetons(admin)
         except (TokenError, Admin.DoesNotExist):
             response = Response({"code": "SESSION_EXPIREE"}, status=status.HTTP_401_UNAUTHORIZED)
             _effacer_cookies(response)
@@ -169,6 +170,17 @@ class ChangerMotDePasseView(APIView):
             return Response({"nouveau": list(e.messages)}, status=400)
         admin.set_password(ser.validated_data["nouveau"])
         admin.doit_changer_mot_de_passe = False
-        admin.save(update_fields=["password", "doit_changer_mot_de_passe"])
+        nouvelle_version_session(admin)
+        admin.save(update_fields=["password", "doit_changer_mot_de_passe", "version_session"])
         journaliser(admin, "MOT_DE_PASSE_CHANGE", admin)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        # Les autres sessions du compte sont révoquées (empreinte du mot de passe dans les jetons) ;
+        # la session courante reçoit de nouveaux jetons et l'ancien jeton de rafraîchissement est invalidé.
+        ancien = request.COOKIES.get(settings.JWT_COOKIE_REFRESH)
+        if ancien:
+            try:
+                RefreshToken(ancien).blacklist()
+            except TokenError:
+                pass
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        _poser_cookies(response, emettre_jetons(admin))
+        return response

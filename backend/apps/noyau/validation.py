@@ -2,14 +2,48 @@
 
 import re
 
+from django.utils.dateparse import parse_date
 from rest_framework import serializers
 
-EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[a-z]{2,}$", re.IGNORECASE)
+EMAIL_RE = re.compile(r"^[^\s@\x00-\x1f\x7f]+@[^\s@\x00-\x1f\x7f]+\.[a-z]{2,}$", re.IGNORECASE)
 HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
+CONTROLE_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+ENTIER_RE = re.compile(r"[0-9]{1,9}")
+
+
+def entier(valeur):
+    """Entier positif d'un paramètre d'URL, ou None. Uniquement les chiffres ASCII : `str.isdigit()`
+    accepte « ² » ou « ١ », que `int()` refuse ensuite (erreur serveur)."""
+    valeur = str(valeur or "")
+    return int(valeur) if ENTIER_RE.fullmatch(valeur) else None
+
+
+def date_iso(valeur):
+    """Date AAAA-MM-JJ d'un paramètre d'URL, ou None (y compris pour une date impossible comme le 30/02)."""
+    try:
+        return parse_date(str(valeur or ""))
+    except ValueError:
+        return None
+
+
+def donnees_objet(request):
+    """Corps de requête JSON sous forme d'objet ; {} si le corps est une liste, un nombre ou une chaîne
+    (`request.data.get` provoquerait sinon une erreur serveur)."""
+    return request.data if hasattr(request.data, "get") else {}
+
+
+def sans_controle(valeur):
+    """Refuse les caractères de contrôle (saut de ligne, retour chariot, tabulation…) dans une saisie d'une
+    ligne : ils casseraient l'objet des emails, les fichiers .ics et les exports."""
+    if CONTROLE_RE.search(valeur or ""):
+        raise serializers.ValidationError("Caractères non autorisés.")
+    return valeur
 
 
 def valider_nom(valeur, libelle):
-    valeur = (valeur or "").strip()
+    valeur = sans_controle((valeur or "").strip())
     if len(valeur) < 2:
         raise serializers.ValidationError(f"Indiquez votre {libelle}.")
     if len(valeur) > 80:
@@ -18,7 +52,7 @@ def valider_nom(valeur, libelle):
 
 
 def valider_texte_obligatoire(valeur, message, maximum=120):
-    valeur = (valeur or "").strip()
+    valeur = sans_controle((valeur or "").strip())
     if len(valeur) < 2:
         raise serializers.ValidationError(message)
     if len(valeur) > maximum:
@@ -27,7 +61,7 @@ def valider_texte_obligatoire(valeur, message, maximum=120):
 
 
 def valider_email(valeur):
-    valeur = (valeur or "").strip().lower()
+    valeur = sans_controle((valeur or "").strip().lower())
     if not valeur:
         raise serializers.ValidationError("Indiquez votre adresse email.")
     if not EMAIL_RE.match(valeur) or len(valeur) > 254:

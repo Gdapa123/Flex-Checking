@@ -54,12 +54,12 @@ def lignes_invites(qs):
     for i in invites_annotes(qs).order_by("evenement__date", "nom", "prenom"):
         lignes.append(
             [
-                i.evenement.nom_affiche,
+                _texte(i.evenement.nom_affiche),
                 i.civilite_affichee,
                 _texte(i.prenom),
                 _texte(i.nom.upper()),
                 _texte(i.email),
-                i.telephone,
+                _texte(i.telephone),  # « +225 … » serait lu comme une formule par Excel
                 _texte(i.entreprise),
                 _texte(i.fonction),
                 i.statut.libelle,
@@ -98,7 +98,7 @@ def lignes_presences(qs):
         em = next((e for e in i.emargements.all() if e.annule_le is None), None)
         lignes.append(
             [
-                i.evenement.nom_affiche,
+                _texte(i.evenement.nom_affiche),
                 i.civilite_affichee,
                 _texte(i.prenom),
                 _texte(i.nom.upper()),
@@ -107,7 +107,7 @@ def lignes_presences(qs):
                 _mode(i.mode_emargement),
                 _texte(em.poste) if em else "",
                 em.get_appareil_display() if em else "",
-                em.admin.nom if em else "",
+                _texte(em.admin.nom) if em else "",
             ]
         )
     return entetes, lignes
@@ -120,14 +120,14 @@ def lignes_emails(qs_invites):
     for e in emails.order_by("cree_le"):
         lignes.append(
             [
-                e.invite.evenement.nom_affiche,
-                e.invite.nom_complet,
+                _texte(e.invite.evenement.nom_affiche),
+                _texte(e.invite.nom_complet),
                 _texte(e.invite.email),
                 "Email n°1 · invitation" if e.type == "INVITATION" else "Email n°2 · magazine",
                 e.get_statut_display(),
                 e.tentatives,
                 _dt(e.envoye_le),
-                e.erreur[:300],
+                _texte(e.erreur[:300]),
             ]
         )
     return entetes, lignes
@@ -139,7 +139,12 @@ def lignes_journal(entrees, cibles):
 
     entetes = ["Date", "Utilisateur", "Type", "Détail"]
     lignes = [
-        [_dt(e.date), e.auteur.nom if e.auteur else "Système", CATEGORIES.get(e.action, ""), decrire(e, cibles)]
+        [
+            _dt(e.date),
+            _texte(e.auteur.nom) if e.auteur else "Système",
+            CATEGORIES.get(e.action, ""),
+            _texte(decrire(e, cibles)),
+        ]
         for e in entrees
     ]
     return entetes, lignes

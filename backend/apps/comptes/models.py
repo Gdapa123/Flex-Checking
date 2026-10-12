@@ -31,6 +31,10 @@ class Admin(AbstractBaseUser):
     actif = models.BooleanField(default=True)
     derniere_connexion = models.DateTimeField(null=True, blank=True)
     doit_changer_mot_de_passe = models.BooleanField(default=False)
+    # Incrémentée à chaque changement ou réinitialisation du mot de passe : les jetons émis avant
+    # (autres appareils, session volée) sont refusés. Une mise à niveau silencieuse du hachage du mot
+    # de passe par Django ne la modifie pas, et un jeton sans version (émis avant cette règle) vaut 0.
+    version_session = models.PositiveIntegerField(default=0)
     cree_le = models.DateTimeField(auto_now_add=True)
 
     # AbstractBaseUser fournit `password` (hachage Argon2) et `last_login`, inutilisé ici.

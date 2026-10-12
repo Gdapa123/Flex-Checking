@@ -10,6 +10,7 @@ Sécurité :
 
 import asyncio
 import time
+import weakref
 from http.cookies import CookieError, SimpleCookie
 
 from channels.db import database_sync_to_async
@@ -19,8 +20,10 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import AccessToken
 
+from apps.comptes.authentication import jeton_revoque
 from apps.comptes.models import Admin, Role
 from apps.comptes.permissions import evenements_visibles
+from config.concurrence import DB_CONCURRENCE
 
 from .temps_reel import CONNECTES, TOUS, groupe_compte, groupe_evenement
 
@@ -41,13 +44,36 @@ def _jeton(scope):
     return None
 
 
-@database_sync_to_async
-def _compte(admin_id):
-    return Admin.objects.filter(pk=admin_id, actif=True).first()
+_files = weakref.WeakKeyDictionary()  # un sémaphore par boucle d'événements (un par processus en production)
+
+
+def _file():
+    """Accès base des connexions WebSocket bornés comme ceux des requêtes HTTP (`config.concurrence`) :
+    une vague de reconnexions (redémarrage, déploiement) ne peut pas dépasser `max_connections` MySQL."""
+    boucle = asyncio.get_running_loop()
+    if boucle not in _files:
+        _files[boucle] = asyncio.Semaphore(DB_CONCURRENCE)
+    return _files[boucle]
+
+
+async def _compte(admin_id):
+    async with _file():
+        return await _compte_base(admin_id)
+
+
+async def _groupes(admin):
+    async with _file():
+        return await _groupes_base(admin)
 
 
 @database_sync_to_async
-def _groupes(admin):
+def _compte_base(admin_id):
+    """Compte actif et sorti du mot de passe temporaire (même règle que `EstAdmin`)."""
+    return Admin.objects.filter(pk=admin_id, actif=True, doit_changer_mot_de_passe=False).first()
+
+
+@database_sync_to_async
+def _groupes_base(admin):
     groupes = {CONNECTES, groupe_compte(admin.pk)}
     if admin.role == Role.SUPER_ADMIN:
         groupes.add(TOUS)
@@ -70,7 +96,10 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
         if admin is None:
             await self.close(code=FERMETURE_SESSION if jeton is None else FERMETURE_COMPTE)
             return
-        self.admin_id = admin.pk
+        if jeton_revoque(jeton, admin):  # mot de passe changé depuis l'émission du jeton
+            await self.close(code=FERMETURE_SESSION)
+            return
+        self.admin_id, self.jeton = admin.pk, jeton
         await self._rejoindre(await _groupes(admin))
         delai = max(0, jeton["exp"] - time.time())
         self.minuteur = asyncio.get_running_loop().call_later(
@@ -102,6 +131,9 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
         admin = await _compte(self.admin_id)
         if admin is None:
             await self.close(code=FERMETURE_COMPTE)
+            return
+        if jeton_revoque(self.jeton, admin):  # mot de passe changé ou réinitialisé : session révoquée
+            await self.close(code=FERMETURE_SESSION)
             return
         await self._rejoindre(await _groupes(admin))
         await self.send_json({"type": "maj", "sujets": ["moi", "evenements", "evenement"], "evenements": []})

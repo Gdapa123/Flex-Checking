@@ -63,7 +63,7 @@ export default function Segmente({
             tabIndex={on || (valeur == null && i === 0) ? 0 : -1}
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}
-            className={`cursor-pointer rounded-petit border-0 font-semibold transition-[background,color,transform] duration-150 active:scale-[.97] ${h} ${on ? actif : `bg-transparent ${inactif}`}`}
+            className={`cursor-pointer rounded-bouton border-0 font-semibold transition-[background,color,transform] duration-150 active:scale-[.97] ${h} ${on ? actif : `bg-transparent ${inactif}`}`}
           >
             {o.label}
           </button>

@@ -174,7 +174,7 @@ export default function Erreurs() {
                   <button
                     type="button"
                     onClick={() => basculer(e)}
-                    className="flex h-9 flex-none cursor-pointer items-center gap-1.5 rounded-petit border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol"
+                    className="flex h-9 flex-none cursor-pointer items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol"
                   >
                     <Icon nom={e.resolue ? 'undo' : 'check'} className="text-[16px]" />
                     {e.resolue ? 'Rouvrir' : 'Résolue'}
@@ -228,7 +228,7 @@ export default function Erreurs() {
                 aria-label="Page précédente"
                 disabled={page <= 1}
                 onClick={() => maj({ page: page - 1 })}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-petit border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
               >
                 <Icon nom="chevL" />
               </button>
@@ -237,7 +237,7 @@ export default function Erreurs() {
                 aria-label="Page suivante"
                 disabled={page >= data.pages}
                 onClick={() => maj({ page: page + 1 })}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-petit border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
               >
                 <Icon nom="chevR" />
               </button>

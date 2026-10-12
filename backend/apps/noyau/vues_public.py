@@ -14,9 +14,10 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from apps.comptes.throttles import LimiteSensible
+from apps.comptes.throttles import CacheDeSecours, LimiteSensible, email_soumis
 
 from . import caches, emails, services
+from .exceptions import ErreurMetier
 from .ics import bornes, description_agenda, ics_evenement
 from .models import Evenement, Invite, TypeEmail
 from .serializers import InscriptionSerializer, tokens_programme
@@ -42,7 +43,7 @@ class RenvoiEmailThrottle(LimiteSensible):
     scope = "renvoi_email"
 
     def get_cache_key(self, request, view):
-        email = str(request.data.get("email", "")).strip().lower()
+        email = email_soumis(request)
         if not email:
             return None
         cle = hashlib.sha256(f"{view.kwargs.get('slug')}:{email}".encode()).hexdigest()
@@ -103,7 +104,18 @@ class InscriptionView(APIView):
         ev = evenement_public(slug)
         ser = InscriptionSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        invite = services.inscrire(ev, ser.validated_data)
+        d = ser.validated_data
+        try:
+            invite = services.inscrire(ev, d)
+        except ErreurMetier as exc:
+            if exc.code != "DEJA_INSCRIT":
+                raise
+            # Adresse déjà inscrite : même réponse qu'une inscription réussie (le formulaire public ne doit pas
+            # révéler qui est inscrit) ; la vraie personne reçoit de nouveau son invitation, au plus 3 fois par heure.
+            existant = Invite.objects.filter(evenement=ev, email=d["email"]).first()
+            if existant is not None and _renvoi_autorise(ev, d["email"]):
+                emails.planifier(existant, TypeEmail.INVITATION)
+            invite = Invite(civilite=d["civilite"], prenom=d["prenom"].strip(), nom=d["nom"].strip())
         return Response(
             {
                 "invite": {
@@ -116,6 +128,21 @@ class InscriptionView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+RENVOIS_AUTOMATIQUES_PAR_HEURE = 3
+
+
+def _renvoi_autorise(evenement, email):
+    """Limite les renvois déclenchés par une nouvelle inscription d'une adresse déjà inscrite (pas
+    d'envoi en rafale vers la boîte d'un tiers). Clé hachée : aucune adresse en clair dans le cache."""
+    cle = "renvoi-auto:" + hashlib.sha256(f"{evenement.pk}:{email}".encode()).hexdigest()
+    cache = CacheDeSecours()
+    n = cache.get(cle) or 0
+    if n >= RENVOIS_AUTOMATIQUES_PAR_HEURE:
+        return False
+    cache.set(cle, n + 1, 3600)
+    return True
 
 
 class RenvoiSerializer(serializers.Serializer):

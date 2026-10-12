@@ -221,7 +221,7 @@ export function BarreRetour({ titre, onRetour }) {
         type="button"
         onClick={onRetour}
         aria-label="Retour"
-        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[22px] text-g-texte"
+        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[22px] text-g-texte"
       >
         <Icon nom="arrowL" />
       </button>
@@ -270,7 +270,7 @@ export function VueCode({ chiffres, onTouche, onRetour, borne }) {
                 type="button"
                 onClick={() => onTouche(t)}
                 aria-label={t === 'del' ? 'Effacer' : t === 'ok' ? 'Valider' : t}
-                className={`flex cursor-pointer items-center justify-center rounded-[12px] border border-g-bordure font-semibold transition-[transform,background] duration-75 active:scale-95 ${ok ? 'bg-p text-op' : 'bg-g-surface text-g-texte'}`}
+                className={`flex cursor-pointer items-center justify-center rounded-bouton border border-g-bordure font-semibold transition-[transform,background] duration-75 active:scale-95 ${ok ? 'bg-p text-op' : 'bg-g-surface text-g-texte'}`}
                 style={{ height: K.keyH, fontSize: K.keyF }}
               >
                 {t === 'del' ? <Icon nom="backspace" /> : t === 'ok' ? <Icon nom="check" /> : t}
@@ -294,7 +294,7 @@ export function VueRecherche({ q, onQ, resultats, total, chargement, onEmarger, 
             type="button"
             onClick={onRetour}
             aria-label="Retour"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[22px] text-g-texte"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[22px] text-g-texte"
           >
             <Icon nom="arrowL" />
           </button>
@@ -359,7 +359,7 @@ export function VueRecherche({ q, onQ, resultats, total, chargement, onEmarger, 
                     type="button"
                     onClick={() => onEmarger(r)}
                     disabled={enCours}
-                    className="btn-principal h-11 cursor-pointer rounded-moyen border-0 px-4 text-[15px] font-semibold active:scale-[.96] disabled:opacity-60"
+                    className="btn-principal h-11 cursor-pointer rounded-bouton border-0 px-4 text-[15px] font-semibold active:scale-[.96] disabled:opacity-60"
                   >
                     {borne ? 'C’est moi' : 'Émarger'}
                   </button>
@@ -445,7 +445,7 @@ export function VueEtatCamera({ etat, onAutoriser, onCode, onRecherche, onDouche
               key={a.label}
               type="button"
               onClick={a.onClick}
-              className={`flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-[12px] text-[16px] font-semibold ${a.principal ? 'border-0 bg-p text-op' : 'border border-g-bordure bg-transparent text-g-texte'}`}
+              className={`flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton text-[16px] font-semibold ${a.principal ? 'border-0 bg-p text-op' : 'border border-g-bordure bg-transparent text-g-texte'}`}
             >
               <Icon nom={a.icone} className="text-[20px]" />
               {a.label}
@@ -504,7 +504,7 @@ export function FeuilleAnnulation({ dernier, enCours, onAnnuler, onFermer }) {
             type="button"
             onClick={onAnnuler}
             disabled={enCours}
-            className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-[12px] border-0 bg-erreur text-[16px] font-semibold text-blanc disabled:opacity-60"
+            className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 bg-erreur text-[16px] font-semibold text-blanc disabled:opacity-60"
           >
             <Icon nom="undo" className="text-[20px]" />
             Annuler l’émargement
@@ -517,7 +517,7 @@ export function FeuilleAnnulation({ dernier, enCours, onAnnuler, onFermer }) {
         type="button"
         onClick={onFermer}
         data-autofocus
-        className="h-[52px] cursor-pointer rounded-[12px] border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
+        className="h-[52px] cursor-pointer rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
       >
         Fermer
       </button>
@@ -559,7 +559,7 @@ export function FeuilleReglages({
       <button
         type="button"
         onClick={onChanger}
-        className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-[12px] border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
+        className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
       >
         <Icon nom="switchCam" className="text-[20px]" />
         Changer d’événement ou de mode
@@ -567,7 +567,7 @@ export function FeuilleReglages({
       <button
         type="button"
         onClick={onAnnulation}
-        className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-[12px] border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
+        className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
       >
         <Icon nom="undo" className="text-[20px]" />
         Annuler le dernier émargement

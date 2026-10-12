@@ -19,11 +19,11 @@ const VARIANTES = {
 };
 
 const TAILLES = {
-  xs: 'h-9 px-3 text-[13px] rounded-petit',
-  sm: 'h-10 px-3.5 text-[14px] rounded-petit',
-  md: 'h-11 px-4 text-[15px] rounded-moyen',
-  lg: 'h-12 px-[18px] text-[15px] rounded-moyen',
-  xl: 'h-[52px] px-6 text-[16px] rounded-moyen',
+  xs: 'h-9 px-3 text-[13px] rounded-bouton',
+  sm: 'h-10 px-3.5 text-[14px] rounded-bouton',
+  md: 'h-11 px-4 text-[15px] rounded-bouton',
+  lg: 'h-12 px-[18px] text-[15px] rounded-bouton',
+  xl: 'h-[52px] px-6 text-[16px] rounded-bouton',
 };
 
 const Bouton = forwardRef(function Bouton(

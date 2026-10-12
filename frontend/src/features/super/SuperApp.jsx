@@ -70,7 +70,7 @@ function BarreLaterale() {
             to={`/super${to ? `/${to}` : ''}`}
             end={!to}
             className={({ isActive }) =>
-              `flex h-11 items-center gap-3 rounded-moyen px-3 text-[15px] text-mde-texte no-underline transition-colors hover:bg-mde-survol hover:text-mde-texte ${isActive ? 'bg-mde-creme font-semibold' : 'font-medium'}`
+              `flex h-11 items-center gap-3 rounded-bouton px-3 text-[15px] text-mde-texte no-underline transition-colors hover:bg-mde-survol hover:text-mde-texte ${isActive ? 'bg-mde-creme font-semibold' : 'font-medium'}`
             }
           >
             {({ isActive }) => (
@@ -105,7 +105,7 @@ function BarreLaterale() {
             await deconnexion();
             naviguer('/super/connexion');
           }}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-moyen border-0 bg-transparent text-[20px] text-mde-texte-2 hover:bg-mde-survol"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[20px] text-mde-texte-2 hover:bg-mde-survol"
         >
           <Icon nom="logout" />
         </button>
@@ -129,7 +129,7 @@ export function PageSuper({ titre, action, onAction, children }) {
           <button
             type="button"
             onClick={onAction}
-            className="relative flex h-11 cursor-pointer items-center gap-2 rounded-[12px] border-0 bg-mde-jaune px-4 text-[15px] font-semibold text-mde-texte shadow-blanc transition-colors hover:bg-mde-jaune-clair"
+            className="relative flex h-11 cursor-pointer items-center gap-2 rounded-bouton border-0 bg-mde-jaune px-4 text-[15px] font-semibold text-mde-texte shadow-blanc transition-colors hover:bg-mde-jaune-clair"
           >
             <Icon nom="plus" className="text-[18px]" />
             {action}
@@ -142,7 +142,7 @@ export function PageSuper({ titre, action, onAction, children }) {
               to={`/super${to ? `/${to}` : ''}`}
               end={!to}
               className={({ isActive }) =>
-                `rounded-moyen px-2.5 py-1.5 text-[13px] font-semibold no-underline ${isActive ? 'bg-mde-surface text-mde-texte' : 'text-mde-surface hover:text-mde-surface'}`
+                `rounded-bouton px-2.5 py-1.5 text-[13px] font-semibold no-underline ${isActive ? 'bg-mde-surface text-mde-texte' : 'text-mde-surface hover:text-mde-surface'}`
               }
             >
               {label}
