@@ -32,7 +32,7 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
   });
   it('exige le consentement', () => {
     expect(erreurChamp(schemaInscription, 'consentementDonnees', { ...OK, consentementDonnees: false })).toMatch(
-      /accord/,
+      /Cochez cette case/,
     );
   });
   it('formate le téléphone pendant la saisie', () => {

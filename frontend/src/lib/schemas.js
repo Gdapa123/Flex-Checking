@@ -44,7 +44,7 @@ export const schemaInviteComplet = schemaInvite.extend({
 
 export const schemaInscription = schemaInviteComplet.extend({
   consentementDonnees: z.literal(true, {
-    errorMap: () => ({ message: 'Votre accord est nécessaire pour recevoir votre invitation.' }),
+    errorMap: () => ({ message: 'Cochez cette case pour continuer.' }),
   }),
 });
 

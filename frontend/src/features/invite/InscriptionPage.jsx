@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { erreursParChamp, formaterTelephone, schemaInscription } from '../../lib/schemas';
@@ -26,27 +26,17 @@ const VIDE = {
   fonction: '',
   consentementDonnees: false,
 };
-const LIBELLES = {
-  civilite: 'Civilité',
-  nom: 'Nom',
-  prenom: 'Prénom',
-  email: 'Email',
-  telephone: 'Téléphone',
-  entreprise: 'Entreprise',
-  fonction: 'Fonction',
-  consentementDonnees: 'Consentement',
-};
 const ORDRE = ['civilite', 'nom', 'prenom', 'email', 'telephone', 'entreprise', 'fonction', 'consentementDonnees'];
 
 // Tous les champs sont obligatoires. `demi` = demi-largeur sur mobile (deux champs par ligne) ;
 // Email et Téléphone prennent toute la largeur.
 const CHAMPS = [
-  { k: 'nom', demi: true, ac: 'family-name', ph: 'ANZOUA' },
-  { k: 'prenom', demi: true, ac: 'given-name', ph: 'George' },
+  { k: 'nom', demi: true, ac: 'family-name', ph: 'Ex. KOUASSI' },
+  { k: 'prenom', demi: true, ac: 'given-name', ph: 'Ex. Aya' },
   { k: 'email', type: 'email', im: 'email', ac: 'email', ph: 'nom@entreprise.ci' },
   { k: 'telephone', type: 'tel', im: 'tel', ac: 'tel-national', ph: '07 12 34 56 78', prefixe: '+225' },
-  { k: 'entreprise', demi: true, ac: 'organization', ph: 'MDE Business School' },
-  { k: 'fonction', demi: true, ac: 'organization-title', ph: 'Directeur des SI' },
+  { k: 'entreprise', demi: true, ac: 'organization', ph: 'Ex. Orange CI' },
+  { k: 'fonction', demi: true, ac: 'organization-title', ph: 'Ex. Directrice RH' },
 ];
 const NOMS_CHAMPS = {
   nom: 'Nom',
@@ -106,22 +96,15 @@ function Formulaire({ ev, slug }) {
     naviguer('?etape=formulaire');
     window.scrollTo(0, 0);
   };
-  const resume = useRef(null);
 
   const erreurs = useMemo(
     () => ({ ...erreursParChamp(schemaInscription.safeParse(v)), ...erreursServeur }),
     [v, erreursServeur],
   );
   const visible = (k) => !!erreurs[k] && (touche[k] || soumis);
-  const listeResume = ORDRE.filter((k) =>
-    k === 'civilite' || k === 'consentementDonnees' ? soumis && erreurs[k] : visible(k),
-  );
-
-  useEffect(() => {
-    if (soumis && listeResume.length) resume.current?.focus();
-    // focalise le récapitulatif uniquement après une soumission refusée
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [soumis, envoi]);
+  // Champ laissé vide : message court ; les erreurs de format gardent leur explication.
+  const message = (k) => (String(v[k] ?? '').trim() === '' ? 'Champ obligatoire' : erreurs[k]);
+  const nbManquants = ORDRE.filter((k) => erreurs[k]).length;
 
   const maj = (k, val) => {
     setV((x) => ({ ...x, [k]: val }));
@@ -134,8 +117,7 @@ function Formulaire({ ev, slug }) {
     setTouche({ nom: 1, prenom: 1, email: 1, telephone: 1 });
     const r = schemaInscription.safeParse(v);
     if (!r.success) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      setTimeout(() => resume.current?.focus(), 60);
+      premierChamp(erreursParChamp(r));
       return;
     }
     setEnvoi(true);
@@ -157,7 +139,7 @@ function Formulaire({ ev, slug }) {
         const srv = {};
         Object.entries(e.data).forEach(([k, msgs]) => (srv[k] = Array.isArray(msgs) ? msgs[0] : String(msgs)));
         setErreursServeur(srv);
-        setTimeout(() => resume.current?.focus(), 60);
+        premierChamp(srv);
       } else {
         setErreursServeur({
           general:
@@ -193,10 +175,17 @@ function Formulaire({ ev, slug }) {
     );
   }
 
-  const focusChamp = (k) => {
-    const el = k === 'civilite' ? document.querySelector('[role=radio]') : document.getElementById(`champ-${k}`);
-    el?.focus();
-  };
+  /** Amène au premier champ à compléter (dans l'ordre du formulaire), sans saut brusque. */
+  function premierChamp(errs) {
+    const k = ORDRE.find((c) => errs[c]);
+    if (!k) return;
+    const el =
+      k === 'civilite'
+        ? document.querySelector('[role=radio]')
+        : document.getElementById(k === 'consentementDonnees' ? 'champ-consentement' : `champ-${k}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el?.focus({ preventScroll: true });
+  }
 
   if (!commence) {
     return (
@@ -225,34 +214,6 @@ function Formulaire({ ev, slug }) {
           >
             <Icon nom="alertCircle" className="mt-px text-[22px] text-erreur" />
             {erreursServeur.general}
-          </div>
-        )}
-        {soumis && listeResume.length > 0 && (
-          <div
-            ref={resume}
-            tabIndex={-1}
-            role="alert"
-            className="flex animate-in-up gap-3 rounded-[12px] border border-erreur-bord bg-erreur-doux p-4 outline-none"
-          >
-            <Icon nom="alertCircle" className="mt-px text-[22px] text-erreur" />
-            <div className="flex min-w-0 flex-col gap-2">
-              <p className="m-0 text-[16px] font-semibold text-erreur-texte">
-                {listeResume.length} {listeResume.length > 1 ? 'champs à corriger' : 'champ à corriger'}
-              </p>
-              <ul className="m-0 flex list-none flex-col gap-1 p-0">
-                {listeResume.map((k) => (
-                  <li key={k}>
-                    <button
-                      type="button"
-                      onClick={() => focusChamp(k === 'consentementDonnees' ? 'consentement' : k)}
-                      className="cursor-pointer border-0 bg-transparent p-0 text-left text-[15px] text-erreur underline underline-offset-[3px]"
-                    >
-                      {LIBELLES[k]} : {erreurs[k]}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
         )}
 
@@ -296,7 +257,7 @@ function Formulaire({ ev, slug }) {
 
           <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:gap-x-4 sm:gap-y-5">
             {CHAMPS.map((f) => {
-              const err = visible(f.k) ? erreurs[f.k] : '';
+              const err = visible(f.k) ? message(f.k) : '';
               const valide = !err && touche[f.k] && !erreurs[f.k] && String(v[f.k]).trim().length > 0;
               return (
                 <Champ
@@ -324,7 +285,7 @@ function Formulaire({ ev, slug }) {
           <div className="flex flex-col gap-2">
             <label
               htmlFor="champ-consentement"
-              className="flex cursor-pointer items-start gap-2.5 text-[12px] leading-[1.4] text-texte-3 sm:gap-3 sm:text-[14px] sm:leading-[1.5]"
+              className="flex cursor-pointer items-start gap-3 text-[13px] leading-[1.45] text-texte-2 sm:text-[14px] sm:leading-[1.5]"
             >
               <input
                 id="champ-consentement"
@@ -335,15 +296,11 @@ function Formulaire({ ev, slug }) {
                 aria-describedby={soumis && erreurs.consentementDonnees ? 'consentement-erreur' : undefined}
                 className="mt-0.5 h-5 w-5 flex-none cursor-pointer accent-p sm:h-[22px] sm:w-[22px]"
               />
-              {/* version courte sur mobile, mêmes mentions légales */}
-              <span className="sm:hidden">
-                J’accepte que MDE Business School traite mes données pour mon inscription (RGPD, loi ivoirienne n°
-                2013-450).
-              </span>
-              <span className="hidden sm:inline">
-                J’accepte que MDE Business School traite mes données pour gérer mon inscription et mon accueil à la
-                cérémonie, conformément au RGPD et à la loi ivoirienne n° 2013-450 relative à la protection des données
-                à caractère personnel.
+              <span className="font-medium text-texte">
+                J’accepte la politique de confidentialité et les conditions d’utilisation du service
+                <span className="mt-0.5 block font-normal text-texte-2">
+                  Vos données sont traitées de façon confidentielle et sécurisée, conformément au RGPD.
+                </span>
               </span>
             </label>
             {soumis && erreurs.consentementDonnees && (
@@ -360,7 +317,15 @@ function Formulaire({ ev, slug }) {
       </main>
 
       <div className="sticky bottom-0 z-10 -mt-7 bg-gradient-to-b from-transparent via-fond via-45% to-fond px-4 pb-3 pt-5 sm:pb-4 sm:pt-6">
-        <div className="mx-auto max-w-[560px]">
+        <div className="mx-auto flex max-w-[560px] flex-col gap-2">
+          <div role="status" aria-live="polite" className="flex justify-center">
+            {soumis && nbManquants > 0 && (
+              <span className="inline-flex animate-in-up items-center gap-1.5 rounded-full border border-erreur-bord bg-surface px-3 py-1 text-[13px] font-medium text-erreur-texte shadow-carte">
+                <Icon nom="alertCircle" className="text-[15px] text-erreur" />
+                {nbManquants > 1 ? `${nbManquants} informations à compléter` : '1 information à compléter'}
+              </span>
+            )}
+          </div>
           <button
             type="submit"
             aria-busy={envoi}

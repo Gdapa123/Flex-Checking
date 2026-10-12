@@ -47,7 +47,7 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
   await expect(p.getByRole('heading', { name: 'Comment ça se passe ?' })).toBeVisible();
   await p.getByRole('button', { name: 'Commencer mon inscription' }).click();
   await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
-  await expect(p.getByText(/champs à corriger/)).toBeVisible(); // validation
+  await expect(p.getByText(/informations à compléter/)).toBeVisible(); // validation
   await p.getByRole('radio', { name: 'Mme' }).click();
   await p.getByLabel('Nom', { exact: true }).fill('Kouassi');
   await p.getByLabel('Prénom', { exact: true }).fill('Aya');
