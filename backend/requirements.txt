@@ -19,3 +19,4 @@ channels-redis==4.2.1
 daphne==4.2.3
 reportlab==4.2.5
 uvicorn[standard]==0.32.1
+psycopg[binary]==3.3.5

@@ -84,6 +84,17 @@ DATABASES = {
     }
 }
 
+# Base fournie par une URL (ex. Postgres Neon pour l'environnement de test sur Vercel) : remplace MySQL.
+# Sans DATABASE_URL, la configuration MySQL ci-dessus s'applique (Docker Compose, VPS).
+if env("DATABASE_URL", default=""):
+    DATABASES["default"] = {
+        **env.db("DATABASE_URL"),
+        "CONN_MAX_AGE": 0,
+        "OPTIONS": {"connect_timeout": 5},
+    }
+    if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+        DATABASES["default"]["OPTIONS"]["sslmode"] = env("DB_SSLMODE", default="require")
+
 AUTH_USER_MODEL = "comptes.Admin"
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
@@ -223,6 +234,14 @@ CHANNEL_LAYERS = {
         "CONFIG": {"hosts": [REDIS_URL], "capacity": 500, "expiry": 30},
     }
 }
+
+if not REDIS_URL:
+    # Sans Redis (REDIS_URL vide, environnement de test Vercel) : cache et limites en mémoire de chaque
+    # processus, pas de relais temps réel (les écrans se mettent à jour toutes les 5 s). Les tâches doivent
+    # alors s'exécuter dans la requête (CELERY_TASK_ALWAYS_EAGER=1).
+    _LOCAL = "django.core.cache.backends.locmem.LocMemCache"
+    CACHES = {alias: {"BACKEND": _LOCAL, "LOCATION": alias} for alias in ("default", "limites", "limites_local")}
+    CHANNEL_LAYERS = {}
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL

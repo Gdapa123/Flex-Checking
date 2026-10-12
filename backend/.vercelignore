@@ -1,0 +1,19 @@
+# Jamais envoyés à Vercel : environnement local, caches, fichiers générés, secrets
+.venv
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+media
+media-tests
+staticfiles
+emails-envoyes
+.env
+.env.*
+
+# Documentation d'assistants installée par la CLI Vercel (intégration Neon)
+.agents
+.claude
+skills-lock.json
+.gitignore
+Dockerfile

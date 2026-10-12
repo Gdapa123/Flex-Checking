@@ -129,7 +129,10 @@ def _date_passage(date_client, maintenant):
 def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode, poste="", appareil, date_client=None):
     """Passage à PRESENT : atomique (select_for_update) et idempotent."""
     with transaction.atomic():
-        qs = Invite.objects.select_for_update().select_related("statut", "evenement__programme")
+        # Verrou sur la seule ligne de l'invité, sans jointure : sous Postgres, un verrou posé sur une requête
+        # jointe (statut) fait disparaître la ligne pour les scans concurrents dès que le statut change
+        # (« code invalide » au lieu de « déjà émargé »). Statut et programme sont lus après le verrou.
+        qs = Invite.objects.select_for_update()
         invite = None
         if qr_token:
             invite = qs.filter(qr_token=qr_token.strip()).first()
@@ -226,8 +229,9 @@ def _resultat(
 def annuler_emargement(emargement, admin, motif=""):
     """Retour à INSCRIT ; la ligne Emargement est conservée avec annuleLe / annulePar / motif."""
     with transaction.atomic():
-        emargement = Emargement.objects.select_for_update().select_related("invite").get(pk=emargement.pk)
-        invite = Invite.objects.select_for_update().select_related("statut").get(pk=emargement.invite_id)
+        # verrous sans jointure (voir `emarger`) : statut et invité sont relus après le verrou
+        emargement = Emargement.objects.select_for_update().get(pk=emargement.pk)
+        invite = Invite.objects.select_for_update().get(pk=emargement.invite_id)
         if emargement.annule_le is not None:
             raise ErreurMetier("DEJA_ANNULE", "Cet émargement a déjà été annulé.")
         if invite.statut.code != statuts.PRESENT:

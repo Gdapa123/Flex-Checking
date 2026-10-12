@@ -4,6 +4,7 @@ L'état des tâches est conservé dans le cache (clé `tache:<id>`) avec le prop
 seul l'admin qui l'a lancée puisse la consulter et télécharger le fichier produit.
 """
 
+import os
 import time
 import uuid
 from pathlib import Path
@@ -12,7 +13,8 @@ from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
 
-SEUIL_ASYNCHRONE = 50
+# au-delà, export en tâche de fond ; sans worker (Vercel), un seuil élevé garde l'export dans la requête
+SEUIL_ASYNCHRONE = int(os.environ.get("EXPORT_SEUIL_ASYNCHRONE", "50"))
 DUREE = 60 * 60 * 6
 DOSSIER = Path(settings.MEDIA_ROOT) / "exports"
 

@@ -86,6 +86,11 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.groupes = set()
         self.minuteur = None
+        if self.channel_layer is None:
+            # Temps réel désactivé (pas de Redis) : refus de la poignée de main, le navigateur interroge
+            # périodiquement l'API à la place.
+            await self.close()
+            return
         await self.accept()
         brut = _jeton(self.scope)
         try:

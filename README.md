@@ -188,6 +188,18 @@ réussite ; 500 écrans WebSocket notifiés en moins de 0,1 s. Une file d’atte
   (`/api/docs/`) réservée au super admin.
 - Dépendances auditées (`pip-audit`, `npm audit`) : aucune vulnérabilité connue en production à la date du dernier audit.
 
+### Environnement de test en ligne (Vercel)
+
+- Frontend : https://flex-checking.vercel.app (projet `flex-checking`, dossier `frontend`, `frontend/vercel.json`
+  relaie `/api` vers le backend).
+- Backend : https://flex-checking-api.vercel.app (projet `flex-checking-api`, dossier `backend`, image
+  `backend/Dockerfile.vercel`, région `fra1` dans `backend/vercel.json`), base Postgres Neon (Francfort).
+- Sans Redis ni worker : pas de temps réel (mise à jour toutes les 5 s), emails et actions groupées traités dans la
+  requête, emails écrits dans les journaux Vercel (pas d’envoi réel). Réservé aux tests ; la production reste
+  `docker-compose.prod.yml`.
+- Base de test : `DATABASE_URL` récupérée par `vercel env pull` (fichier privé), puis `python manage.py migrate` et
+  `seed_demo` lancés depuis un poste.
+
 ## 8. Architecture
 
 ```
