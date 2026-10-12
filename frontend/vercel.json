@@ -5,8 +5,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://flex-checking-api.vercel.app/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://flex-checking-api.vercel.app/api/$1"
     },
     {
       "source": "/((?!api/|assets/).*)",

@@ -9,6 +9,8 @@ from pathlib import Path
 
 import environ
 
+from .bases import base_depuis_url, caches_sans_redis
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent
 
@@ -86,14 +88,9 @@ DATABASES = {
 
 # Base fournie par une URL (ex. Postgres Neon pour l'environnement de test sur Vercel) : remplace MySQL.
 # Sans DATABASE_URL, la configuration MySQL ci-dessus s'applique (Docker Compose, VPS).
+# Les options de l'URL (sslmode, channel_binding…) priment ; à défaut, chiffrement imposé (DB_SSLMODE).
 if env("DATABASE_URL", default=""):
-    DATABASES["default"] = {
-        **env.db("DATABASE_URL"),
-        "CONN_MAX_AGE": 0,
-        "OPTIONS": {"connect_timeout": 5},
-    }
-    if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
-        DATABASES["default"]["OPTIONS"]["sslmode"] = env("DB_SSLMODE", default="require")
+    DATABASES["default"] = base_depuis_url(env.db("DATABASE_URL"), env("DB_SSLMODE", default="require"))
 
 AUTH_USER_MODEL = "comptes.Admin"
 PASSWORD_HASHERS = [
@@ -236,16 +233,15 @@ CHANNEL_LAYERS = {
 }
 
 if not REDIS_URL:
-    # Sans Redis (REDIS_URL vide, environnement de test Vercel) : cache et limites en mémoire de chaque
-    # processus, pas de relais temps réel (les écrans se mettent à jour toutes les 5 s). Les tâches doivent
-    # alors s'exécuter dans la requête (CELERY_TASK_ALWAYS_EAGER=1).
-    _LOCAL = "django.core.cache.backends.locmem.LocMemCache"
-    CACHES = {alias: {"BACKEND": _LOCAL, "LOCATION": alias} for alias in ("default", "limites", "limites_local")}
+    # Sans Redis (REDIS_URL vide, environnement de test Vercel) : cache local, limites anti-abus partagées
+    # en base, pas de relais temps réel (les écrans se mettent à jour toutes les 5 s). Les tâches
+    # s'exécutent alors dans la requête (aucune file pour les recevoir).
+    CACHES = caches_sans_redis()
     CHANNEL_LAYERS = {}
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=not REDIS_URL)
 CELERY_TASK_EAGER_PROPAGATES = False
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ACKS_LATE = True

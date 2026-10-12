@@ -1,0 +1,12 @@
+# Déploiement du frontend par la CLI depuis la racine (projet flex-checking, dossier racine « frontend ») :
+# seul le dossier frontend est envoyé, jamais le backend, les secrets ni les fichiers locaux.
+/*
+!/frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/test-results
+/frontend/playwright-report
+/frontend/.vercel
+/frontend/.env
+/frontend/.env.*
+/frontend/.emails-e2e

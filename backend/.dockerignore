@@ -7,3 +7,11 @@ staticfiles
 media-tests
 **/__pycache__
 *.pyc
+# secrets et fichiers locaux : jamais copiés dans une image (COPY . .)
+.env
+.env.*
+.vercel
+.agents
+.claude
+skills-lock.json
+emails-envoyes

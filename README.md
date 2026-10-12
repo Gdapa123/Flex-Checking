@@ -197,8 +197,9 @@ réussite ; 500 écrans WebSocket notifiés en moins de 0,1 s. Une file d’atte
 - Sans Redis ni worker : pas de temps réel (mise à jour toutes les 5 s), emails et actions groupées traités dans la
   requête, emails écrits dans les journaux Vercel (pas d’envoi réel). Réservé aux tests ; la production reste
   `docker-compose.prod.yml`.
-- Base de test : `DATABASE_URL` récupérée par `vercel env pull` (fichier privé), puis `python manage.py migrate` et
-  `seed_demo` lancés depuis un poste.
+- Base de test : `DATABASE_URL` récupérée par `vercel env pull` (fichier privé), puis `python manage.py migrate`,
+  `python manage.py createcachetable` (limites anti-abus partagées entre instances) et `seed_demo` lancés depuis
+  un poste.
 
 ## 8. Architecture
 

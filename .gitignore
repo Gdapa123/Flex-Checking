@@ -17,3 +17,4 @@ media-tests/
 
 # Liaison locale aux projets Vercel (vercel link)
 .vercel/
+.env.local
