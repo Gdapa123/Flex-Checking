@@ -18,8 +18,8 @@ def test_programme_crud_et_protection(client_sa, evenement, programme):
     d = r.json()
     assert d["couleurPrincipale"] == "#2F3A8F" and d["tokens"]["op"] == "#FFFFFF"
     assert client_sa.delete(f"/api/programmes/{d['id']}/").status_code == 204
-    r = client_sa.delete(f"/api/programmes/{programme.pk}/")
-    assert r.status_code == 409 and r.json()["code"] == "PROGRAMME_UTILISE"
+    r = client_sa.delete(f"/api/programmes/{programme.pk}/")  # programme avec événements : confirmation exigée
+    assert r.status_code == 400 and r.json()["code"] == "CONFIRMATION_REQUISE"
     r = client_sa.patch(f"/api/programmes/{programme.pk}/", {"actif": False}, format="json")
     assert r.status_code == 200 and Programme.objects.get(pk=programme.pk).actif is False
     assert JournalActivite.objects.filter(action="PROGRAMME_DESACTIVATION").exists()

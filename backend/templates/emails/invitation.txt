@@ -6,8 +6,8 @@ INFOS PRATIQUES
 - {{ date_longue }}
 - {{ heure_debut }} · accueil dès {{ heure_accueil }}
 - {{ lieu }}
-- Itinéraire (Google Maps, Waze, Plans) : {{ lien_itineraire }}
-- Ajouter à l'agenda (Google, Outlook, Apple) : {{ lien_agenda }}
+- Itinéraire (Google Maps, Plans) : {{ lien_itineraire }}
+- Ajouter à l'agenda (Google Agenda, Microsoft 365) : {{ lien_agenda }}
 
 --
 {{ expediteur }}

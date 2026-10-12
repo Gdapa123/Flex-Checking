@@ -5,9 +5,11 @@ import { jourHeure } from '../../lib/format';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
 import Dialogue from '../../components/ui/Dialogue';
+import DialogueSuppression from '../../components/ui/DialogueSuppression';
 import Icon from '../../components/ui/Icon';
 import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
+import { useMoi } from '../auth/useMoi';
 import { PageSuper } from './SuperApp';
 import { CHAMP_MDE, useAdmins, useEvenements } from './donnees';
 
@@ -21,6 +23,8 @@ export default function Comptes() {
   const [erreurs, setErreurs] = useState({});
   const [mdp, setMdp] = useState(null);
   const [confirmer, setConfirmer] = useState(null);
+  const [suppression, setSuppression] = useState(null);
+  const { data: moi } = useMoi();
   const aujourdHui = new Date().toISOString().slice(0, 10);
   const colonnes = evenements.filter((e) => e.date >= aujourdHui).sort((a, b) => a.date.localeCompare(b.date));
   const rafraichir = () => {
@@ -69,6 +73,17 @@ export default function Comptes() {
       toast(messageErreur(e), 'erreur');
     }
     setConfirmer(null);
+  };
+
+  const supprimer = async () => {
+    try {
+      await api.delete(`/admins/${suppression.id}/`);
+      toast(`Compte supprimé · ${suppression.nom}`);
+      rafraichir();
+      setSuppression(null);
+    } catch (e) {
+      toast(messageErreur(e), 'erreur');
+    }
   };
 
   return (
@@ -173,6 +188,18 @@ export default function Comptes() {
                       >
                         {a.actif ? 'Désactiver' : 'Réactiver'}
                       </Bouton>
+                      {moi?.id !== a.id && (
+                        <Bouton
+                          variante="mde-secondaire"
+                          taille="xs"
+                          icone="trash"
+                          className="!text-erreur"
+                          aria-label={`Supprimer le compte de ${a.nom}`}
+                          onClick={() => setSuppression(a)}
+                        >
+                          Supprimer
+                        </Bouton>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -295,6 +322,15 @@ export default function Comptes() {
           </div>
         )}
       </Dialogue>
+      <DialogueSuppression
+        ouvert={!!suppression}
+        titre={`Supprimer le compte de ${suppression?.nom} ?`}
+        onConfirmer={supprimer}
+        onFermer={() => setSuppression(null)}
+      >
+        Le compte ne pourra plus se connecter et disparaît de la liste. Les émargements qu’il a enregistrés restent dans
+        l’historique des invités (« Compte supprimé »). Pour une simple pause, préférez « Désactiver ».
+      </DialogueSuppression>
     </PageSuper>
   );
 }

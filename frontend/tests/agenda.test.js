@@ -32,35 +32,26 @@ describe('agenda et itinéraire', () => {
     expect(url.searchParams.get('details')).toContain('Itinéraire');
   });
 
-  it('Outlook et Microsoft 365 : formulaire de création pré-rempli', () => {
-    const { outlook, office, apple } = parCle(liensAgenda(ev));
-    for (const [o, domaine] of [
-      [outlook, 'outlook.live.com'],
-      [office, 'outlook.office.com'],
-    ]) {
-      const url = new URL(o.href);
-      expect(url.host).toBe(domaine);
-      expect(url.searchParams.get('rru')).toBe('addevent');
-      expect(url.searchParams.get('startdt')).toBe(ev.agenda.debut);
-      expect(url.searchParams.get('subject')).toBe(ev.nomAffiche);
-    }
-    expect(apple.href).toBe('/api/public/evenements/pmd-2026-b0b3bb/agenda.ics');
-    expect(apple.telechargement).toBe(true);
+  it('Microsoft 365 : formulaire de création pré-rempli ; seuls Google et Microsoft 365 sont proposés', () => {
+    const liens = liensAgenda(ev);
+    expect(liens.map((o) => o.cle)).toEqual(['google', 'office']);
+    const url = new URL(parCle(liens).office.href);
+    expect(url.host).toBe('outlook.office.com');
+    expect(url.searchParams.get('rru')).toBe('addevent');
+    expect(url.searchParams.get('startdt')).toBe(ev.agenda.debut);
+    expect(url.searchParams.get('subject')).toBe(ev.nomAffiche);
   });
 
-  it('itinéraires en mode navigation vers le lieu, plan de l’organisateur si fourni', () => {
+  it('itinéraires en mode navigation : Google Maps et Plans uniquement', () => {
     const liens = parCle(liensItineraire(ev));
     const dest = encodeURIComponent(adresse(ev));
+    expect(Object.keys(liens)).toEqual(['google', 'apple']);
     expect(liens.google.href).toBe(`https://www.google.com/maps/dir/?api=1&destination=${dest}`);
-    expect(liens.waze.href).toContain('navigate=yes');
     expect(liens.apple.href).toBe(`https://maps.apple.com/?daddr=${dest}`);
-    expect(liens.carte.href).toBe(ev.lienCarte);
-    expect(parCle(liensItineraire({ ...ev, lienCarte: '' })).carte).toBeUndefined();
   });
 
-  it('propose Apple en premier sur iPhone', () => {
+  it('propose Plans en premier sur iPhone', () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' });
-    expect(liensAgenda(ev)[0].cle).toBe('apple');
     expect(liensItineraire(ev)[0].cle).toBe('apple');
   });
 });

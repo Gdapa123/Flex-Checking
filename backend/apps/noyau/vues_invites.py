@@ -8,13 +8,16 @@ from django.utils import timezone
 from django.utils.text import slugify
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.comptes.models import Role
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 
 from . import emails, exports, services, statuts
 from .exceptions import ErreurMetier
+from .exports import COMPTE_SUPPRIME
 from .filtres import PaginationInvites, compteurs_invites, filtrer_invites, filtrer_par_evenement, trier_invites
 from .journal import journaliser
 from .models import Appareil, Invite, ModeEmargement, Source, TypeEmail
@@ -195,6 +198,24 @@ class InviteDetailView(APIView):
             journaliser(request.user, "INVITE_MODIFICATION", invite, evenement=invite.evenement_id, champs=champs)
         return Response(InviteSerializer(invites_annotes(Invite.objects.filter(pk=pk)).get()).data)
 
+    @extend_schema(responses={204: None}, summary="Supprimer un invité (super admin)")
+    def delete(self, request, pk):
+        if request.user.role != Role.SUPER_ADMIN:
+            raise PermissionDenied("Suppression réservée au super admin.")
+        invite = invite_visible(request.user, pk)
+        supprimer_invites(request.user, invite.evenement, Invite.objects.filter(pk=invite.pk))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def supprimer_invites(auteur, evenement, qs):
+    """Suppression définitive (invités, emails, émargements). Le journal ne garde que le nombre."""
+    ids = list(qs.values_list("pk", flat=True))
+    with transaction.atomic():
+        Invite.objects.filter(pk__in=ids).delete()
+        if ids:
+            journaliser(auteur, "INVITE_SUPPRESSION", evenement, evenement=evenement.pk, nb=len(ids))
+    return len(ids)
+
 
 class RenvoiEmailSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=TypeEmail.choices, default=TypeEmail.INVITATION)
@@ -267,7 +288,9 @@ class HistoriqueView(APIView):
                     "type": "EMARGEMENT",
                     "date": em.date,
                     "libelle": "Statut « Présent »",
-                    "detail": " · ".join(filter(None, [em.get_mode_display(), em.poste, em.admin.nom])),
+                    "detail": " · ".join(
+                        filter(None, [em.get_mode_display(), em.poste, em.admin.nom if em.admin else COMPTE_SUPPRIME])
+                    ),
                 }
             )
             if em.annule_le:
@@ -297,7 +320,7 @@ class HistoriqueView(APIView):
         return Response(evts)
 
 
-ACTIONS = ("VALIDER", "RENVOYER", "EXPORTER")
+ACTIONS = ("VALIDER", "RENVOYER", "EXPORTER", "SUPPRIMER")
 
 
 class ActionGroupeeSerializer(serializers.Serializer):
@@ -351,6 +374,12 @@ class ActionsGroupeesView(APIView):
         qs = filtrer_invites(base, request.query_params) if d["tous"] else base.filter(pk__in=d.get("ids") or [])
         if d["action"] == "EXPORTER":
             return exporter(request, qs, d["format"], evenement)
+        if d["action"] == "SUPPRIMER":
+            # suppression définitive (données personnelles, emails, émargements) : réservée au super admin
+            if request.user.role != Role.SUPER_ADMIN:
+                raise PermissionDenied("Suppression réservée au super admin.")
+            n = supprimer_invites(request.user, evenement, qs)
+            return Response({"traites": n})
         ids = list(qs.values_list("pk", flat=True))
         if not ids:
             raise ErreurMetier("SELECTION_VIDE", "Aucun invité sélectionné.", status=400)

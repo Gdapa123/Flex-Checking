@@ -7,6 +7,7 @@ import ThemeScope from '../../theme/ThemeScope';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
 import Dialogue from '../../components/ui/Dialogue';
+import DialogueSuppression from '../../components/ui/DialogueSuppression';
 import Icon from '../../components/ui/Icon';
 import Interrupteur from '../../components/ui/Interrupteur';
 import Logo from '../../components/ui/Logo';
@@ -86,10 +87,11 @@ export default function Programmes() {
     setDialogue(null);
   };
 
-  const supprimer = async () => {
+  const supprimer = async (confirmation) => {
     try {
-      await api.delete(`/programmes/${d.id}/`);
+      await api.delete(`/programmes/${d.id}/`, { params: { confirmation } });
       await qc.invalidateQueries({ queryKey: ['programmes'] });
+      qc.invalidateQueries({ queryKey: ['evenements'] });
       toast(`Programme ${d.nom} supprimé`);
       naviguer('/super/programmes');
     } catch (e) {
@@ -338,7 +340,7 @@ export default function Programmes() {
                     {d.actif ? 'Désactiver le programme' : 'Réactiver le programme'}
                   </Bouton>
                 )}
-                {!nouveau && d.nbEvenements === 0 && (
+                {!nouveau && (
                   <Bouton
                     variante="fantome"
                     icone="trash"
@@ -374,25 +376,17 @@ export default function Programmes() {
         Les événements existants et leurs données restent consultables. Aucun nouvel événement ne pourra être créé avec
         ce programme tant qu’il est désactivé.
       </Dialogue>
-      <Dialogue
+      <DialogueSuppression
         ouvert={dialogue === 'supprimer'}
         titre={`Supprimer le programme ${d?.nom} ?`}
-        tonalite="erreur"
-        icone="trash"
+        nomAConfirmer={d?.nbEvenements ? d.nom : undefined}
+        onConfirmer={supprimer}
         onFermer={() => setDialogue(null)}
-        actions={
-          <>
-            <Bouton variante="mde-secondaire" onClick={() => setDialogue(null)} data-autofocus>
-              Annuler
-            </Bouton>
-            <Bouton variante="destructif" onClick={supprimer}>
-              Supprimer
-            </Bouton>
-          </>
-        }
       >
-        Ce programme n’a aucun événement. Sa suppression est définitive.
-      </Dialogue>
+        {d?.nbEvenements
+          ? `Suppression définitive du programme, de ses ${d.nbEvenements} cérémonie${d.nbEvenements > 1 ? 's' : ''} et de tous leurs invités. Pour simplement ne plus l’utiliser, préférez « Désactiver le programme ».`
+          : 'Ce programme n’a aucune cérémonie. Sa suppression est définitive.'}
+      </DialogueSuppression>
     </PageSuper>
   );
 }

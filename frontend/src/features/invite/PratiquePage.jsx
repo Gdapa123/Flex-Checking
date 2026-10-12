@@ -33,7 +33,7 @@ export default function PratiquePage() {
             id="agenda"
             icone="calendarPlus"
             titre="Ajouter à mon agenda"
-            texte="Avec un rappel 2 h avant l’accueil."
+            texte="Date, heure et lieu déjà remplis."
           >
             <ChoixAgenda ev={ev} />
           </Section>

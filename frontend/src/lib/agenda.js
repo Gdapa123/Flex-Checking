@@ -45,16 +45,15 @@ export function liensAgenda(ev) {
     details: description,
     location: lieu,
   });
-  const outlook = (domaine) =>
-    `https://${domaine}/calendar/0/deeplink/compose?${new URLSearchParams({
-      path: '/calendar/action/compose',
-      rru: 'addevent',
-      subject: ev.nomAffiche,
-      startdt: debut,
-      enddt: fin,
-      location: lieu,
-      body: description,
-    })}`;
+  const microsoft365 = `https://outlook.office.com/calendar/0/deeplink/compose?${new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: ev.nomAffiche,
+    startdt: debut,
+    enddt: fin,
+    location: lieu,
+    body: description,
+  })}`;
   return ordonner([
     {
       cle: 'google',
@@ -64,27 +63,11 @@ export function liensAgenda(ev) {
       href: `https://calendar.google.com/calendar/render?${google}`,
     },
     {
-      cle: 'apple',
-      nom: 'Apple Calendrier',
-      detail: 'iPhone, Mac · ou tout agenda (.ics)',
-      icone: 'download',
-      href: `/api/public/evenements/${ev.slug}/agenda.ics`,
-      telechargement: true,
-      apple: true,
-    },
-    {
-      cle: 'outlook',
-      nom: 'Outlook',
-      detail: 'Outlook.com, Hotmail, Live',
-      icone: 'calendar',
-      href: outlook('outlook.live.com'),
-    },
-    {
       cle: 'office',
       nom: 'Microsoft 365',
       detail: 'Outlook professionnel',
       icone: 'briefcase',
-      href: outlook('outlook.office.com'),
+      href: microsoft365,
     },
   ]);
 }
@@ -100,13 +83,6 @@ export function liensItineraire(ev) {
       href: `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
     },
     {
-      cle: 'waze',
-      nom: 'Waze',
-      detail: 'Navigation avec le trafic en direct',
-      icone: 'navigation',
-      href: `https://waze.com/ul?q=${destination}&navigate=yes`,
-    },
-    {
       cle: 'apple',
       nom: 'Plans',
       detail: 'iPhone, iPad, Mac',
@@ -114,16 +90,5 @@ export function liensItineraire(ev) {
       href: `https://maps.apple.com/?daddr=${destination}`,
       apple: true,
     },
-    ...(ev.lienCarte
-      ? [
-          {
-            cle: 'carte',
-            nom: 'Plan de l’organisateur',
-            detail: 'Emplacement exact du lieu',
-            icone: 'external',
-            href: ev.lienCarte,
-          },
-        ]
-      : []),
   ]);
 }

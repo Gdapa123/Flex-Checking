@@ -14,6 +14,8 @@ import { useToast } from '../../components/ui/Toasts';
 import { BadgeStatut, EtatEmail } from './badges';
 import PanneauAjout from './PanneauAjout';
 import PanneauInvite from './PanneauInvite';
+import DialogueSuppression from '../../components/ui/DialogueSuppression';
+import { useMoi } from '../auth/useMoi';
 
 const DEFAUTS = {
   q: '',
@@ -87,10 +89,15 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
   const [ajout, setAjout] = useState(false);
   const [exportEnCours, setExportEnCours] = useState('');
   const [actionEnCours, setActionEnCours] = useState('');
+  const [suppressionGroupee, setSuppressionGroupee] = useState(false);
+  const { data: moi } = useMoi();
+  const superAdmin = moi?.role === 'SUPER_ADMIN';
   const base = evenement ? `/evenements/${evenement.id}/invites/` : '/invites/';
 
   // recherche différée (300 ms) avant d'écrire dans l'URL
-  useEffect(() => setRecherche(f.q), [f.q]);
+  useEffect(() => {
+    setRecherche(f.q);
+  }, [f.q]);
   useEffect(() => {
     if (recherche === f.q) return undefined;
     const t = setTimeout(() => majUrl({ q: recherche, page: 1 }, { remplacer: true }), 300);
@@ -161,6 +168,8 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
             : 'Les invités sélectionnés sont déjà présents.',
           res.traites ? 'ok' : 'info',
         );
+      else if (action === 'SUPPRIMER')
+        toast(`${res.traites} ${res.traites > 1 ? 'invités supprimés' : 'invité supprimé'}.`);
       else toast(`Invitation renvoyée à ${res.traites} ${res.traites > 1 ? 'invités' : 'invité'}.`);
       setSelection(new Set());
       invalider();
@@ -549,6 +558,17 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               )}
               Exporter la sélection
             </button>
+            {superAdmin && (
+              <button
+                type="button"
+                onClick={() => setSuppressionGroupee(true)}
+                disabled={!!actionEnCours}
+                className="flex h-10 cursor-pointer items-center gap-2 rounded-bouton border border-erreur-bord bg-surface px-3.5 text-[14px] font-semibold text-erreur disabled:opacity-60"
+              >
+                {actionEnCours === 'SUPPRIMER' ? <Spinner taille={14} /> : <Icon nom="trash" className="text-[16px]" />}
+                Supprimer
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setSelection(new Set())}
@@ -802,6 +822,18 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
           univers={univers}
         />
       )}
+      <DialogueSuppression
+        univers={univers}
+        ouvert={suppressionGroupee}
+        titre={`Supprimer ${selection.size} ${selection.size > 1 ? 'invités' : 'invité'} ?`}
+        onConfirmer={async () => {
+          await actionGroupee('SUPPRIMER');
+          setSuppressionGroupee(false);
+        }}
+        onFermer={() => setSuppressionGroupee(false)}
+      >
+        Suppression définitive des invités sélectionnés, de leurs emails et de leur historique d’émargement.
+      </DialogueSuppression>
       {ajout && evenement && (
         <PanneauAjout
           evenement={evenement}

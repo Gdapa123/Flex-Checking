@@ -49,7 +49,7 @@ test('accessibilité des écrans principaux', async ({ page }) => {
     ['/super/analyses', 'Analyses'],
     ['/super/analyses?onglet=technique', 'Analyses'],
     ['/super/erreurs', 'Erreurs techniques'],
-    ['/admin', 'Choisissez une cérémonie'],
+    ['/admin', 'Vos cérémonies'],
     [`/admin/evenements/${encours.id}`, 'Tableau de bord'],
     [`/admin/evenements/${encours.id}/invites`, 'Gestion des invités'],
     ['/scan', 'Démarrer l’émargement'],

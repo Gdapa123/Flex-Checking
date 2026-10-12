@@ -114,7 +114,7 @@ class RecentsView(APIView):
                         "mode": e.mode,
                         "poste": e.poste,
                         "appareil": e.appareil,
-                        "admin": e.admin.nom,
+                        "admin": e.admin.nom if e.admin else "Compte supprimé",
                         "annule": e.annule_le is not None,
                     }
                     for e in qs

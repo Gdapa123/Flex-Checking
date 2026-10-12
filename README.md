@@ -281,10 +281,10 @@ Les contradictions entre le design et le cahier des charges sont listées dans `
   (`/super/erreurs`), en temps réel : regroupées par signature avec compteur d’occurrences, détail dépliable
   (trace, navigateur), « Résolue » / « Rouvrir » (une erreur résolue qui revient est rouverte), conservation 30 jours.
   Emails et téléphones sont masqués, les URL sont gardées sans paramètres ; signalement public limité à 30/min.
-- **Agenda et itinéraire** : « Ajouter à l’agenda » propose Google Agenda, Apple Calendrier (fichier .ics), Outlook et
-  Microsoft 365 (événement pré-rempli, rappel 2 h avant) ; « Enregistrer l’itinéraire » ouvre le trajet dans Google
-  Maps, Waze ou Plans, ou copie l’adresse. Apple est proposé en premier sur iPhone et iPad. Les boutons de l’email
-  mènent à la page publique `/i/<lien>/pratique` (mêmes choix) ; le fichier .ics reste joint à l’email.
+- **Agenda et itinéraire** : « Ajouter à l’agenda » propose Google Agenda et Microsoft 365 (événement pré-rempli :
+  date, heure, lieu) ; « Enregistrer l’itinéraire » ouvre le trajet dans Google Maps ou Plans, ou copie l’adresse
+  (Plans proposé en premier sur iPhone et iPad). Les boutons de l’email mènent à la page publique
+  `/i/<lien>/pratique` (mêmes choix) ; le fichier .ics reste joint à l’email (avec un rappel 2 h avant).
 - **Champs obligatoires** : tous les champs du formulaire d’inscription et de l’ajout manuel (entreprise et fonction
   comprises) sont obligatoires, côté client et côté API ; formulaire mobile compacté pour tenir sur un écran.
 - **Exports lourds** : le fichier produit par Celery est supprimé dès son téléchargement ; les fichiers oubliés sont purgés après 6 h.

@@ -3,6 +3,7 @@
 import secrets
 from datetime import time
 
+from django.db import transaction
 from django.db.models import Count, ProtectedError
 from django.http import HttpResponse
 from django.utils import timezone
@@ -15,7 +16,7 @@ from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.comptes.authentication import nouvelle_version_session
-from apps.comptes.models import Admin
+from apps.comptes.models import Admin, Role
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 
 from . import caches, exports
@@ -79,17 +80,36 @@ class ProgrammeViewSet(viewsets.ModelViewSet):
             couleurs = (prog.couleur_principale, prog.couleur_secondaire) != etat[1:]
             journaliser(self.request.user, "PROGRAMME_MODIFICATION", prog, couleurs=couleurs)
 
+    @extend_schema(parameters=[OpenApiParameter("confirmation", str)], responses={204: None})
     def destroy(self, request, *args, **kwargs):
+        """Un programme avec des cérémonies se supprime avec elles (invités compris) : il faut alors
+        retaper son nom (`?confirmation=`) pour confirmer."""
         prog = self.get_object()
-        try:
-            nom = prog.nom
-            prog.delete()
-        except ProtectedError as exc:
-            raise ErreurMetier(
-                "PROGRAMME_UTILISE", "Ce programme est lié à des événements : il peut seulement être désactivé."
-            ) from exc
-        journaliser(request.user, "PROGRAMME_SUPPRESSION", None, nom=nom)
+        nom = prog.nom
+        evenements = list(prog.evenements.all())
+        if evenements:
+            exiger_confirmation(request, nom)
+        with transaction.atomic():
+            nb_invites = Invite.objects.filter(evenement__in=evenements).count()
+            for ev in evenements:
+                ev.delete()
+            try:
+                prog.delete()
+            except ProtectedError as exc:  # pragma: no cover — course avec une création d'événement
+                raise ErreurMetier("PROGRAMME_UTILISE", "Ce programme vient de recevoir un événement.") from exc
+            journaliser(
+                request.user, "PROGRAMME_SUPPRESSION", None, nom=nom, evenements=len(evenements), invites=nb_invites
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def exiger_confirmation(request, nom):
+    """Suppression en cascade : le nom doit être retapé à l'identique (insensible à la casse)."""
+    saisi = (request.query_params.get("confirmation") or "").strip()
+    if saisi.casefold() != nom.strip().casefold():
+        raise ErreurMetier(
+            "CONFIRMATION_REQUISE", f"Pour confirmer, saisissez exactement « {nom} ».", status=400, attendu=nom
+        )
 
 
 # ---------------------------------------------------------------- Événements
@@ -121,13 +141,18 @@ class EvenementViewSet(viewsets.ModelViewSet):
             journaliser(self.request.user, "EVENEMENT_ADMINS", ev)
         journaliser(self.request.user, "EVENEMENT_MODIFICATION", ev)
 
+    @extend_schema(parameters=[OpenApiParameter("confirmation", str)], responses={204: None})
     def destroy(self, request, *args, **kwargs):
+        """Suppression définitive avec ses invités, emails et émargements : si la cérémonie a des invités,
+        il faut retaper son nom (`?confirmation=`) pour confirmer."""
         ev = self.get_object()
-        if ev.invites.exists():
-            raise ErreurMetier("EVENEMENT_UTILISE", "Impossible de supprimer un événement qui a des invités.")
         nom = ev.nom_affiche
-        ev.delete()
-        journaliser(request.user, "EVENEMENT_SUPPRESSION", None, nom=nom)
+        nb_invites = ev.invites.count()
+        if nb_invites:
+            exiger_confirmation(request, nom)
+        with transaction.atomic():
+            ev.delete()
+            journaliser(request.user, "EVENEMENT_SUPPRESSION", None, nom=nom, invites=nb_invites)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(request=None, responses={200: EvenementSerializer})
@@ -195,6 +220,7 @@ def mot_de_passe_temporaire():
 
 
 class AdminViewSet(
+    mixins.DestroyModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.CreateModelMixin,
@@ -231,6 +257,19 @@ class AdminViewSet(
             journaliser(self.request.user, "ADMIN_ACTIVATION" if admin.actif else "ADMIN_DESACTIVATION", admin)
         else:
             journaliser(self.request.user, "ADMIN_MODIFICATION", admin)
+
+    def perform_destroy(self, admin):
+        if admin.pk == self.request.user.pk:
+            raise ErreurMetier("COMPTE_COURANT", "Vous ne pouvez pas supprimer votre propre compte.")
+        if (
+            admin.role == Role.SUPER_ADMIN
+            and not Admin.objects.filter(role=Role.SUPER_ADMIN).exclude(pk=admin.pk).exists()
+        ):
+            raise ErreurMetier("DERNIER_SUPER_ADMIN", "Impossible de supprimer le dernier super admin.")
+        nom = admin.nom
+        with transaction.atomic():
+            admin.delete()  # ses émargements restent dans l'historique (« Compte supprimé »)
+            journaliser(self.request.user, "ADMIN_SUPPRESSION", None, nom=nom)
 
     @extend_schema(request=None, responses={200: None})
     @action(detail=True, methods=["post"], url_path="reinitialiser-mot-de-passe")

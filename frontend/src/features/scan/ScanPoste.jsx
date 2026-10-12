@@ -160,8 +160,12 @@ function Poste({ evenement }) {
     setTimeout(() => setToast((t) => (t === m ? null : t)), 2600);
   }, []);
 
-  useEffect(() => ecrireSession(CLE_HISTO(evenementId), historique.slice(0, 40)), [historique, evenementId]);
-  useEffect(() => ecrireSession(`fc-scan-dernier-${evenementId}`, dernier), [dernier, evenementId]);
+  useEffect(() => {
+    ecrireSession(CLE_HISTO(evenementId), historique.slice(0, 40));
+  }, [historique, evenementId]);
+  useEffect(() => {
+    ecrireSession(`fc-scan-dernier-${evenementId}`, dernier);
+  }, [dernier, evenementId]);
 
   // Compteurs temps réel (WebSocket ; interrogation toutes les 5 s en secours)
   const { data: recents } = useQuery({

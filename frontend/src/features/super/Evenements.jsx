@@ -7,6 +7,7 @@ import { telecharger } from '../../lib/telechargement';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
 import Dialogue from '../../components/ui/Dialogue';
+import DialogueSuppression from '../../components/ui/DialogueSuppression';
 import Icon from '../../components/ui/Icon';
 import Interrupteur from '../../components/ui/Interrupteur';
 import Squelette from '../../components/ui/Squelette';
@@ -52,6 +53,7 @@ export default function Evenements() {
   const [erreurs, setErreurs] = useState({});
   const [envoi, setEnvoi] = useState(false);
   const [regen, setRegen] = useState(false);
+  const [suppression, setSuppression] = useState(false);
   const [qrVersion, setQrVersion] = useState(0);
 
   useEffect(() => {
@@ -91,6 +93,18 @@ export default function Evenements() {
       else toast(messageErreur(e), 'erreur');
     } finally {
       setEnvoi(false);
+    }
+  };
+
+  const supprimer = async (confirmation) => {
+    try {
+      await api.delete(`/evenements/${d.id}/`, { params: { confirmation } });
+      await qc.invalidateQueries({ queryKey: ['evenements'] });
+      toast(`${courant.nomAffiche} supprimé`);
+      setSuppression(false);
+      naviguer('/super/evenements');
+    } catch (e) {
+      toast(messageErreur(e), 'erreur');
     }
   };
 
@@ -282,7 +296,14 @@ export default function Evenements() {
                 </div>
               </div>
             )}
-            <div className="flex justify-end gap-2 border-t border-mde-bordure pt-2">
+            <div className="flex flex-wrap justify-between gap-2 border-t border-mde-bordure pt-2">
+              {!nouveau ? (
+                <Bouton variante="fantome" icone="trash" className="!text-erreur" onClick={() => setSuppression(true)}>
+                  Supprimer l’événement
+                </Bouton>
+              ) : (
+                <span />
+              )}
               <Bouton variante="mde" chargement={envoi} onClick={enregistrer} className="px-[18px]">
                 {nouveau ? 'Créer l’événement' : 'Enregistrer l’événement'}
               </Bouton>
@@ -308,6 +329,17 @@ export default function Evenements() {
         L’ancien lien et l’ancien QR code d’inscription cesseront immédiatement de fonctionner. Les invités déjà
         inscrits ne sont pas concernés.
       </Dialogue>
+      <DialogueSuppression
+        ouvert={suppression}
+        titre={`Supprimer ${courant?.nomAffiche} ?`}
+        nomAConfirmer={courant?.nbInscrits ? courant.nomAffiche : undefined}
+        onConfirmer={supprimer}
+        onFermer={() => setSuppression(false)}
+      >
+        {courant?.nbInscrits
+          ? `Suppression définitive de la cérémonie et de ses ${courant.nbInscrits} invités (inscriptions, emails, émargements). Pensez à exporter la liste avant si besoin.`
+          : 'Cette cérémonie n’a aucun invité. Sa suppression est définitive.'}
+      </DialogueSuppression>
     </PageSuper>
   );
 }

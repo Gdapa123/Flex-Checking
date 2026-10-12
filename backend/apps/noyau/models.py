@@ -173,7 +173,8 @@ class Invite(models.Model):
 
 class Emargement(models.Model):
     invite = models.ForeignKey(Invite, on_delete=models.CASCADE, related_name="emargements")
-    admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    # compte supprimé : l'émargement reste dans l'historique (« Compte supprimé »)
+    admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
     mode = models.CharField(max_length=12, choices=ModeEmargement.choices)
     poste = models.CharField(max_length=60, blank=True)
     appareil = models.CharField(max_length=12, choices=Appareil.choices, default=Appareil.TELEPHONE)
@@ -181,7 +182,7 @@ class Emargement(models.Model):
     date_client = models.DateTimeField(null=True, blank=True)
     annule_le = models.DateTimeField(null=True, blank=True)
     annule_par = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     motif_annulation = models.CharField(max_length=200, blank=True)
 

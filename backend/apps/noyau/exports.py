@@ -20,6 +20,9 @@ def _dt(valeur):
     return timezone.localtime(valeur).strftime("%d/%m/%Y %H:%M")
 
 
+COMPTE_SUPPRIME = "Compte supprimé"
+
+
 def _texte(valeur):
     """Neutralise une saisie libre interprétable comme formule par Excel (injection CSV/XLSX)."""
     if isinstance(valeur, str) and valeur[:1] in ("=", "+", "-", "@", "\t", "\r"):
@@ -107,7 +110,7 @@ def lignes_presences(qs):
                 _mode(i.mode_emargement),
                 _texte(em.poste) if em else "",
                 em.get_appareil_display() if em else "",
-                _texte(em.admin.nom) if em else "",
+                (_texte(em.admin.nom) if em.admin else COMPTE_SUPPRIME) if em else "",
             ]
         )
     return entetes, lignes

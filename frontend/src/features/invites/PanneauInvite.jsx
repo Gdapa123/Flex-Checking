@@ -5,6 +5,8 @@ import { jourHeure, MODES } from '../../lib/format';
 import { useSecours } from '../../lib/tempsReel';
 import { erreursParChamp, formaterTelephone, schemaInvite } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
+import DialogueSuppression from '../../components/ui/DialogueSuppression';
+import { useMoi } from '../auth/useMoi';
 import Champ from '../../components/ui/Champ';
 import Icon from '../../components/ui/Icon';
 import PanneauLateral from '../../components/ui/PanneauLateral';
@@ -34,6 +36,9 @@ const TONS = {
 
 /** A5 · Fiche invité : actions, fiche (modifiable), QR et code, historique complet. */
 export default function PanneauInvite({ id, onFermer, basculerPresence, invalider }) {
+  const { data: moi } = useMoi();
+  const superAdmin = moi?.role === 'SUPER_ADMIN';
+  const [suppression, setSuppression] = useState(false);
   const toast = useToast();
   const [edition, setEdition] = useState(null);
   const [erreurs, setErreurs] = useState({});
@@ -161,6 +166,11 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
               >
                 Modifier
               </Bouton>
+              {superAdmin && (
+                <Bouton variante="fantome" icone="trash" className="!text-erreur" onClick={() => setSuppression(true)}>
+                  Supprimer
+                </Bouton>
+              )}
             </div>
             <section className="flex flex-col gap-3" aria-labelledby="t-fiche">
               <h3 id="t-fiche" className="m-0 text-[15px] font-semibold">
@@ -289,6 +299,26 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
           </div>
         )}
       </div>
+      <DialogueSuppression
+        univers="programme"
+        ouvert={suppression}
+        titre={`Supprimer ${inv?.nomComplet} ?`}
+        onConfirmer={async () => {
+          try {
+            await api.delete(`/invites/${id}/`);
+            toast(`${inv?.nomComplet} supprimé`);
+            setSuppression(false);
+            invalider();
+            onFermer();
+          } catch (e) {
+            toast(messageErreur(e), 'erreur');
+          }
+        }}
+        onFermer={() => setSuppression(false)}
+      >
+        Suppression définitive de l’invité, de ses emails et de son historique d’émargement. Son QR code et son code ne
+        fonctionneront plus.
+      </DialogueSuppression>
     </PanneauLateral>
   );
 }

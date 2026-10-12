@@ -46,7 +46,11 @@ function Contenu({ ev, conf, slug }) {
   const [feuille, setFeuille] = useState(null); // 'agenda' | 'itineraire'
   const fermer = useCallback(() => setFeuille(null), []);
   const { invite } = conf;
-  useEffect(() => window.scrollTo(0, 0), []);
+  // corps entre accolades : dans les navigateurs récents, scrollTo renvoie une promesse, que React prendrait pour
+  // une fonction de nettoyage (« destroy is not a function », page blanche)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const nomComplet = `${invite.civiliteAffichee} ${invite.prenom} ${invite.nom.toUpperCase()}`;
 
   const renvoyer = async () => {
@@ -155,7 +159,7 @@ function Contenu({ ev, conf, slug }) {
       <FeuilleChoix
         ouvert={feuille === 'agenda'}
         titre="Ajouter à mon agenda"
-        sousTitre="Choisissez votre agenda : l’événement s’y ajoute avec un rappel 2 h avant."
+        sousTitre="Choisissez votre agenda : l’événement s’y ajoute, déjà rempli (date, heure, lieu)."
         onFermer={fermer}
       >
         <ChoixAgenda ev={ev} onChoix={fermer} />

@@ -25,7 +25,7 @@ async function connexion(page) {
   await page.getByLabel('Email').fill(ADMIN.email);
   await page.getByLabel('Mot de passe').fill(ADMIN.mdp);
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page.getByRole('heading', { name: 'Choisissez une cérémonie' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Vos cérémonies' })).toBeVisible();
 }
 
 test('inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export', async ({ page, request }) => {
@@ -56,14 +56,14 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
   await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
   await expect(p.getByRole('heading', { name: 'Inscription réussie' })).toBeVisible();
   await expect(p.getByText('Inscrit·e')).toBeVisible();
-  // Ajouter à l'agenda : choix de l'agenda (Google, Apple, Outlook, Microsoft 365) avec liens pré-remplis
+  // Ajouter à l'agenda : Google Agenda ou Microsoft 365, avec liens pré-remplis
   await p.getByRole('button', { name: 'Ajouter à l’agenda' }).click();
   const feuille = p.getByRole('dialog', { name: 'Ajouter à mon agenda' });
   await expect(feuille.getByRole('link', { name: /Google Agenda/ })).toHaveAttribute('href', /calendar\.google\.com.*TEMPLATE/);
-  await expect(feuille.getByRole('link', { name: /Apple Calendrier/ })).toHaveAttribute('href', /agenda\.ics$/);
+  await expect(feuille.getByRole('link', { name: /Microsoft 365/ })).toHaveAttribute('href', /outlook\.office\.com/);
   await p.keyboard.press('Escape');
   await p.getByRole('button', { name: 'Enregistrer l’itinéraire' }).click();
-  await expect(p.getByRole('dialog', { name: 'Itinéraire' }).getByRole('link', { name: /Waze/ })).toBeVisible();
+  await expect(p.getByRole('dialog', { name: 'Itinéraire' }).getByRole('link', { name: /Google Maps/ })).toBeVisible();
   await p.keyboard.press('Escape');
   await invite.close();
 
