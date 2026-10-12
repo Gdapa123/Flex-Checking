@@ -3,10 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { heureTexte, nombre, prenomSeul, STATUTS_EVENEMENT } from '../../lib/format';
 import useTitre from '../../lib/useTitre';
+import { useSecours } from '../../lib/tempsReel';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Squelette from '../../components/ui/Squelette';
+import EtatErreur from '../../components/ui/EtatErreur';
 
 const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
@@ -33,11 +35,18 @@ export default function ChoixCeremonie() {
   const { data: moi } = useMoi();
   const deconnexion = useDeconnexion();
   const naviguer = useNavigate();
+  const secours = useSecours(30_000);
   const {
     data: evenements,
     isLoading,
     error,
-  } = useQuery({ queryKey: ['evenements'], queryFn: () => api.get('/evenements/') });
+    refetch,
+  } = useQuery({
+    queryKey: ['evenements'],
+    queryFn: () => api.get('/evenements/'),
+    // compteurs à jour même sans temps réel ; relance régulière tant que le chargement échoue
+    refetchInterval: (q) => (q.state.error ? 20_000 : secours),
+  });
   const tous = evenements || [];
   const aujourdhui = tous.filter((e) => e.statut === 'AUJOURDHUI');
   const aVenir = tous
@@ -61,7 +70,7 @@ export default function ChoixCeremonie() {
               {moi?.role === 'SUPER_ADMIN' && (
                 <Link
                   to="/super"
-                  className="flex h-10 items-center gap-2 rounded-bouton px-3 text-[14px] font-semibold text-mde-surface no-underline hover:bg-blanc-18 hover:text-mde-surface"
+                  className="flex h-11 items-center gap-2 rounded-bouton px-3 text-[14px] font-semibold text-mde-surface no-underline hover:bg-blanc-18 hover:text-mde-surface"
                 >
                   <Icon nom="shield" className="text-[16px]" />
                   Espace super admin
@@ -74,7 +83,7 @@ export default function ChoixCeremonie() {
                   naviguer('/connexion');
                 }}
                 aria-label="Se déconnecter"
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[19px] text-mde-surface hover:bg-blanc-18"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[19px] text-mde-surface hover:bg-blanc-18"
               >
                 <Icon nom="logout" />
               </button>
@@ -106,11 +115,12 @@ export default function ChoixCeremonie() {
 
       <main className="relative -mt-16 px-4 pb-14 sm:px-8">
         <div className="mx-auto flex max-w-[1120px] flex-col gap-10">
-          {error && (
-            <p role="alert" className="m-0 rounded-carte bg-surface p-5 text-erreur shadow-carte-mde">
-              Impossible de charger les cérémonies. Rechargez la page.
-            </p>
-          )}
+          {error &&
+            (evenements ? (
+              <EtatErreur compact erreur={error} onReessayer={() => refetch()} />
+            ) : (
+              <EtatErreur titre="Impossible de charger les cérémonies" erreur={error} onReessayer={() => refetch()} />
+            ))}
           {isLoading && <Squelette className="h-[260px] !rounded-carte" />}
           {evenements?.length === 0 && (
             <div className="flex flex-col items-center gap-3 rounded-carte border border-mde-bordure-carte bg-surface p-10 text-center shadow-carte-mde">
@@ -225,7 +235,7 @@ function CeremonieDuJour({ e }) {
               Tableau de bord
             </Link>
             <Link
-              to="/scan"
+              to={`/scan?evenement=${e.id}`}
               className="flex h-11 items-center gap-2 rounded-bouton border px-4 text-[15px] font-semibold no-underline hover:bg-noir-16"
               style={{ color: t.op, borderColor: 'currentColor' }}
             >

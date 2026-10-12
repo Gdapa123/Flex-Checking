@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import { ToastProvider } from '../../components/ui/Toasts';
@@ -18,12 +18,18 @@ const NAV = [
   ['', 'Vue globale', 'globe'],
   ['analyses', 'Analyses', 'chart'],
   ['programmes', 'Programmes', 'palette'],
-  ['evenements', 'Événements', 'calendar'],
+  ['evenements', 'Cérémonies', 'calendar'],
   ['invites', 'Invités', 'users'],
   ['admins', 'Comptes admins', 'shield'],
   ['parametres', 'Paramètres', 'sliders'],
   ['journal', 'Exports et journal', 'file'],
   ['erreurs', 'Erreurs', 'alertCircle'],
+];
+
+// les autres espaces auxquels le super admin a accès
+const AUTRES_ESPACES = [
+  ['/admin', 'Espace admin', 'grid'],
+  ['/scan', 'Scan', 'scan'],
 ];
 
 export default function SuperApp() {
@@ -42,6 +48,7 @@ export default function SuperApp() {
             <Route path="journal" element={<Journal />} />
             <Route path="erreurs" element={<Erreurs />} />
             <Route path="analyses" element={<Analyses />} />
+            <Route path="*" element={<PageIntrouvable />} />
           </Routes>
         </div>
       </ToastProvider>
@@ -49,10 +56,31 @@ export default function SuperApp() {
   );
 }
 
-function BarreLaterale() {
-  const { data: moi } = useMoi();
+function PageIntrouvable() {
+  return (
+    <PageSuper titre="Page introuvable">
+      <div className="flex flex-col items-start gap-3 rounded-carte border border-mde-bordure-carte bg-surface p-6 shadow-carte-mde">
+        <p className="m-0 text-[16px] text-mde-texte-2">Cette page n’existe pas dans l’espace super admin.</p>
+        <Link to="/super" className="inline-flex min-h-11 items-center font-semibold">
+          Retour à la vue globale
+        </Link>
+      </div>
+    </PageSuper>
+  );
+}
+
+function useSeDeconnecter() {
   const deconnexion = useDeconnexion();
   const naviguer = useNavigate();
+  return async () => {
+    await deconnexion();
+    naviguer('/super/connexion');
+  };
+}
+
+function BarreLaterale() {
+  const { data: moi } = useMoi();
+  const seDeconnecter = useSeDeconnecter();
   const aTraiter = useErreursATraiter();
   return (
     <aside className="hidden w-[248px] flex-none flex-col gap-6 border-r border-mde-bordure bg-surface px-4 py-5 min-[961px]:flex">
@@ -90,6 +118,19 @@ function BarreLaterale() {
           </NavLink>
         ))}
       </nav>
+      <nav aria-label="Autres espaces" className="flex flex-col gap-1 border-t border-mde-bordure pt-4">
+        {AUTRES_ESPACES.map(([to, label, icone]) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex h-11 items-center gap-3 rounded-bouton px-3 text-[15px] font-medium text-mde-texte no-underline transition-colors hover:bg-mde-survol hover:text-mde-texte"
+          >
+            <Icon nom={icone} className="text-[20px] text-mde-texte-2" />
+            <span className="flex-1">{label}</span>
+            <Icon nom="chevR" className="text-[16px] text-mde-texte-2" />
+          </Link>
+        ))}
+      </nav>
       <div className="mt-auto flex items-center gap-2.5 border-t border-mde-bordure pt-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mde-creme text-[14px] font-semibold">
           {moi?.initiales}
@@ -101,10 +142,7 @@ function BarreLaterale() {
         <button
           type="button"
           aria-label="Se déconnecter"
-          onClick={async () => {
-            await deconnexion();
-            naviguer('/super/connexion');
-          }}
+          onClick={seDeconnecter}
           className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[20px] text-mde-texte-2 hover:bg-mde-survol"
         >
           <Icon nom="logout" />
@@ -117,6 +155,7 @@ function BarreLaterale() {
 /** En-tête MDE + contenu qui chevauche (commun à tous les écrans du super admin). */
 export function PageSuper({ titre, action, onAction, children }) {
   useTitre(`${titre} · Super admin`);
+  const seDeconnecter = useSeDeconnecter();
   return (
     <main className="flex min-w-0 flex-1 flex-col">
       <header className="entete-mde hachures flex flex-wrap items-end justify-between gap-4 px-4 pb-[76px] pt-7 sm:px-8">
@@ -135,6 +174,7 @@ export function PageSuper({ titre, action, onAction, children }) {
             {action}
           </button>
         )}
+        {/* sous 961 px la barre latérale est masquée : navigation, autres espaces et déconnexion passent ici */}
         <nav aria-label="Sections" className="relative flex w-full flex-wrap gap-1 min-[961px]:hidden">
           {NAV.map(([to, label]) => (
             <NavLink
@@ -142,12 +182,30 @@ export function PageSuper({ titre, action, onAction, children }) {
               to={`/super${to ? `/${to}` : ''}`}
               end={!to}
               className={({ isActive }) =>
-                `rounded-bouton px-2.5 py-1.5 text-[13px] font-semibold no-underline ${isActive ? 'bg-mde-surface text-mde-texte' : 'text-mde-surface hover:text-mde-surface'}`
+                `inline-flex min-h-11 items-center rounded-bouton px-2.5 text-[13px] font-semibold no-underline ${isActive ? 'bg-mde-surface text-mde-texte' : 'text-mde-surface hover:text-mde-surface'}`
               }
             >
               {label}
             </NavLink>
           ))}
+          {AUTRES_ESPACES.map(([to, label, icone]) => (
+            <Link
+              key={to}
+              to={to}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-bouton px-2.5 text-[13px] font-semibold text-mde-surface no-underline hover:text-mde-surface"
+            >
+              <Icon nom={icone} className="text-[15px]" />
+              {label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={seDeconnecter}
+            className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-bouton border-0 bg-transparent px-2.5 text-[13px] font-semibold text-mde-surface"
+          >
+            <Icon nom="logout" className="text-[15px]" />
+            Se déconnecter
+          </button>
         </nav>
       </header>
       <div className="relative -mt-12 flex min-w-0 flex-col gap-5 px-4 pb-10 sm:px-8 [&>*]:min-w-0">{children}</div>

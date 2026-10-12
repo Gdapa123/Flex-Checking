@@ -12,10 +12,11 @@ export function ToastProvider({ children, position = 'droite', univers = 'progra
   const n = useRef(0);
   const fermer = useCallback((id) => setListe((l) => l.filter((t) => t.id !== id)), []);
   const toast = useCallback(
-    (msg, type = 'ok', duree = 4200) => {
+    (msg, type = 'ok', duree) => {
       const id = ++n.current;
       setListe((l) => [...l, { id, msg, type }].slice(-3));
-      setTimeout(() => fermer(id), duree);
+      // une erreur reste lisible plus longtemps (message parfois long, action à entreprendre)
+      setTimeout(() => fermer(id), duree ?? (type === 'erreur' ? 9000 : 4200));
     },
     [fermer],
   );
@@ -47,7 +48,7 @@ export function ToastProvider({ children, position = 'droite', univers = 'progra
                 type="button"
                 onClick={() => fermer(t.id)}
                 aria-label="Fermer"
-                className="-mr-1 -mt-[3px] flex h-7 w-7 cursor-pointer items-center justify-center border-0 bg-transparent text-[16px] text-g-texte-2"
+                className="-my-2.5 -mr-2.5 flex h-11 w-11 flex-none cursor-pointer items-center justify-center border-0 bg-transparent text-[16px] text-g-texte-2"
               >
                 <Icon nom="x" />
               </button>

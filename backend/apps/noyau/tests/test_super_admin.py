@@ -146,3 +146,24 @@ def test_changement_mot_de_passe(admin):
 def test_schema_openapi(client_sa):
     r = client_sa.get("/api/schema/")
     assert r.status_code == 200 and b"emargement" in r.content
+
+
+def test_ancien_lien_reste_lisible_apres_regeneration(client_sa, evenement):
+    from rest_framework.test import APIClient
+
+    ancien = evenement.slug_inscription
+    nouveau = client_sa.post(f"/api/evenements/{evenement.pk}/regenerer-slug/").json()["slugInscription"]
+    public = APIClient()
+    r = public.get(f"/api/public/evenements/{ancien}/")
+    assert r.status_code == 200
+    # l'ancien lien ne révèle jamais le nouveau et n'accepte plus d'inscriptions
+    assert r.json()["slug"] == ancien and nouveau not in r.content.decode() and r.json()["etat"] == "FERME"
+    r = public.get(f"/api/public/evenements/{ancien}/agenda.ics")
+    assert r.status_code == 200 and nouveau not in r.content.decode()
+    r = public.post(
+        f"/api/public/evenements/{ancien}/inscription/",
+        {"civilite": "MME", "prenom": "A", "nom": "B", "email": "a.b@exemple.ci", "telephone": "0700000000"},
+        format="json",
+    )
+    assert r.status_code == 404
+    assert public.get(f"/api/public/evenements/{nouveau}/").json()["slug"] == nouveau

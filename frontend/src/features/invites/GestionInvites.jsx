@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { api, messageErreur } from '../../lib/api';
-import { heure, jour, MODES } from '../../lib/format';
+import { heure, jour, MODES, nombre } from '../../lib/format';
 import { marquerMaj, useSecours } from '../../lib/tempsReel';
 import { suivreTache, telecharger } from '../../lib/telechargement';
 import useUrlState from '../../lib/useUrlState';
@@ -15,6 +15,9 @@ import { BadgeStatut, EtatEmail } from './badges';
 import PanneauAjout from './PanneauAjout';
 import PanneauInvite from './PanneauInvite';
 import DialogueSuppression from '../../components/ui/DialogueSuppression';
+import Dialogue from '../../components/ui/Dialogue';
+import Bouton from '../../components/ui/Bouton';
+import EtatErreur from '../../components/ui/EtatErreur';
 import { useMoi } from '../auth/useMoi';
 
 const DEFAUTS = {
@@ -90,6 +93,8 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
   const [exportEnCours, setExportEnCours] = useState('');
   const [actionEnCours, setActionEnCours] = useState('');
   const [suppressionGroupee, setSuppressionGroupee] = useState(false);
+  const [confirmationGroupee, setConfirmationGroupee] = useState('');
+  const [aAnnuler, setAAnnuler] = useState(null);
   const { data: moi } = useMoi();
   const superAdmin = moi?.role === 'SUPER_ADMIN';
   const base = evenement ? `/evenements/${evenement.id}/invites/` : '/invites/';
@@ -104,22 +109,31 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
     return () => clearTimeout(t);
   }, [recherche, f.q, majUrl]);
 
+  const magazineActif = evenement ? evenement.magazineActif !== false : true;
+  // filtre magazine masqué quand l'email n°2 est désactivé : une valeur restée dans l'URL ne doit pas filtrer
+  const filtreMagazine = magazineActif ? f.magazine : '';
   const filtres = {
     q: f.q,
     statut: f.statut,
     mode: f.mode,
-    magazine: f.magazine,
+    magazine: filtreMagazine,
     email1: f.email1,
     evenement: f.evenement,
     programme: f.programme,
   };
   const params = { ...filtres, tri: f.tri, page: f.page, taille: f.taille };
+  // la sélection ne porte que sur les lignes visibles : on la vide quand la liste affichée change
+  const cleListe = JSON.stringify([filtres, f.page, f.taille]);
+  useEffect(() => {
+    setSelection(new Set());
+  }, [cleListe]);
   const secours = useSecours(5000);
-  const { data, isLoading, isFetching, error, dataUpdatedAt } = useQuery({
+  const { data, isLoading, isFetching, error, dataUpdatedAt, refetch } = useQuery({
     queryKey: ['invites', base, params],
     queryFn: () => api.get(base, params),
     placeholderData: keepPreviousData,
-    refetchInterval: secours,
+    // en cas d'échec, relance périodique même si le temps réel est connecté
+    refetchInterval: (q) => (q.state.error ? 15_000 : secours),
   });
   useEffect(() => {
     if (dataUpdatedAt) marquerMaj(dataUpdatedAt);
@@ -130,14 +144,18 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
 
   const lignes = useMemo(() => data?.resultats || [], [data]);
   const c = data?.compteurs || { tous: 0, inscrits: 0, presents: 0, aRenvoyer: 0 };
-  const filtresActifs = !!(f.q || f.statut || f.mode || f.magazine || f.email1 || f.evenement || f.programme);
+  const filtresActifs = !!(f.q || f.statut || f.mode || filtreMagazine || f.email1 || f.evenement || f.programme);
   const definirFiltre = (o) => majUrl({ ...o, page: 1 });
+  // filet de sécurité si le temps réel est coupé : compteurs des listes, en-tête, statistiques et derniers passages
   const invalider = () => {
-    qc.invalidateQueries({ queryKey: ['invites'] });
-    qc.invalidateQueries({ queryKey: ['statistiques'] });
+    ['invites', 'invite', 'statistiques', 'evenements', 'evenement', 'recents', 'historique'].forEach((cle) =>
+      qc.invalidateQueries({ queryKey: [cle] }),
+    );
   };
 
   // ------------------------------------------------------------------ actions
+  /** Valider part directement ; annuler une présence demande confirmation (comme au scan). */
+  const demanderPresence = (inv) => (inv.statut === 'INSCRIT' ? basculerPresence(inv) : setAAnnuler(inv));
   const basculerPresence = async (inv) => {
     try {
       if (inv.statut === 'INSCRIT') {
@@ -164,13 +182,13 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
       if (action === 'VALIDER')
         toast(
           res.traites
-            ? `${res.traites} ${res.traites > 1 ? 'présences validées' : 'présence validée'}. Emails n°2 envoyés.`
+            ? `${nombre(res.traites)} ${res.traites > 1 ? 'présences validées' : 'présence validée'}.${magazineActif ? ' Emails n°2 envoyés.' : ''}`
             : 'Les invités sélectionnés sont déjà présents.',
           res.traites ? 'ok' : 'info',
         );
       else if (action === 'SUPPRIMER')
-        toast(`${res.traites} ${res.traites > 1 ? 'invités supprimés' : 'invité supprimé'}.`);
-      else toast(`Invitation renvoyée à ${res.traites} ${res.traites > 1 ? 'invités' : 'invité'}.`);
+        toast(`${nombre(res.traites)} ${res.traites > 1 ? 'invités supprimés' : 'invité supprimé'}.`);
+      else toast(`Invitation renvoyée à ${nombre(res.traites)} ${res.traites > 1 ? 'invités' : 'invité'}.`);
       setSelection(new Set());
       invalider();
     } catch (e) {
@@ -223,8 +241,18 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
         header: 'Invité',
         tri: 'nom',
         cell: ({ row: { original: r } }) => (
-          <div className="flex min-w-[200px] flex-col">
-            <span className="font-semibold">{r.nomComplet}</span>
+          <div className="flex min-w-[200px] flex-col items-start">
+            {/* bouton focalisable : la fiche s'ouvre aussi au clavier (le clic sur la ligne reste un raccourci) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                majUrl({ fiche: r.id });
+              }}
+              className="cursor-pointer border-0 bg-transparent p-0 text-left text-[15px] font-semibold text-inherit hover:underline hover:underline-offset-[3px]"
+            >
+              {r.nomComplet}
+            </button>
             <span className="text-[13px] text-texte-2">{r.email}</span>
           </div>
         ),
@@ -291,8 +319,8 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
         cell: ({ row: { original: r } }) => <EtatEmail statut={r.email2} magazine />,
       },
     ];
-    return cols;
-  }, [evenement]);
+    return magazineActif ? cols : cols.filter((c) => c.id !== 'email2');
+  }, [evenement, magazineActif, majUrl]);
 
   const table = useReactTable({
     data: lignes,
@@ -379,7 +407,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                 {k.label}
               </span>
               <span className="text-[32px] font-bold leading-[1.1] tracking-[-0.025em] tabular-nums">
-                {data ? k.valeur : '–'}
+                {data ? nombre(k.valeur) : '–'}
               </span>
             </button>
           );
@@ -474,16 +502,18 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               </option>
             ))}
           </select>
-          <select
-            aria-label="Magazine"
-            value={f.magazine}
-            onChange={(e) => definirFiltre({ magazine: e.target.value })}
-            className={select}
-          >
-            <option value="">Magazine : tous</option>
-            <option value="ENVOYE">Email 2 envoyé</option>
-            <option value="NON">Email 2 non envoyé</option>
-          </select>
+          {magazineActif && (
+            <select
+              aria-label="Magazine"
+              value={f.magazine}
+              onChange={(e) => definirFiltre({ magazine: e.target.value })}
+              className={select}
+            >
+              <option value="">Magazine : tous</option>
+              <option value="ENVOYE">Email 2 envoyé</option>
+              <option value="NON">Email 2 non envoyé</option>
+            </select>
+          )}
           {filtresActifs && (
             <button
               type="button"
@@ -529,18 +559,18 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
             </span>
             <button
               type="button"
-              onClick={() => actionGroupee('VALIDER')}
+              onClick={() => setConfirmationGroupee('VALIDER')}
               disabled={!!actionEnCours}
-              className="btn-principal flex h-10 cursor-pointer items-center gap-2 rounded-bouton border-0 px-3.5 text-[14px] font-semibold disabled:opacity-60"
+              className="btn-principal flex h-11 cursor-pointer items-center gap-2 rounded-bouton border-0 px-3.5 text-[14px] font-semibold disabled:opacity-60"
             >
               {actionEnCours === 'VALIDER' ? <Spinner taille={14} /> : <Icon nom="userCheck" className="text-[16px]" />}
               Valider la présence
             </button>
             <button
               type="button"
-              onClick={() => actionGroupee('RENVOYER')}
+              onClick={() => setConfirmationGroupee('RENVOYER')}
               disabled={!!actionEnCours}
-              className="flex h-10 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
+              className="flex h-11 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
             >
               {actionEnCours === 'RENVOYER' ? <Spinner taille={14} /> : <Icon nom="send" className="text-[16px]" />}
               Renvoyer l’invitation
@@ -549,7 +579,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               type="button"
               onClick={() => exporter('xlsx', true)}
               disabled={!!exportEnCours}
-              className="flex h-10 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
+              className="flex h-11 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-3.5 text-[14px] font-semibold text-texte disabled:opacity-60"
             >
               {exportEnCours === 'selection' ? (
                 <Spinner taille={14} />
@@ -563,7 +593,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                 type="button"
                 onClick={() => setSuppressionGroupee(true)}
                 disabled={!!actionEnCours}
-                className="flex h-10 cursor-pointer items-center gap-2 rounded-bouton border border-erreur-bord bg-surface px-3.5 text-[14px] font-semibold text-erreur disabled:opacity-60"
+                className="flex h-11 cursor-pointer items-center gap-2 rounded-bouton border border-erreur-bord bg-surface px-3.5 text-[14px] font-semibold text-erreur disabled:opacity-60"
               >
                 {actionEnCours === 'SUPPRIMER' ? <Spinner taille={14} /> : <Icon nom="trash" className="text-[16px]" />}
                 Supprimer
@@ -572,7 +602,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
             <button
               type="button"
               onClick={() => setSelection(new Set())}
-              className="ml-auto h-10 cursor-pointer border-0 bg-transparent px-3 text-[14px] font-semibold text-texte underline underline-offset-[3px]"
+              className="ml-auto h-11 cursor-pointer border-0 bg-transparent px-3 text-[14px] font-semibold text-texte underline underline-offset-[3px]"
             >
               Désélectionner
             </button>
@@ -660,7 +690,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                       className="border-t border-bordure-ligne py-2 pl-3 pr-4 text-right"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <BoutonPresence invite={r} onClick={() => basculerPresence(r)} court />
+                      <BoutonPresence invite={r} onClick={() => demanderPresence(r)} court />
                     </td>
                   </tr>
                 );
@@ -683,13 +713,15 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               className={`flex items-start gap-3 border-b border-bordure-ligne p-4 ${selection.has(r.id) ? 'bg-ps' : ''}`}
             >
               {selectionnable && (
-                <input
-                  type="checkbox"
-                  aria-label={`Sélectionner ${r.nomComplet}`}
-                  checked={selection.has(r.id)}
-                  onChange={() => basculer(r.id)}
-                  className="mt-1 h-[18px] w-[18px] cursor-pointer accent-p"
-                />
+                <label className="-ml-3 -mt-3 flex h-11 w-11 flex-none cursor-pointer items-center justify-center">
+                  <input
+                    type="checkbox"
+                    aria-label={`Sélectionner ${r.nomComplet}`}
+                    checked={selection.has(r.id)}
+                    onChange={() => basculer(r.id)}
+                    className="h-[18px] w-[18px] cursor-pointer accent-p"
+                  />
+                </label>
               )}
               <button
                 type="button"
@@ -710,12 +742,21 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                   {!evenement && <span className="text-[13px] text-texte-2">{r.evenementNom}</span>}
                 </span>
               </button>
-              <BoutonPresence invite={r} onClick={() => basculerPresence(r)} court />
+              <BoutonPresence invite={r} onClick={() => demanderPresence(r)} court />
             </li>
           ))}
         </ul>
 
-        {!isLoading && lignes.length === 0 && (
+        {error && error.status !== 404 && (
+          <div className={data ? 'border-t border-bordure px-4 py-3' : 'border-t border-bordure p-4'}>
+            {data ? (
+              <EtatErreur compact erreur={error} onReessayer={() => refetch()} />
+            ) : (
+              <EtatErreur titre="Liste des invités indisponible" erreur={error} onReessayer={() => refetch()} />
+            )}
+          </div>
+        )}
+        {!isLoading && !(error && !data) && lignes.length === 0 && (
           <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-[12px] bg-subtil text-[26px]">
               <Icon nom={filtresActifs ? 'search' : 'users'} />
@@ -741,23 +782,18 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
             )}
           </div>
         )}
-        {error && error.status !== 404 && (
-          <p role="alert" className="m-0 border-t border-bordure px-4 py-3 text-[14px] text-erreur">
-            Mise à jour impossible. Nouvelle tentative automatique…
-          </p>
-        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-bordure px-4 py-3">
           <span className="flex items-center gap-3 text-[14px] tabular-nums text-texte-2">
             {data?.total
-              ? `${(page - 1) * taille + 1}–${Math.min(data.total, page * taille)} sur ${data.total} invités`
+              ? `${nombre((page - 1) * taille + 1)}–${nombre(Math.min(data.total, page * taille))} sur ${nombre(data.total)} invités`
               : '0 invité'}
             <label className="flex items-center gap-2">
               <span className="sr-only">Lignes par page</span>
               <select
                 value={f.taille}
                 onChange={(e) => majUrl({ taille: e.target.value, page: 1 })}
-                className="h-9 rounded-petit border border-bordure bg-surface px-2 text-[14px] text-texte"
+                className="h-11 rounded-petit border border-bordure bg-surface px-2 text-[14px] text-texte"
               >
                 {[25, 50, 100].map((n) => (
                   <option key={n} value={n}>
@@ -773,7 +809,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               aria-label="Page précédente"
               disabled={page <= 1}
               onClick={() => majUrl({ page: page - 1 })}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
             >
               <Icon nom="chevL" />
             </button>
@@ -788,7 +824,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                   type="button"
                   aria-current={p === page ? 'page' : undefined}
                   onClick={() => majUrl({ page: p })}
-                  className={`h-10 min-w-10 cursor-pointer rounded-bouton border text-[14px] font-semibold tabular-nums ${
+                  className={`h-11 min-w-11 cursor-pointer rounded-bouton border text-[14px] font-semibold tabular-nums ${
                     p === page
                       ? mde
                         ? 'border-mde-bordeaux bg-mde-bordeaux text-blanc'
@@ -805,7 +841,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               aria-label="Page suivante"
               disabled={page >= pages}
               onClick={() => majUrl({ page: page + 1 })}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-bordure bg-surface text-[18px] text-texte disabled:opacity-40"
             >
               <Icon nom="chevR" />
             </button>
@@ -820,8 +856,56 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
           basculerPresence={basculerPresence}
           invalider={invalider}
           univers={univers}
+          magazineActif={magazineActif}
         />
       )}
+      <DialogueAnnulation
+        invite={aAnnuler}
+        univers={univers}
+        onFermer={() => setAAnnuler(null)}
+        onConfirmer={async () => {
+          const inv = aAnnuler;
+          setAAnnuler(null);
+          await basculerPresence(inv);
+        }}
+      />
+      <Dialogue
+        univers={univers}
+        ouvert={!!confirmationGroupee}
+        tonalite="info"
+        icone={confirmationGroupee === 'VALIDER' ? 'userCheck' : 'send'}
+        titre={
+          confirmationGroupee === 'VALIDER'
+            ? `Valider ${selection.size > 1 ? `${nombre(selection.size)} présences` : 'la présence'} ?`
+            : `Renvoyer ${selection.size > 1 ? `${nombre(selection.size)} invitations` : 'l’invitation'} ?`
+        }
+        onFermer={() => setConfirmationGroupee('')}
+        actions={
+          <>
+            <Bouton
+              variante={mde ? 'mde-secondaire' : 'secondaire'}
+              onClick={() => setConfirmationGroupee('')}
+              data-autofocus
+            >
+              Annuler
+            </Bouton>
+            <Bouton
+              variante={mde ? 'mde' : 'principal'}
+              onClick={() => {
+                const action = confirmationGroupee;
+                setConfirmationGroupee('');
+                actionGroupee(action);
+              }}
+            >
+              Confirmer
+            </Bouton>
+          </>
+        }
+      >
+        {confirmationGroupee === 'VALIDER'
+          ? `Les invités sélectionnés passeront au statut « Présent »${magazineActif ? ' et recevront l’email n°2 (magazine)' : ''}.`
+          : `Un nouvel email d’invitation (QR code et code à 4 chiffres) sera envoyé à ${selection.size > 1 ? `ces ${nombre(selection.size)} invités` : 'cet invité'}.`}
+      </Dialogue>
       <DialogueSuppression
         univers={univers}
         ouvert={suppressionGroupee}
@@ -860,11 +944,36 @@ export function BoutonPresence({ invite, onClick, court = false, grand = false }
       type="button"
       onClick={onClick}
       className={`inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-bouton border bg-surface font-semibold transition-transform active:scale-[.96] ${
-        grand ? 'h-11 rounded-bouton px-4 text-[15px]' : 'h-9 px-3 text-[13px]'
+        grand ? 'h-11 rounded-bouton px-4 text-[15px]' : 'h-11 px-3 text-[13px]'
       } ${inscrit ? 'border-champ text-texte' : 'border-erreur-bord text-erreur'}`}
     >
       {grand && <Icon nom={inscrit ? 'userCheck' : 'undo'} className="text-[18px]" />}
       {label}
     </button>
+  );
+}
+
+/** Confirmation avant d'annuler une présence (même garde-fou qu'au scan). */
+export function DialogueAnnulation({ invite, univers = 'programme', onFermer, onConfirmer }) {
+  return (
+    <Dialogue
+      univers={univers}
+      ouvert={!!invite}
+      titre={`Annuler la présence de ${invite?.nomComplet ?? ''} ?`}
+      onFermer={onFermer}
+      icone="undo"
+      actions={
+        <>
+          <Bouton variante={univers === 'mde' ? 'mde-secondaire' : 'secondaire'} onClick={onFermer} data-autofocus>
+            Garder présent
+          </Bouton>
+          <Bouton variante="destructif" onClick={onConfirmer}>
+            Annuler la présence
+          </Bouton>
+        </>
+      }
+    >
+      L’invité repasse au statut « Inscrit ». L’annulation est enregistrée dans le journal.
+    </Dialogue>
   );
 }

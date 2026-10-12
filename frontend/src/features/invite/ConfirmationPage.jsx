@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { dateLongue, heureTexte, INSCRIT_E } from '../../lib/format';
@@ -7,9 +7,10 @@ import ThemeScope from '../../theme/ThemeScope';
 import Badge from '../../components/ui/Badge';
 import Icon from '../../components/ui/Icon';
 import { ToastProvider, useToast } from '../../components/ui/Toasts';
+import EtatErreur from '../../components/ui/EtatErreur';
 import LienInvalide from './LienInvalide';
 import { CLE_CONFIRMATION, EnteteInvite, useEvenementPublic } from './commun';
-import { ChoixAgenda, ChoixItineraire, FeuilleChoix } from './pratique';
+import { InfosPratiques } from './pratique';
 
 function lireConfirmation(slug, etat) {
   if (etat?.invite) return etat;
@@ -24,11 +25,22 @@ function lireConfirmation(slug, etat) {
 export default function ConfirmationPage() {
   const { slug } = useParams();
   const { state } = useLocation();
-  const { data: ev, error } = useEvenementPublic(slug);
+  const { data: ev, error, refetch } = useEvenementPublic(slug);
   const conf = lireConfirmation(slug, state);
   useTitre('Inscription réussie');
   if (error?.status === 404) return <LienInvalide />;
   if (!conf) return <Navigate to={`/i/${slug}`} replace />;
+  if (!ev && error)
+    // l'inscription est déjà enregistrée : on le dit, même si la page ne peut pas se charger
+    return (
+      <EtatErreur
+        pleinePage
+        titre="Inscription enregistrée"
+        texte="Votre invitation vous est envoyée par email. Cette page n’a pas pu s’afficher :"
+        erreur={error}
+        onReessayer={() => refetch()}
+      />
+    );
   if (!ev) return <div className="min-h-[100dvh] bg-fond" aria-busy="true" />;
   return (
     <ThemeScope tokens={ev.tokens} className="min-h-[100dvh] bg-fond">
@@ -43,8 +55,6 @@ function Contenu({ ev, conf, slug }) {
   const toast = useToast();
   const [renvoye, setRenvoye] = useState(false);
   const [envoi, setEnvoi] = useState(false);
-  const [feuille, setFeuille] = useState(null); // 'agenda' | 'itineraire'
-  const fermer = useCallback(() => setFeuille(null), []);
   const { invite } = conf;
   // corps entre accolades : dans les navigateurs récents, scrollTo renvoie une promesse, que React prendrait pour
   // une fonction de nettoyage (« destroy is not a function », page blanche)
@@ -121,27 +131,10 @@ function Contenu({ ev, conf, slug }) {
             </p>
           </div>
         </section>
-        <div
-          className="grid animate-in-up gap-3 [animation-delay:.15s]"
-          style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,200px),1fr))' }}
-        >
-          <button
-            type="button"
-            onClick={() => setFeuille('agenda')}
-            className="btn-principal flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-bouton border-0 text-[16px] font-semibold active:scale-[.98]"
-          >
-            <Icon nom="calendarPlus" className="text-[20px]" />
-            Ajouter à l’agenda
-          </button>
-          <button
-            type="button"
-            onClick={() => setFeuille('itineraire')}
-            className="flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-bouton border border-champ bg-surface text-[16px] font-semibold text-texte shadow-champ transition-colors hover:bg-fond active:scale-[.98]"
-          >
-            <Icon nom="navigation" className="text-[20px]" />
-            Enregistrer l’itinéraire
-          </button>
-        </div>
+        <h2 className="m-0 mt-2 px-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-texte-2">
+          Infos pratiques
+        </h2>
+        <InfosPratiques ev={ev} />
         <div className="flex justify-center">
           <button
             type="button"
@@ -156,22 +149,6 @@ function Contenu({ ev, conf, slug }) {
           </button>
         </div>
       </main>
-      <FeuilleChoix
-        ouvert={feuille === 'agenda'}
-        titre="Ajouter à mon agenda"
-        sousTitre="Choisissez votre agenda : l’événement s’y ajoute, déjà rempli (date, heure, lieu)."
-        onFermer={fermer}
-      >
-        <ChoixAgenda ev={ev} onChoix={fermer} />
-      </FeuilleChoix>
-      <FeuilleChoix
-        ouvert={feuille === 'itineraire'}
-        titre="Itinéraire"
-        sousTitre="Ouvrez le trajet dans votre application de navigation."
-        onFermer={fermer}
-      >
-        <ChoixItineraire ev={ev} onChoix={fermer} />
-      </FeuilleChoix>
     </>
   );
 }

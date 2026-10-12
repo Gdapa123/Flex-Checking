@@ -11,36 +11,44 @@ import Spinner from '../../components/ui/Spinner';
 import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
 import { PageSuper } from './SuperApp';
+import { useEvenements, useProgrammes } from './donnees';
 
 const EXPORTS = [
-  ['invites', 'Tous les invités', 'Tous événements', 'users'],
+  ['invites', 'Invités', 'Liste complète des inscrits', 'users'],
   ['presences', 'Présences', 'Heure et mode d’émargement', 'userCheck'],
   ['emails', 'Suivi des emails', 'Emails n°1 et n°2', 'mail'],
   ['journal', 'Journal d’activité', 'Selon les filtres ci-dessous', 'activity'],
 ];
 const CATEGORIES = ['Émargement', 'Invité', 'Email', 'Configuration', 'Export', 'Compte'];
-const SELECT = 'h-10 rounded-petit border border-mde-champ bg-surface px-2.5 text-[14px] font-medium text-mde-texte';
+const SELECT = 'h-11 rounded-petit border border-mde-champ bg-surface px-2.5 text-[14px] font-medium text-mde-texte';
 
 /** SA8 · Exports et journal d'activité filtrable (auteur, action, période). */
 export default function Journal() {
   const toast = useToast();
-  const [f, maj] = useUrlState({ categorie: '', auteur: '', du: '', au: '', page: '1' });
+  const [f, maj] = useUrlState({ categorie: '', auteur: '', du: '', au: '', page: '1', evenement: '', programme: '' });
+  const { data: evenements = [] } = useEvenements();
+  const { data: programmes = [] } = useProgrammes();
   const [enCours, setEnCours] = useState('');
   const secours = useSecours(15000);
   const { data: comptes = [] } = useQuery({ queryKey: ['comptes'], queryFn: () => api.get('/comptes/') });
+  const filtresJournal = { categorie: f.categorie, auteur: f.auteur, du: f.du, au: f.au, page: f.page };
   const { data, isLoading } = useQuery({
-    queryKey: ['journal', f],
-    queryFn: () => api.get('/journal/', f),
+    queryKey: ['journal', filtresJournal],
+    queryFn: () => api.get('/journal/', filtresJournal),
     placeholderData: keepPreviousData,
     refetchInterval: secours,
   });
-  const filtresJournal = { categorie: f.categorie, auteur: f.auteur, du: f.du, au: f.au };
 
   const exporter = async (type, format) => {
     setEnCours(`${type}-${format}`);
     try {
       const r = await telecharger(`/exports/${type}/`, {
-        params: { format, ...(type === 'journal' ? filtresJournal : {}) },
+        params: {
+          format,
+          ...(type === 'journal'
+            ? { categorie: f.categorie, auteur: f.auteur, du: f.du, au: f.au }
+            : { evenement: f.evenement, programme: f.programme }),
+        },
       });
       toast(
         `Export ${format === 'csv' ? 'CSV' : 'Excel'} téléchargé${r.asynchrone ? ' (préparé en arrière-plan)' : ''}.`,
@@ -55,6 +63,39 @@ export default function Journal() {
   const page = Number(f.page);
   return (
     <PageSuper titre="Exports et journal d’activité">
+      <Carte mde as="section" aria-labelledby="t-perimetre" className="flex flex-wrap items-center gap-3 px-5 py-4">
+        <h2 id="t-perimetre" className="m-0 mr-auto text-[15px] font-semibold">
+          Périmètre des exports invités, présences et emails
+        </h2>
+        <select
+          aria-label="Limiter les exports à un programme"
+          value={f.programme}
+          onChange={(e) => maj({ programme: e.target.value, evenement: '' })}
+          className={SELECT}
+        >
+          <option value="">Tous les programmes</option>
+          {programmes.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nom}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Limiter les exports à une cérémonie"
+          value={f.evenement}
+          onChange={(e) => maj({ evenement: e.target.value })}
+          className={SELECT}
+        >
+          <option value="">Toutes les cérémonies</option>
+          {evenements
+            .filter((e) => !f.programme || String(e.programme) === f.programme)
+            .map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nomAffiche}
+              </option>
+            ))}
+        </select>
+      </Carte>
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
         {EXPORTS.map(([type, label, sub, icone]) => (
           <Carte mde key={type} className="flex flex-col gap-3 p-5">
@@ -72,7 +113,7 @@ export default function Journal() {
                   type="button"
                   disabled={!!enCours}
                   onClick={() => exporter(type, fmt)}
-                  className="flex h-10 cursor-pointer items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol disabled:opacity-60"
+                  className="flex h-11 cursor-pointer items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol disabled:opacity-60"
                 >
                   {enCours === `${type}-${fmt}` && <Spinner taille={14} />}
                   {fmt === 'csv' ? 'CSV' : 'Excel'}
@@ -182,7 +223,7 @@ export default function Journal() {
                 aria-label="Page précédente"
                 disabled={page <= 1}
                 onClick={() => maj({ page: page - 1 })}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
               >
                 <Icon nom="chevL" />
               </button>
@@ -191,7 +232,7 @@ export default function Journal() {
                 aria-label="Page suivante"
                 disabled={page >= data.pages}
                 onClick={() => maj({ page: page + 1 })}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-mde-bordure bg-surface text-[18px] disabled:opacity-40"
               >
                 <Icon nom="chevR" />
               </button>

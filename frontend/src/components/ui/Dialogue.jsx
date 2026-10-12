@@ -2,7 +2,10 @@ import { useId, useRef } from 'react';
 import Icon from './Icon';
 import useFocusTrap from './useFocusTrap';
 
-/** Dialogue de confirmation (alertdialog) — gabarit « Désactiver le programme ? » du design. */
+/**
+ * Dialogue de confirmation (alertdialog) — gabarit « Désactiver le programme ? » du design.
+ * `fermable={false}` : ni le voile ni Échap ne le ferment (information affichée une seule fois).
+ */
 export default function Dialogue({
   ouvert,
   titre,
@@ -12,16 +15,17 @@ export default function Dialogue({
   icone = 'alert',
   univers = 'mde',
   tonalite = 'avert',
+  fermable = true,
 }) {
   const ref = useRef(null);
   const id = useId();
-  useFocusTrap(ref, ouvert, onFermer);
+  useFocusTrap(ref, ouvert, fermable ? onFermer : undefined);
   if (!ouvert) return null;
   const mde = univers === 'mde';
   return (
     <div
       className={`fixed inset-0 z-50 flex animate-fade-in items-center justify-center p-4 ${mde ? 'bg-voile-mde' : 'bg-voile-fort'} ${mde ? 'univers-mde' : ''}`}
-      onClick={onFermer}
+      onClick={fermable ? onFermer : undefined}
     >
       <div
         ref={ref}

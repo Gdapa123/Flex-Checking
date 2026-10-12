@@ -9,19 +9,6 @@ export const adresse = (ev) => ev.lieu.replace(/\s*·\s*/g, ', ').trim();
 /** « 2026-11-27T17:45:00Z » → « 20261127T174500Z » (format Google Agenda). */
 const compact = (iso) => iso.replace(/[-:]/g, '').replace(/\.\d+/, '');
 
-/** iPhone ou iPad (iPadOS se présente comme un Mac tactile) : Calendrier et Plans y sont les applications par défaut. */
-function appareilApple() {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-}
-
-/** Place en tête l'option la plus probable pour l'appareil (Apple sur iPhone / Mac). */
-function ordonner(options) {
-  if (!appareilApple()) return options;
-  return [...options.filter((o) => o.apple), ...options.filter((o) => !o.apple)];
-}
-
 /** Horaires de l'agenda : fournis par l'API ; à défaut (données en cache d'une version antérieure),
  * reconstruits depuis la date et les heures (Abidjan = UTC), avec la même règle que le serveur. */
 function horaires(ev) {
@@ -54,7 +41,7 @@ export function liensAgenda(ev) {
     location: lieu,
     body: description,
   })}`;
-  return ordonner([
+  return [
     {
       cle: 'google',
       nom: 'Google Agenda',
@@ -69,12 +56,12 @@ export function liensAgenda(ev) {
       icone: 'briefcase',
       href: microsoft365,
     },
-  ]);
+  ];
 }
 
 export function liensItineraire(ev) {
   const destination = encodeURIComponent(adresse(ev));
-  return ordonner([
+  return [
     {
       cle: 'google',
       nom: 'Google Maps',
@@ -82,13 +69,5 @@ export function liensItineraire(ev) {
       icone: 'navigation',
       href: `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
     },
-    {
-      cle: 'apple',
-      nom: 'Plans',
-      detail: 'iPhone, iPad, Mac',
-      icone: 'mapPin',
-      href: `https://maps.apple.com/?daddr=${destination}`,
-      apple: true,
-    },
-  ]);
+  ];
 }

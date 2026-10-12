@@ -20,9 +20,10 @@ def _utc(dt):
     return dt.astimezone(UTC).strftime(FORMAT)
 
 
-def lien_pratique(evenement, ancre=""):
-    """Page publique « Infos pratiques » (choix de l'agenda et de l'application d'itinéraire)."""
-    lien = f"{settings.APP_PUBLIC_URL}/i/{evenement.slug_inscription}/pratique"
+def lien_pratique(evenement, ancre="", slug=None):
+    """Page publique « Infos pratiques » (choix de l'agenda et de l'application d'itinéraire). `slug` : lien
+    effectivement utilisé par l'invité (un ancien lien ne doit jamais révéler le nouveau)."""
+    lien = f"{settings.APP_PUBLIC_URL}/i/{slug or evenement.slug_inscription}/pratique"
     return f"{lien}#{ancre}" if ancre else lien
 
 
@@ -33,17 +34,18 @@ def bornes(evenement):
     return debut, fin
 
 
-def description_agenda(evenement):
+def description_agenda(evenement, slug=None):
     return (
         f"Accueil dès {evenement.heure_accueil:%H:%M}, lancement à {evenement.heure_debut:%H:%M}. "
         "Présentez votre QR code à l'accueil.\n"
-        f"Itinéraire : {lien_pratique(evenement, 'itineraire')}"
+        f"Itinéraire : {lien_pratique(evenement, 'itineraire', slug)}"
     )
 
 
-def ics_evenement(evenement):
+def ics_evenement(evenement, slug=None):
+    slug = slug or evenement.slug_inscription
     debut, fin = bornes(evenement)
-    description = description_agenda(evenement)
+    description = description_agenda(evenement, slug)
     lignes = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -58,7 +60,7 @@ def ics_evenement(evenement):
         f"SUMMARY:{_echapper(evenement.nom_affiche)}",
         f"LOCATION:{_echapper(evenement.lieu)}",
         f"DESCRIPTION:{_echapper(description)}",
-        f"URL:{settings.APP_PUBLIC_URL}/i/{evenement.slug_inscription}",
+        f"URL:{settings.APP_PUBLIC_URL}/i/{slug}",
         "BEGIN:VALARM",
         "TRIGGER:-PT2H",
         "ACTION:DISPLAY",

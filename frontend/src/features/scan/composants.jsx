@@ -284,7 +284,18 @@ export function VueCode({ chiffres, onTouche, onRetour, borne }) {
 }
 
 /* ------------------------------------------------------------------ S6 · Recherche par nom */
-export function VueRecherche({ q, onQ, resultats, total, chargement, onEmarger, onRetour, borne, enCours }) {
+export function VueRecherche({
+  q,
+  onQ,
+  resultats,
+  total,
+  chargement,
+  onEmarger,
+  onRetour,
+  borne,
+  enCours,
+  indisponible,
+}) {
   const court = borne && q.trim().length < 3;
   return (
     <div className="flex min-h-0 flex-1 flex-col border-t-[6px] border-p">
@@ -316,7 +327,18 @@ export function VueRecherche({ q, onQ, resultats, total, chargement, onEmarger, 
         </div>
       </div>
       <div className="mx-auto w-full max-w-[760px] flex-1 overflow-y-auto">
-        <p className="m-0 px-4 pb-1 pt-3 text-[14px] text-g-texte-2" aria-live="polite">
+        {indisponible && (
+          <div role="status" className="flex flex-col items-center gap-2.5 px-6 py-12 text-center">
+            <Icon nom="wifiOff" className="text-[36px] text-g-texte-2" />
+            <span className="text-[17px] font-semibold">Recherche indisponible hors ligne</span>
+            <span className="max-w-[320px] text-[15px] text-g-texte-2">
+              {borne
+                ? 'Présentez votre QR code ou adressez-vous à l’accueil.'
+                : 'Utilisez le QR code ou le code à 4 chiffres : ils fonctionnent sans réseau.'}
+            </span>
+          </div>
+        )}
+        <p hidden={indisponible} className="m-0 px-4 pb-1 pt-3 text-[14px] text-g-texte-2" aria-live="polite">
           {court
             ? 'Saisissez au moins 3 lettres de votre nom.'
             : chargement
@@ -325,7 +347,7 @@ export function VueRecherche({ q, onQ, resultats, total, chargement, onEmarger, 
                 ? `${total} ${total > 1 ? 'résultats' : 'résultat'}`
                 : `Tous les invités · ${total}`}
         </p>
-        {!court && !chargement && total === 0 && (
+        {!indisponible && !court && !chargement && total === 0 && (
           <div className="flex flex-col items-center gap-2.5 px-6 py-12 text-center">
             <Icon nom="search" className="text-[36px] text-g-texte-2" />
             <span className="text-[17px] font-semibold">Aucun invité trouvé</span>
@@ -336,7 +358,8 @@ export function VueRecherche({ q, onQ, resultats, total, chargement, onEmarger, 
             </span>
           </div>
         )}
-        {!court &&
+        {!indisponible &&
+          !court &&
           resultats.map((r) => (
             <div key={r.id} className="flex items-center gap-3 border-b border-g-surface px-4 py-3">
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -533,6 +556,7 @@ export function FeuilleReglages({
   vibration,
   onVibration,
   onChanger,
+  onQuitter,
   onAnnulation,
   onFermer,
 }) {
@@ -562,7 +586,7 @@ export function FeuilleReglages({
         className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
       >
         <Icon nom="switchCam" className="text-[20px]" />
-        Changer d’événement ou de mode
+        Changer de cérémonie ou de mode
       </button>
       <button
         type="button"
@@ -572,6 +596,16 @@ export function FeuilleReglages({
         <Icon nom="undo" className="text-[20px]" />
         Annuler le dernier émargement
       </button>
+      {onQuitter && (
+        <button
+          type="button"
+          onClick={onQuitter}
+          className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 bg-transparent text-[16px] font-semibold text-g-texte-2"
+        >
+          <Icon nom="logout" className="text-[20px]" />
+          Quitter le scan · tableau de bord
+        </button>
+      )}
     </Feuille>
   );
 }

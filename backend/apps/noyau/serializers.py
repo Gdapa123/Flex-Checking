@@ -112,6 +112,7 @@ class EvenementSerializer(serializers.ModelSerializer):
     nom_affiche = serializers.CharField(read_only=True)
     annee = serializers.IntegerField(read_only=True)
     programme_nom = serializers.CharField(source="programme.nom", read_only=True)
+    magazine_actif = serializers.SerializerMethodField()
     tokens = serializers.SerializerMethodField()
     lien_inscription = serializers.SerializerMethodField()
     admins = serializers.PrimaryKeyRelatedField(many=True, queryset=Admin.objects.all(), required=False)
@@ -127,6 +128,7 @@ class EvenementSerializer(serializers.ModelSerializer):
             "id",
             "programme",
             "programme_nom",
+            "magazine_actif",
             "nom_affiche",
             "annee",
             "tokens",
@@ -153,6 +155,10 @@ class EvenementSerializer(serializers.ModelSerializer):
 
     def get_tokens(self, obj):
         return tokens_programme(obj.programme)
+
+    def get_magazine_actif(self, obj):
+        # même règle que l'envoi de l'email n°2 (services) et la page publique : activé ET lien renseigné
+        return bool(obj.programme.magazine_actif and obj.programme.lien_magazine)
 
     def get_lien_inscription(self, obj):
         return f"{settings.APP_PUBLIC_URL}/i/{obj.slug_inscription}"

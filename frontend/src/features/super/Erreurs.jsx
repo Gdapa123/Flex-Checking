@@ -174,7 +174,7 @@ export default function Erreurs() {
                   <button
                     type="button"
                     onClick={() => basculer(e)}
-                    className="flex h-9 flex-none cursor-pointer items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol"
+                    className="flex h-11 flex-none cursor-pointer items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3 text-[14px] font-semibold text-mde-texte hover:bg-mde-survol"
                   >
                     <Icon nom={e.resolue ? 'undo' : 'check'} className="text-[16px]" />
                     {e.resolue ? 'Rouvrir' : 'Résolue'}

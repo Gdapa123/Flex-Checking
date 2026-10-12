@@ -9,6 +9,7 @@ import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
 import { PageSuper } from './SuperApp';
 import { CHAMP_MDE, useProgrammes } from './donnees';
+import ErreurChargement from './ErreurChargement';
 
 const VARIABLES = [
   '{civilite}',
@@ -27,7 +28,7 @@ const VARIABLES = [
 export default function Parametres() {
   const qc = useQueryClient();
   const toast = useToast();
-  const { data: p } = useQuery({ queryKey: ['parametres'], queryFn: () => api.get('/parametres/') });
+  const { data: p, error, refetch } = useQuery({ queryKey: ['parametres'], queryFn: () => api.get('/parametres/') });
   const { data: programmes = [] } = useProgrammes();
   const [d, setD] = useState(null);
   const [onglet, setOnglet] = useState(1);
@@ -100,7 +101,11 @@ export default function Parametres() {
   if (!d)
     return (
       <PageSuper titre="Paramètres">
-        <Squelette className="h-[520px] !rounded-carte" />
+        {error ? (
+          <ErreurChargement erreur={error} onReessayer={refetch} />
+        ) : (
+          <Squelette className="h-[520px] !rounded-carte" />
+        )}
       </PageSuper>
     );
 
@@ -119,7 +124,7 @@ export default function Parametres() {
                 role="tab"
                 aria-selected={onglet === n}
                 onClick={() => setOnglet(n)}
-                className={`h-[38px] cursor-pointer rounded-bouton border-0 px-3.5 text-[14px] font-semibold text-mde-texte ${onglet === n ? 'bg-surface shadow-onglet' : 'bg-transparent'}`}
+                className={`min-h-[38px] cursor-pointer rounded-bouton border-0 px-3.5 text-[14px] font-semibold text-mde-texte ${onglet === n ? 'bg-surface shadow-onglet' : 'bg-transparent'}`}
               >
                 Email n°{n} · {n === 1 ? 'inscription' : 'sur place'}
               </button>

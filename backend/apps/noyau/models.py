@@ -2,7 +2,7 @@ import secrets
 
 from django.conf import settings
 from django.core.validators import MinValueValidator, RegexValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -34,7 +34,13 @@ class Programme(models.Model):
 
 
 def nouveau_slug(programme_nom, annee):
-    return f"{slugify(programme_nom)}-{annee}-{secrets.token_hex(3)}"
+    # jamais un lien déjà attribué, actuel ou remplacé (un ancien lien ne doit pas mener à une autre cérémonie)
+    while True:
+        slug = f"{slugify(programme_nom)}-{annee}-{secrets.token_hex(3)}"
+        if not (
+            Evenement.objects.filter(slug_inscription=slug).exists() or AncienSlug.objects.filter(slug=slug).exists()
+        ):
+            return slug
 
 
 class Evenement(models.Model):
@@ -72,8 +78,23 @@ class Evenement(models.Model):
         super().save(*args, **kwargs)
 
     def regenerer_slug(self):
-        self.slug_inscription = nouveau_slug(self.programme.nom, self.annee)
-        self.save(update_fields=["slug_inscription", "modifie_le"])
+        # L'ancien lien reste lisible (page pratique, agenda, renvoi de l'invitation) pour les invités qui l'ont
+        # reçu par email, mais n'accepte plus de nouvelles inscriptions.
+        with transaction.atomic():
+            AncienSlug.objects.get_or_create(slug=self.slug_inscription, defaults={"evenement": self})
+            self.slug_inscription = nouveau_slug(self.programme.nom, self.annee)
+            self.save(update_fields=["slug_inscription", "modifie_le"])
+
+
+class AncienSlug(models.Model):
+    """Lien d'inscription remplacé par une régénération : encore servi en lecture seule."""
+
+    slug = models.SlugField(max_length=80, unique=True)
+    evenement = models.ForeignKey(Evenement, on_delete=models.CASCADE, related_name="anciens_slugs")
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.slug
 
 
 class Statut(models.Model):

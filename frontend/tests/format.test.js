@@ -10,6 +10,6 @@ describe('formats français, fuseau Africa/Abidjan', () => {
   it('heures', () => {
     expect(heureTexte('18:00:00')).toBe('18h00');
     expect(heure('2026-11-14T18:42:10Z')).toBe('18h42');
-    expect(jourHeure('2026-11-14T18:42:10Z')).toBe('14/11/2026 18:42');
+    expect(jourHeure('2026-11-14T18:42:10Z')).toBe('14/11/2026 à 18h42');
   });
 });

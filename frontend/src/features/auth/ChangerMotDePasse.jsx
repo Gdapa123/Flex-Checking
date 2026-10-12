@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import Bouton from '../../components/ui/Bouton';
 import Champ from '../../components/ui/Champ';
 import Logo from '../../components/ui/Logo';
+import { useDeconnexion } from './useMoi';
 
 /** Changement obligatoire du mot de passe temporaire à la première connexion. */
 export default function ChangerMotDePasse({ univers }) {
@@ -11,6 +13,9 @@ export default function ChangerMotDePasse({ univers }) {
   const [err, setErr] = useState({});
   const [envoi, setEnvoi] = useState(false);
   const qc = useQueryClient();
+  const naviguer = useNavigate();
+  const deconnexion = useDeconnexion();
+  const [sortie, setSortie] = useState(false);
   const mde = univers === 'mde';
   const maj = (k) => (e) => setV({ ...v, [k]: e.target.value });
 
@@ -32,6 +37,16 @@ export default function ChangerMotDePasse({ univers }) {
         nouveau: ex.data?.nouveau?.[0] || (!ex.data?.actuel && messageErreur(ex)),
       });
       setEnvoi(false);
+    }
+  };
+
+  // Sortie possible sans le mot de passe temporaire (poste partagé, mauvais compte)
+  const seDeconnecter = async () => {
+    setSortie(true);
+    try {
+      await deconnexion();
+    } finally {
+      naviguer(mde ? '/super/connexion' : '/connexion', { replace: true });
     }
   };
 
@@ -88,6 +103,15 @@ export default function ChangerMotDePasse({ univers }) {
         />
         <Bouton type="submit" taille="xl" variante={mde ? 'mde' : 'principal'} chargement={envoi}>
           Enregistrer et continuer
+        </Bouton>
+        <Bouton
+          type="button"
+          variante={mde ? 'mde-secondaire' : 'secondaire'}
+          icone="logout"
+          chargement={sortie}
+          onClick={seDeconnecter}
+        >
+          Ce n’est pas mon compte · Se déconnecter
         </Bouton>
       </form>
     </main>

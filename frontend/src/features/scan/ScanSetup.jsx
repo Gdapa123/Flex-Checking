@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMoi } from '../auth/useMoi';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useDeconnexion, useMoi } from '../auth/useMoi';
 import { dateCourte, nombre } from '../../lib/format';
 import useTitre from '../../lib/useTitre';
 import ThemeScope from '../../theme/ThemeScope';
@@ -12,13 +12,20 @@ import { debloquerAudio } from './retour';
 import { APPAREILS, MODES_SCAN, POSTES_SUGGERES, ecrireReglages, lireReglages } from './reglages';
 import { useEvenementsScan } from './useEvenementsScan';
 
-/** S1 · Démarrer l'émargement : événement, poste, mode (mémorisés sur l'appareil). */
+/** S1 · Démarrer l'émargement : cérémonie, poste, mode (mémorisés sur l'appareil). */
 export default function ScanSetup() {
   useTitre('Démarrer l’émargement');
   const naviguer = useNavigate();
   const { data: moi } = useMoi();
+  const deconnexion = useDeconnexion();
   const { data: evenements, isLoading, error } = useEvenementsScan();
-  const [r, setR] = useState(lireReglages);
+  const [params] = useSearchParams();
+  // « Ouvrir le scan » depuis une cérémonie : elle est présélectionnée (prioritaire sur la dernière mémorisée)
+  const [r, setR] = useState(() => {
+    const demande = Number(params.get('evenement'));
+    const memorises = lireReglages();
+    return demande > 0 ? { ...memorises, evenementId: demande } : memorises;
+  });
   const choisi = evenements?.find((e) => e.id === r.evenementId) || evenements?.[0];
 
   useEffect(() => {
@@ -47,17 +54,37 @@ export default function ScanSetup() {
             </span>
           )}
         </div>
+        <nav aria-label="Navigation" className="-my-3 flex items-center justify-between gap-3">
+          <Link
+            to={moi?.role === 'SUPER_ADMIN' ? '/super' : '/admin'}
+            className="-ml-1 inline-flex min-h-11 items-center gap-1.5 px-1 text-[15px] font-medium text-g-texte-2 no-underline hover:text-g-texte"
+          >
+            <Icon nom="arrowL" className="text-[18px]" />
+            Vos cérémonies
+          </Link>
+          <button
+            type="button"
+            onClick={async () => {
+              await deconnexion().catch(() => {});
+              naviguer('/connexion', { replace: true });
+            }}
+            className="-mr-1 inline-flex min-h-11 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-1 text-[15px] font-medium text-g-texte-2 hover:text-g-texte"
+          >
+            <Icon nom="logout" className="text-[18px]" />
+            Se déconnecter
+          </button>
+        </nav>
         <div className="flex flex-col gap-1.5">
           <h1 className="m-0 text-[30px] font-bold tracking-[-0.028em]">Démarrer l’émargement</h1>
           <p className="m-0 text-[16px] text-g-texte-2">Choisissez la cérémonie, le poste puis le mode de lecture.</p>
         </div>
 
-        <div role="radiogroup" aria-label="Événement" className="flex flex-col gap-2">
-          <span className="text-[14px] font-semibold text-g-texte-2">Événement</span>
+        <div role="radiogroup" aria-label="Cérémonie" className="flex flex-col gap-2">
+          <span className="text-[14px] font-semibold text-g-texte-2">Cérémonie</span>
           {isLoading && [1, 2].map((k) => <Squelette key={k} className="h-16 !rounded-bloc opacity-20" />)}
           {error && (
             <p className="m-0 text-[15px] text-g-erreur-clair">
-              Impossible de charger les événements. Vérifiez le réseau.
+              Impossible de charger les cérémonies. Vérifiez le réseau.
             </p>
           )}
           {evenements?.length === 0 && (
@@ -123,7 +150,7 @@ export default function ScanSetup() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => setR({ ...r, poste: p })}
-                  className={`h-9 cursor-pointer rounded-full border px-3.5 text-[14px] font-medium ${on ? 'border-g-texte bg-g-texte text-g-fond' : 'border-texte-2 bg-transparent text-g-texte-2 hover:text-g-texte'}`}
+                  className={`min-h-11 cursor-pointer rounded-full border px-3.5 text-[14px] font-medium ${on ? 'border-g-texte bg-g-texte text-g-fond' : 'border-texte-2 bg-transparent text-g-texte-2 hover:text-g-texte'}`}
                 >
                   {p}
                 </button>

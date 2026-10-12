@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -23,6 +23,8 @@ import { marquerMaj, useSecours } from '../../lib/tempsReel';
 import Carte from '../../components/ui/Carte';
 import Icon from '../../components/ui/Icon';
 import Squelette from '../../components/ui/Squelette';
+import EtatErreur from '../../components/ui/EtatErreur';
+import { useToast } from '../../components/ui/Toasts';
 
 const COULEURS_MODES = ['bg-p', 'barre-segment-mode-1', 'barre-segment-mode-2', 'bg-neutre'];
 // mêmes teintes que les classes ci-dessus, pour les graphiques SVG
@@ -49,23 +51,19 @@ export default function TableauDeBord({ ev }) {
     data: s,
     error,
     dataUpdatedAt,
+    refetch,
   } = useQuery({
     queryKey: ['statistiques', ev.id],
     queryFn: () => api.get(`/evenements/${ev.id}/statistiques/`),
-    refetchInterval: secours,
+    // en cas d'échec, relance périodique même si le temps réel est connecté (il ne renvoie que des changements)
+    refetchInterval: (q) => (q.state.error ? 15_000 : secours),
   });
   useEffect(() => {
     if (dataUpdatedAt) marquerMaj(dataUpdatedAt);
   }, [dataUpdatedAt]);
 
-  if (error)
-    return (
-      <Carte className="p-6">
-        <p role="alert" className="m-0 text-erreur">
-          Impossible de charger les statistiques. Nouvelle tentative automatique…
-        </p>
-      </Carte>
-    );
+  if (error && !s)
+    return <EtatErreur titre="Statistiques indisponibles" erreur={error} onReessayer={() => refetch()} />;
   if (!s)
     return (
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
@@ -76,19 +74,26 @@ export default function TableauDeBord({ ev }) {
     );
 
   const precedente = s.comparaison.find((c) => !c.enCours);
+  // sous-titres selon le moment : avant, pendant ou après la cérémonie
+  const jourJ = ev.statut === 'AUJOURDHUI';
+  const terminee = ev.statut === 'TERMINEE';
   const kpis = [
     { icone: 'users', label: 'Inscrits', valeur: nombre(s.inscrits), sub: `Capacité ${nombre(s.capacite)} places` },
     {
       icone: 'userCheck',
       label: 'Présents',
       valeur: nombre(s.presents),
-      sub: `+${s.presents15min} sur les 15 dernières minutes`,
+      sub: jourJ
+        ? `+${nombre(s.presents15min)} sur les 15 dernières minutes`
+        : terminee
+          ? 'Cérémonie terminée'
+          : 'Émargement le jour de la cérémonie',
     },
     {
       icone: 'clock',
-      label: 'Inscrits non présents',
+      label: terminee ? 'Inscrits absents' : 'Inscrits non présents',
       valeur: nombre(s.nonPresents),
-      sub: `Attendus avant ${s.heureDebut}`,
+      sub: terminee ? 'Ne se sont pas présentés' : `Attendus avant ${s.heureDebut}${jourJ ? '' : ' le jour J'}`,
     },
     {
       icone: 'chart',
@@ -108,6 +113,7 @@ export default function TableauDeBord({ ev }) {
 
   return (
     <>
+      {error && <EtatErreur compact erreur={error} onReessayer={() => refetch()} />}
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
         {kpis.map((k) => (
           <Carte key={k.label} className="flex animate-in-up flex-col gap-2 p-5">
@@ -131,7 +137,7 @@ export default function TableauDeBord({ ev }) {
             </h2>
             <span className="text-[14px] text-texte-2">
               {s.pic
-                ? `Pic : ${s.pic.debut} – ${s.pic.fin} · ${s.pic.arrivees} arrivées`
+                ? `Pic : ${s.pic.debut} – ${s.pic.fin} · ${nombre(s.pic.arrivees)} arrivées`
                 : 'Aucune arrivée pour le moment'}
             </span>
           </div>
@@ -234,7 +240,7 @@ export default function TableauDeBord({ ev }) {
               <li key={m.mode} className="flex items-center gap-2.5 text-[15px]">
                 <span className={`h-2.5 w-2.5 rounded-[3px] ${COULEURS_MODES[k]}`} />
                 <span className="flex-1">{m.libelle}</span>
-                <span className="font-semibold tabular-nums">{m.nb}</span>
+                <span className="font-semibold tabular-nums">{nombre(m.nb)}</span>
                 <span className="w-11 text-right tabular-nums text-texte-2">
                   {total ? Math.round((m.nb / total) * 100) : 0} %
                 </span>
@@ -338,7 +344,7 @@ export default function TableauDeBord({ ev }) {
               <div className="flex justify-between text-[15px]">
                 <span>{m.label}</span>
                 <span className="font-semibold tabular-nums">
-                  {m.n} / {m.sur}
+                  {nombre(m.n)} / {nombre(m.sur)}
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-[3px] bg-subtil">
@@ -354,7 +360,7 @@ export default function TableauDeBord({ ev }) {
               <Icon nom="alert" className="text-[20px] text-avert" />
               <span className="flex-1 text-[15px] text-avert-texte">
                 <strong className="font-semibold">
-                  {s.emails.invitationsEchec}{' '}
+                  {nombre(s.emails.invitationsEchec)}{' '}
                   {s.emails.invitationsEchec > 1 ? 'invitations à renvoyer' : 'invitation à renvoyer'}
                 </strong>{' '}
                 · adresse rejetée ou boîte pleine
@@ -362,7 +368,7 @@ export default function TableauDeBord({ ev }) {
               <button
                 type="button"
                 onClick={() => naviguer(`/admin/evenements/${ev.id}/invites?email1=ECHEC`)}
-                className="h-10 cursor-pointer rounded-bouton border border-avert bg-surface px-3.5 text-[14px] font-semibold text-avert"
+                className="h-11 cursor-pointer rounded-bouton border border-avert bg-surface px-3.5 text-[14px] font-semibold text-avert"
               >
                 Voir
               </button>
@@ -426,8 +432,8 @@ export default function TableauDeBord({ ev }) {
               {s.comparaison.map((c) => (
                 <tr key={c.evenement} className="border-t border-bordure-ligne">
                   <td className={`py-3 ${c.enCours ? 'font-bold' : 'font-medium'}`}>{c.annee}</td>
-                  <td className="py-3 text-right tabular-nums">{c.inscrits}</td>
-                  <td className="py-3 text-right tabular-nums">{c.presents}</td>
+                  <td className="py-3 text-right tabular-nums">{nombre(c.inscrits)}</td>
+                  <td className="py-3 text-right tabular-nums">{nombre(c.presents)}</td>
                   <td className="py-3 pl-5">
                     <span className="flex items-center gap-2.5">
                       <span className="h-1.5 flex-1 overflow-hidden rounded-[3px] bg-subtil">
@@ -450,6 +456,57 @@ export default function TableauDeBord({ ev }) {
           </span>
         </Carte>
       </div>
+
+      {!terminee && <LienInscription ev={ev} />}
     </>
+  );
+}
+
+/** Lien public d'inscription, à partager (le QR code d'affichage reste côté super admin). */
+function LienInscription({ ev }) {
+  const toast = useToast();
+  const [copie, setCopie] = useState(false);
+  useEffect(() => {
+    if (!copie) return undefined;
+    const t = setTimeout(() => setCopie(false), 2500);
+    return () => clearTimeout(t);
+  }, [copie]);
+  const copier = async () => {
+    try {
+      await navigator.clipboard.writeText(ev.lienInscription);
+      setCopie(true);
+      toast('Lien d’inscription copié.');
+    } catch {
+      toast('Copie impossible : sélectionnez le lien et copiez-le manuellement.', 'erreur');
+    }
+  };
+  return (
+    <Carte as="section" className="flex flex-col gap-3 px-6 py-5" aria-labelledby="t-lien">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="t-lien" className="m-0 text-[17px] font-semibold">
+          Lien d’inscription
+        </h2>
+        <span className="text-[14px] text-texte-2">
+          {ev.etatInscriptions === 'OUVERT' ? 'À partager avec les diplômés' : 'Inscriptions actuellement fermées'}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          readOnly
+          value={ev.lienInscription}
+          aria-label="Lien d’inscription"
+          onFocus={(e) => e.target.select()}
+          className="h-11 min-w-0 flex-[1_1_260px] rounded-champ border border-champ bg-fond px-3 text-[15px] text-texte outline-none focus:ring-2 focus:ring-focus"
+        />
+        <button
+          type="button"
+          onClick={copier}
+          className="flex h-11 cursor-pointer items-center gap-2 rounded-bouton border border-champ bg-surface px-4 text-[15px] font-semibold text-texte hover:bg-fond"
+        >
+          <Icon nom={copie ? 'check' : 'copy'} className="text-[18px]" />
+          {copie ? 'Copié' : 'Copier'}
+        </button>
+      </div>
+    </Carte>
   );
 }

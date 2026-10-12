@@ -27,6 +27,7 @@ import Icon from '../../components/ui/Icon';
 import Spinner from '../../components/ui/Spinner';
 import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
+import ErreurChargement, { BandeauErreur } from './ErreurChargement';
 import { PageSuper } from './SuperApp';
 
 const BORDEAUX = 'var(--mde-bordeaux)';
@@ -153,12 +154,17 @@ function Chargement() {
 
 function Activite() {
   const secours = useSecours(30_000);
-  const { data: a, error } = useQuery({
+  const {
+    data: a,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['analytique'],
     queryFn: () => api.get('/analytique/'),
-    refetchInterval: secours,
+    // en échec, nouvel essai toutes les 30 s même si le temps réel est connecté (il ne relance rien)
+    refetchInterval: (q) => (q.state.error ? 30_000 : secours),
   });
-  if (error) return <p className="m-0 text-mde-texte-2">Analyses momentanément indisponibles. Nouvel essai…</p>;
+  if (error && !a) return <ErreurChargement erreur={error} onReessayer={refetch} titre="Analyses indisponibles" />;
   if (!a) return <Chargement />;
   const t = a.totaux;
   const aVenir = a.evenements.filter((e) => e.date >= new Date().toISOString().slice(0, 10));
@@ -175,6 +181,7 @@ function Activite() {
 
   return (
     <>
+      {error && <BandeauErreur erreur={error} onReessayer={refetch} />}
       <Kpis
         elements={[
           { label: 'Cérémonies', valeur: nombre(t.evenements), sub: `${aVenir.length} à venir` },
@@ -392,17 +399,22 @@ function Activite() {
 // ------------------------------------------------------------------ technique
 
 function Technique() {
-  const { data: t, error } = useQuery({
+  const {
+    data: t,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['analytique-technique'],
     queryFn: () => api.get('/analytique/technique/'),
     refetchInterval: 15_000, // mesures de trafic : non notifiées en temps réel
   });
-  if (error) return <p className="m-0 text-mde-texte-2">Indicateurs momentanément indisponibles. Nouvel essai…</p>;
+  if (error && !t) return <ErreurChargement erreur={error} onReessayer={refetch} titre="Indicateurs indisponibles" />;
   if (!t) return <Chargement />;
   const { sante, resume } = t;
   const aTraiter = t.erreursATraiter.reduce((s, x) => s + x.nb, 0);
   return (
     <>
+      {error && <BandeauErreur erreur={error} onReessayer={refetch} />}
       <Kpis
         elements={[
           {

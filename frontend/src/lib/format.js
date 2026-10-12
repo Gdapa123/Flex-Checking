@@ -80,11 +80,11 @@ export function jour(iso) {
   return `${p.day}/${p.month}/${p.year}`;
 }
 
-/** ISO datetime → « 09/10/2026 19:04 » */
+/** ISO datetime → « 09/10/2026 à 19h04 » (même écriture des heures que partout ailleurs) */
 export function jourHeure(iso) {
   if (!iso) return '';
   const p = parties(iso);
-  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
+  return `${p.day}/${p.month}/${p.year} à ${Number(p.hour)}h${p.minute}`;
 }
 
 export const nombre = (n) => new Intl.NumberFormat('fr-FR').format(n ?? 0);
@@ -97,8 +97,9 @@ export const MODES = {
   MANUEL: 'Manuel',
 };
 
+/** Libellés uniques des statuts de cérémonie (admin, super admin, scan). */
 export const STATUTS_EVENEMENT = {
-  AUJOURDHUI: 'Aujourd’hui',
+  AUJOURDHUI: 'En cours',
   INSCRIPTIONS_OUVERTES: 'Inscriptions ouvertes',
   INSCRIPTIONS_FERMEES: 'Inscriptions fermées',
   COMPLET: 'Complet',

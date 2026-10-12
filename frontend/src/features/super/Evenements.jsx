@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { dateCourte } from '../../lib/format';
@@ -13,6 +13,7 @@ import Interrupteur from '../../components/ui/Interrupteur';
 import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
 import { PageSuper } from './SuperApp';
+import ErreurChargement from './ErreurChargement';
 import { CHAMP_MDE, useAdmins, useEvenements, useProgrammes } from './donnees';
 
 const CHAMPS = [
@@ -38,34 +39,53 @@ const VIDE = {
   admins: [],
 };
 
-/** SA5 · Événements : création et modification, inscriptions, admins affectés, lien et QR d'inscription. */
+/** SA5 · Cérémonies (événements) : création et modification, inscriptions, admins affectés, lien et QR d'inscription. */
 export default function Evenements() {
   const { id } = useParams();
   const naviguer = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
-  const { data: evenements } = useEvenements();
+  const { data: evenements, error: erreurListe, refetch } = useEvenements();
   const { data: programmes = [] } = useProgrammes();
   const { data: admins = [] } = useAdmins();
   const nouveau = id === 'nouveau';
-  const courant = nouveau ? null : evenements?.find((e) => String(e.id) === id) || evenements?.[0];
+  // sans identifiant : première cérémonie de la liste ; identifiant inconnu : « introuvable » (jamais une autre)
+  const courant = nouveau ? null : id ? evenements?.find((e) => String(e.id) === id) : evenements?.[0];
+  const introuvable = Boolean(id && !nouveau && evenements && !courant);
   const [d, setD] = useState(null);
   const [erreurs, setErreurs] = useState({});
   const [envoi, setEnvoi] = useState(false);
   const [regen, setRegen] = useState(false);
   const [suppression, setSuppression] = useState(false);
   const [qrVersion, setQrVersion] = useState(0);
+  const [initial, setInitial] = useState(null);
+  const [sortie, setSortie] = useState(null); // destination en attente si le formulaire a des modifications
+  const modifie = Boolean(d && initial && JSON.stringify(d) !== initial);
 
   useEffect(() => {
     setErreurs({});
-    if (nouveau) setD({ ...VIDE, programme: programmes.find((p) => p.actif)?.id || '' });
+    let valeur = null;
+    if (nouveau) valeur = { ...VIDE, programme: programmes.find((p) => p.actif)?.id || '' };
     else if (courant)
-      setD({
+      valeur = {
         ...courant,
         heureDebut: courant.heureDebut.slice(0, 5),
         heureAccueil: courant.heureAccueil.slice(0, 5),
-      });
+      };
+    setD(valeur);
+    setInitial(valeur && JSON.stringify(valeur));
   }, [nouveau, courant?.id, programmes.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // changer de cérémonie ou en créer une ne doit pas perdre silencieusement une saisie en cours
+  const allerA = (chemin) => (modifie ? setSortie(chemin) : naviguer(chemin));
+
+  const invaliderTout = (evenementId) =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: ['evenements'] }),
+      evenementId && qc.invalidateQueries({ queryKey: ['evenement', String(evenementId)] }),
+      evenementId && qc.invalidateQueries({ queryKey: ['apercu-emails', evenementId] }),
+      evenementId && qc.invalidateQueries({ queryKey: ['statistiques', evenementId] }),
+    ]);
 
   const enregistrer = async () => {
     setEnvoi(true);
@@ -84,13 +104,20 @@ export default function Evenements() {
     };
     try {
       const r = nouveau ? await api.post('/evenements/', corps) : await api.patch(`/evenements/${d.id}/`, corps);
-      await qc.invalidateQueries({ queryKey: ['evenements'] });
-      toast(nouveau ? `${r.nomAffiche} créé` : 'Événement enregistré');
+      await invaliderTout(r.id);
+      setInitial(JSON.stringify(d));
+      toast(nouveau ? `${r.nomAffiche} créée` : 'Cérémonie enregistrée');
       if (nouveau) naviguer(`/super/evenements/${r.id}`);
     } catch (e) {
-      if (e.status === 400)
-        setErreurs(Object.fromEntries(Object.entries(e.data).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])));
-      else toast(messageErreur(e), 'erreur');
+      if (e.status === 400 && e.data && !e.data.detail) {
+        const champs = Object.fromEntries(
+          Object.entries(e.data).map(([k, v]) => [k, Array.isArray(v) ? String(v[0]) : String(v)]),
+        );
+        setErreurs(champs);
+        // erreurs sans champ affiché (non_field_errors, code…) : signalées aussi en toast
+        const autre = champs.nonFieldErrors || champs.non_field_errors;
+        if (autre) toast(autre, 'erreur');
+      } else toast(messageErreur(e), 'erreur');
     } finally {
       setEnvoi(false);
     }
@@ -99,6 +126,7 @@ export default function Evenements() {
   const supprimer = async (confirmation) => {
     try {
       await api.delete(`/evenements/${d.id}/`, { params: { confirmation } });
+      setInitial(null);
       await qc.invalidateQueries({ queryKey: ['evenements'] });
       toast(`${courant.nomAffiche} supprimé`);
       setSuppression(false);
@@ -111,9 +139,9 @@ export default function Evenements() {
   const regenerer = async () => {
     try {
       await api.post(`/evenements/${d.id}/regenerer-slug/`);
-      await qc.invalidateQueries({ queryKey: ['evenements'] });
+      await invaliderTout(d.id);
       setQrVersion((v) => v + 1);
-      toast('Nouveau lien d’inscription généré. L’ancien lien ne fonctionne plus.');
+      toast('Nouveau lien d’inscription généré. L’ancien n’accepte plus d’inscriptions.');
     } catch (e) {
       toast(messageErreur(e), 'erreur');
     }
@@ -132,7 +160,8 @@ export default function Evenements() {
   const adminsLibres = admins.filter((a) => a.actif && !d?.admins.includes(a.id));
 
   return (
-    <PageSuper titre="Événements" action="Nouvel événement" onAction={() => naviguer('/super/evenements/nouveau')}>
+    <PageSuper titre="Cérémonies" action="Nouvelle cérémonie" onAction={() => allerA('/super/evenements/nouveau')}>
+      {erreurListe && !evenements && <ErreurChargement erreur={erreurListe} onReessayer={refetch} />}
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
         <div className="flex flex-col gap-2">
           {!evenements && [1, 2, 3].map((k) => <Squelette key={k} className="h-[68px] !rounded-[12px]" />)}
@@ -143,7 +172,7 @@ export default function Evenements() {
                 key={e.id}
                 type="button"
                 aria-pressed={on}
-                onClick={() => naviguer(`/super/evenements/${e.id}`)}
+                onClick={() => allerA(`/super/evenements/${e.id}`)}
                 className={`box-border flex cursor-pointer items-center gap-3 rounded-bouton bg-surface px-4 py-3.5 text-left text-mde-texte ${on ? 'border-2 border-mde-bordeaux' : 'border border-mde-bordure'}`}
               >
                 <span className="h-9 w-1.5 rounded-[3px]" style={{ background: e.tokens.p }} />
@@ -156,11 +185,34 @@ export default function Evenements() {
           })}
         </div>
 
+        {introuvable && (
+          <Carte mde role="alert" className="flex flex-col items-start gap-3 p-6">
+            <h2 className="m-0 text-[20px] font-bold tracking-[-0.02em]">Cérémonie introuvable</h2>
+            <p className="m-0 text-[15px] text-mde-texte-2">
+              Elle a peut-être été supprimée. Choisissez une cérémonie dans la liste.
+            </p>
+            <Link to="/super/evenements" className="inline-flex min-h-11 items-center font-semibold">
+              Voir toutes les cérémonies
+            </Link>
+          </Carte>
+        )}
+
         {d && (
           <Carte mde as="section" className="flex min-w-0 flex-col gap-5 p-6" aria-labelledby="t-ev">
-            <h2 id="t-ev" className="m-0 text-[20px] font-bold tracking-[-0.02em]">
-              {nouveau ? 'Nouvel événement' : courant?.nomAffiche}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="t-ev" className="m-0 text-[20px] font-bold tracking-[-0.02em]">
+                {nouveau ? 'Nouvelle cérémonie' : courant?.nomAffiche}
+              </h2>
+              {!nouveau && courant && (
+                <Link
+                  to={`/admin/evenements/${courant.id}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-bouton border border-mde-champ bg-surface px-3.5 text-[14px] font-semibold text-mde-texte no-underline hover:bg-mde-survol hover:text-mde-texte"
+                >
+                  <Icon nom="chart" className="text-[16px]" />
+                  Tableau de bord
+                </Link>
+              )}
+            </div>
             <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
               <label className="flex flex-col gap-2 text-[15px] font-medium">
                 Programme
@@ -214,14 +266,14 @@ export default function Evenements() {
                   return (
                     <span
                       key={aid}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-mde-bordure bg-mde-survol py-0 pl-3 pr-1 text-[14px] font-medium"
+                      className="inline-flex h-11 items-center gap-1 rounded-full border border-mde-bordure bg-mde-survol py-0 pl-3.5 pr-0.5 text-[14px] font-medium"
                     >
                       {a.nom}
                       <button
                         type="button"
                         aria-label={`Retirer ${a.nom}`}
                         onClick={() => setD({ ...d, admins: d.admins.filter((x) => x !== aid) })}
-                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[14px] text-mde-texte-2"
+                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[14px] text-mde-texte-2 hover:bg-mde-bordure-ligne"
                       >
                         <Icon nom="x" />
                       </button>
@@ -233,7 +285,7 @@ export default function Evenements() {
                     aria-label="Affecter un admin"
                     value=""
                     onChange={(e) => e.target.value && setD({ ...d, admins: [...d.admins, Number(e.target.value)] })}
-                    className="h-9 rounded-full border border-dashed border-mde-champ bg-surface px-3 text-[14px] font-medium text-mde-texte"
+                    className="h-11 rounded-full border border-dashed border-mde-champ bg-surface px-3 text-[14px] font-medium text-mde-texte"
                   >
                     <option value="">+ Affecter un admin</option>
                     {adminsLibres.map((a) => (
@@ -244,6 +296,7 @@ export default function Evenements() {
                   </select>
                 )}
               </div>
+              {erreurs.admins && <span className="text-[14px] text-erreur">{erreurs.admins}</span>}
             </div>
 
             {!nouveau && courant && (
@@ -279,7 +332,7 @@ export default function Evenements() {
                       onClick={() =>
                         telecharger(`/evenements/${courant.id}/qr-inscription.png`, { defaut: 'qr-inscription.png' })
                       }
-                      className="flex h-10 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 text-[14px] font-semibold text-mde-texte underline underline-offset-[3px]"
+                      className="flex h-11 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 text-[14px] font-semibold text-mde-texte underline underline-offset-[3px]"
                     >
                       <Icon nom="download" className="text-[16px]" />
                       Télécharger le QR code (PNG)
@@ -287,7 +340,7 @@ export default function Evenements() {
                     <button
                       type="button"
                       onClick={() => setRegen(true)}
-                      className="flex h-10 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 text-[14px] font-semibold text-mde-texte underline underline-offset-[3px]"
+                      className="flex h-11 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 text-[14px] font-semibold text-mde-texte underline underline-offset-[3px]"
                     >
                       <Icon nom="refresh" className="text-[16px]" />
                       Régénérer le lien
@@ -299,13 +352,13 @@ export default function Evenements() {
             <div className="flex flex-wrap justify-between gap-2 border-t border-mde-bordure pt-2">
               {!nouveau ? (
                 <Bouton variante="fantome" icone="trash" className="!text-erreur" onClick={() => setSuppression(true)}>
-                  Supprimer l’événement
+                  Supprimer la cérémonie
                 </Bouton>
               ) : (
                 <span />
               )}
               <Bouton variante="mde" chargement={envoi} onClick={enregistrer} className="px-[18px]">
-                {nouveau ? 'Créer l’événement' : 'Enregistrer l’événement'}
+                {nouveau ? 'Créer la cérémonie' : 'Enregistrer la cérémonie'}
               </Bouton>
             </div>
           </Carte>
@@ -326,8 +379,33 @@ export default function Evenements() {
           </>
         }
       >
-        L’ancien lien et l’ancien QR code d’inscription cesseront immédiatement de fonctionner. Les invités déjà
-        inscrits ne sont pas concernés.
+        L’ancien lien et l’ancien QR code n’accepteront plus de nouvelles inscriptions. Les invités déjà inscrits
+        gardent l’accès à leurs infos pratiques (agenda, itinéraire) depuis les liens de leurs emails.
+      </Dialogue>
+      <Dialogue
+        ouvert={Boolean(sortie)}
+        titre="Quitter sans enregistrer ?"
+        onFermer={() => setSortie(null)}
+        actions={
+          <>
+            <Bouton variante="mde-secondaire" onClick={() => setSortie(null)} data-autofocus>
+              Continuer la saisie
+            </Bouton>
+            <Bouton
+              variante="destructif"
+              onClick={() => {
+                const chemin = sortie;
+                setSortie(null);
+                setInitial(null);
+                naviguer(chemin);
+              }}
+            >
+              Abandonner les modifications
+            </Bouton>
+          </>
+        }
+      >
+        Les modifications de cette cérémonie ne sont pas enregistrées.
       </Dialogue>
       <DialogueSuppression
         ouvert={suppression}

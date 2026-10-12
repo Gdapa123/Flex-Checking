@@ -15,7 +15,8 @@ import Spinner from '../../components/ui/Spinner';
 import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
 import { BadgeStatut } from './badges';
-import { BoutonPresence } from './GestionInvites';
+import { BoutonPresence, DialogueAnnulation } from './GestionInvites';
+import EtatErreur from '../../components/ui/EtatErreur';
 
 const ICONES_HISTO = {
   INSCRIPTION: ['file', 'ok'],
@@ -35,10 +36,11 @@ const TONS = {
 };
 
 /** A5 · Fiche invité : actions, fiche (modifiable), QR et code, historique complet. */
-export default function PanneauInvite({ id, onFermer, basculerPresence, invalider }) {
+export default function PanneauInvite({ id, onFermer, basculerPresence, invalider, magazineActif = true }) {
   const { data: moi } = useMoi();
   const superAdmin = moi?.role === 'SUPER_ADMIN';
   const [suppression, setSuppression] = useState(false);
+  const [annulation, setAnnulation] = useState(false);
   const toast = useToast();
   const [edition, setEdition] = useState(null);
   const [erreurs, setErreurs] = useState({});
@@ -60,10 +62,12 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
     invalider();
   };
 
-  const renvoyer = async () => {
+  const renvoyer = async (type = 'INVITATION') => {
     try {
-      await api.post(`/invites/${id}/renvoi-email/`, { type: 'INVITATION' });
-      toast(`Invitation renvoyée à ${inv.email}.`);
+      await api.post(`/invites/${id}/renvoi-email/`, { type });
+      toast(
+        `${type === 'MAGAZINE' ? 'Email n°2 (magazine)' : 'Invitation'} renvoyé${type === 'MAGAZINE' ? '' : 'e'} à ${inv.email}.`,
+      );
       recharger();
     } catch (e) {
       toast(messageErreur(e), 'erreur');
@@ -129,11 +133,15 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
         </button>
       </div>
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
-        {error && (
-          <p role="alert" className="m-0 text-erreur">
-            Invité introuvable.
-          </p>
-        )}
+        {error &&
+          !inv &&
+          (error.status === 404 ? (
+            <p role="alert" className="m-0 text-erreur">
+              Invité introuvable.
+            </p>
+          ) : (
+            <EtatErreur titre="Fiche indisponible" erreur={error} onReessayer={() => refetch()} />
+          ))}
         {inv && !edition && (
           <>
             <div className="flex flex-wrap gap-2">
@@ -141,13 +149,24 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
                 invite={inv}
                 grand
                 onClick={async () => {
+                  if (inv.statut !== 'INSCRIT') return setAnnulation(true);
                   await basculerPresence(inv);
                   recharger();
                 }}
               />
-              <Bouton variante="secondaire" icone="send" onClick={renvoyer} className="!border-champ">
+              <Bouton variante="secondaire" icone="send" onClick={() => renvoyer()} className="!border-champ">
                 Renvoyer l’invitation
               </Bouton>
+              {magazineActif && inv.statut === 'PRESENT' && (
+                <Bouton
+                  variante="secondaire"
+                  icone="mail"
+                  onClick={() => renvoyer('MAGAZINE')}
+                  className="!border-champ"
+                >
+                  Renvoyer l’email n°2
+                </Bouton>
+              )}
               <Bouton
                 variante="fantome"
                 icone="edit"
@@ -299,6 +318,15 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
           </div>
         )}
       </div>
+      <DialogueAnnulation
+        invite={annulation ? inv : null}
+        onFermer={() => setAnnulation(false)}
+        onConfirmer={async () => {
+          setAnnulation(false);
+          await basculerPresence(inv);
+          recharger();
+        }}
+      />
       <DialogueSuppression
         univers="programme"
         ouvert={suppression}

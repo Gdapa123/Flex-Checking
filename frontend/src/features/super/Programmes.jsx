@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { controlesContraste, deriverTokens, estHexValide } from '../../theme/tokens';
@@ -15,6 +15,7 @@ import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
 import { CadreVisee } from '../scan/composants';
 import { PageSuper } from './SuperApp';
+import ErreurChargement from './ErreurChargement';
 import { CHAMP_MDE, useProgrammes } from './donnees';
 
 const VIDE = {
@@ -32,9 +33,11 @@ export default function Programmes() {
   const naviguer = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
-  const { data: programmes } = useProgrammes();
+  const { data: programmes, error: erreurListe, refetch } = useProgrammes();
   const nouveau = id === 'nouveau';
-  const courant = nouveau ? null : programmes?.find((p) => String(p.id) === id) || programmes?.[0];
+  // sans identifiant : premier programme ; identifiant inconnu : « introuvable » (jamais un autre programme)
+  const courant = nouveau ? null : id ? programmes?.find((p) => String(p.id) === id) : programmes?.[0];
+  const introuvable = Boolean(id && !nouveau && programmes && !courant);
   const [d, setD] = useState(null);
   const [erreurs, setErreurs] = useState({});
   const [dialogue, setDialogue] = useState(null);
@@ -42,9 +45,16 @@ export default function Programmes() {
 
   useEffect(() => {
     setErreurs({});
-    if (nouveau) setD({ ...VIDE });
-    else if (courant) setD({ ...courant });
+    setD(nouveau ? { ...VIDE } : courant ? { ...courant } : null);
   }, [nouveau, courant?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // couleurs, nom et activation se répercutent sur les cérémonies, leurs tableaux de bord et les aperçus d'emails
+  const invaliderTout = () =>
+    Promise.all(
+      ['programmes', 'evenements', 'evenement', 'apercu-emails'].map((cle) =>
+        qc.invalidateQueries({ queryKey: [cle] }),
+      ),
+    );
 
   const valide = d && estHexValide(d.couleurPrincipale) && estHexValide(d.couleurSecondaire);
   const t = valide ? deriverTokens(d.couleurPrincipale, d.couleurSecondaire) : null;
@@ -63,8 +73,7 @@ export default function Programmes() {
         lienMagazine: d.lienMagazine,
       };
       const r = nouveau ? await api.post('/programmes/', corps) : await api.patch(`/programmes/${d.id}/`, corps);
-      await qc.invalidateQueries({ queryKey: ['programmes'] });
-      qc.invalidateQueries({ queryKey: ['evenements'] });
+      await invaliderTout();
       toast(nouveau ? `Programme ${r.nom} créé` : `Couleurs du programme ${r.nom} enregistrées`);
       if (nouveau) naviguer(`/super/programmes/${r.id}`);
     } catch (e) {
@@ -79,7 +88,7 @@ export default function Programmes() {
   const basculerActivation = async () => {
     try {
       await api.patch(`/programmes/${d.id}/`, { actif: !d.actif });
-      await qc.invalidateQueries({ queryKey: ['programmes'] });
+      await invaliderTout();
       toast(`Programme ${d.nom} ${d.actif ? 'désactivé' : 'réactivé'}`);
     } catch (e) {
       toast(messageErreur(e), 'erreur');
@@ -90,8 +99,7 @@ export default function Programmes() {
   const supprimer = async (confirmation) => {
     try {
       await api.delete(`/programmes/${d.id}/`, { params: { confirmation } });
-      await qc.invalidateQueries({ queryKey: ['programmes'] });
-      qc.invalidateQueries({ queryKey: ['evenements'] });
+      await invaliderTout();
       toast(`Programme ${d.nom} supprimé`);
       naviguer('/super/programmes');
     } catch (e) {
@@ -106,7 +114,10 @@ export default function Programmes() {
     <PageSuper titre="Programmes" action="Nouveau programme" onAction={() => naviguer('/super/programmes/nouveau')}>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
         <div className="flex flex-col gap-2">
-          {!programmes && [1, 2, 3, 4].map((k) => <Squelette key={k} className="h-[70px] !rounded-[12px]" />)}
+          {erreurListe && !programmes && <ErreurChargement erreur={erreurListe} onReessayer={refetch} />}
+          {!programmes &&
+            !erreurListe &&
+            [1, 2, 3, 4].map((k) => <Squelette key={k} className="h-[70px] !rounded-[12px]" />)}
           {programmes?.map((p) => {
             const on = !nouveau && courant?.id === p.id;
             return (
@@ -138,13 +149,29 @@ export default function Programmes() {
           })}
         </div>
 
+        {introuvable && (
+          <Carte mde role="alert" className="flex flex-col items-start gap-3 p-6">
+            <h2 className="m-0 text-[20px] font-bold tracking-[-0.02em]">Programme introuvable</h2>
+            <p className="m-0 text-[15px] text-mde-texte-2">
+              Il a peut-être été supprimé. Choisissez un programme dans la liste.
+            </p>
+            <Link to="/super/programmes" className="inline-flex min-h-11 items-center font-semibold">
+              Voir tous les programmes
+            </Link>
+          </Carte>
+        )}
+
         {d && (
           <Carte mde as="section" className="flex min-w-0 animate-in-up flex-col gap-6 p-6" aria-labelledby="t-prog">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 id="t-prog" className="m-0 text-[20px] font-bold tracking-[-0.02em]">
                 {nouveau ? 'Nouveau programme' : `Programme ${d.nom}`}
               </h2>
-              {!nouveau && <span className="text-[14px] text-mde-texte-2">{d.nbEvenements} événement(s)</span>}
+              {!nouveau && (
+                <span className="text-[14px] text-mde-texte-2">
+                  {d.nbEvenements} cérémonie{d.nbEvenements > 1 ? 's' : ''}
+                </span>
+              )}
             </div>
 
             <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
@@ -373,8 +400,8 @@ export default function Programmes() {
           </>
         }
       >
-        Les événements existants et leurs données restent consultables. Aucun nouvel événement ne pourra être créé avec
-        ce programme tant qu’il est désactivé.
+        Les cérémonies existantes et leurs données restent consultables. Aucune nouvelle cérémonie ne pourra être créée
+        avec ce programme tant qu’il est désactivé.
       </Dialogue>
       <DialogueSuppression
         ouvert={dialogue === 'supprimer'}

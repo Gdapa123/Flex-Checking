@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { erreursParChamp, formaterTelephone, schemaInscription } from '../../lib/schemas';
 import useTitre from '../../lib/useTitre';
@@ -10,6 +10,7 @@ import Segmente from '../../components/ui/Segmente';
 import Spinner from '../../components/ui/Spinner';
 import Squelette from '../../components/ui/Squelette';
 import { ToastProvider } from '../../components/ui/Toasts';
+import EtatErreur from '../../components/ui/EtatErreur';
 import EtatCarte from './EtatCarte';
 import LienInvalide from './LienInvalide';
 import Presentation from './Presentation';
@@ -59,11 +60,13 @@ const NOMS_CHAMPS = {
 /** I1 · Inscription (et I2 erreurs de saisie, I4 à I8 états). */
 export default function InscriptionPage() {
   const { slug } = useParams();
-  const { data: ev, isLoading, error } = useEvenementPublic(slug);
+  const { data: ev, isLoading, error, refetch } = useEvenementPublic(slug);
   useTitre(ev ? `Inscription · ${ev.nomAffiche}` : 'Inscription');
 
   if (error?.status === 404) return <LienInvalide />;
-  if (isLoading || !ev) return <Chargement erreur={error} />;
+  if (!ev && error && !isLoading)
+    return <EtatErreur pleinePage titre="Page indisponible" erreur={error} onReessayer={() => refetch()} />;
+  if (isLoading || !ev) return <Chargement />;
   return (
     <ThemeScope tokens={ev.tokens} className="min-h-[100dvh] bg-fond">
       <ToastProvider position="centre">
@@ -73,23 +76,15 @@ export default function InscriptionPage() {
   );
 }
 
-function Chargement({ erreur }) {
+function Chargement() {
   return (
     <div className="min-h-[100dvh] bg-fond" aria-busy="true">
       <div className="h-[280px] bg-subtil" />
       <div className="mx-auto -mt-10 flex max-w-[560px] flex-col gap-4 rounded-carte bg-surface p-6 shadow-carte">
-        {erreur ? (
-          <p role="alert" className="m-0 text-center text-[16px] text-texte-2">
-            Impossible de charger la page. Vérifiez votre connexion puis rechargez.
-          </p>
-        ) : (
-          <>
-            <Squelette className="h-6 w-1/2" />
-            <Squelette className="h-12" />
-            <Squelette className="h-12" />
-            <Squelette className="h-12" />
-          </>
-        )}
+        <Squelette className="h-6 w-1/2" />
+        <Squelette className="h-12" />
+        <Squelette className="h-12" />
+        <Squelette className="h-12" />
       </div>
     </div>
   );
@@ -103,22 +98,12 @@ function Formulaire({ ev, slug }) {
   const [envoi, setEnvoi] = useState(false);
   const [erreursServeur, setErreursServeur] = useState({});
   const [etat, setEtat] = useState(ev.etat !== 'OUVERT' ? ev.etat : null);
-  // Écran de présentation des étapes avant le formulaire (une fois par session et par lien)
-  const cleCommence = `fc-commence-${slug}`;
-  const [commence, setCommence] = useState(() => {
-    try {
-      return sessionStorage.getItem(cleCommence) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // Écran de présentation des étapes avant le formulaire. L'étape est dans l'URL (entrée d'historique) :
+  // le bouton retour du téléphone revient à la présentation au lieu de quitter le site, et un rechargement la conserve.
+  const [parametres] = useSearchParams();
+  const commence = parametres.get('etape') === 'formulaire';
   const commencer = () => {
-    try {
-      sessionStorage.setItem(cleCommence, '1');
-    } catch {
-      /* stockage indisponible : l'état en mémoire suffit */
-    }
-    setCommence(true);
+    naviguer('?etape=formulaire');
     window.scrollTo(0, 0);
   };
   const resume = useRef(null);
@@ -178,7 +163,13 @@ function Formulaire({ ev, slug }) {
           general:
             e.status === 429
               ? 'Trop de tentatives. Réessayez dans quelques minutes.'
-              : 'L’envoi a échoué. Vérifiez votre connexion puis réessayez.',
+              : e.data?.detail
+                ? e.data.detail
+                : e.status === 503
+                  ? 'Service momentanément saturé, réessayez dans une minute.'
+                  : e.status >= 500
+                    ? 'Une erreur est survenue de notre côté. Réessayez dans un instant.'
+                    : 'L’envoi a échoué. Vérifiez votre connexion puis réessayez.',
         });
       }
     }
@@ -217,7 +208,14 @@ function Formulaire({ ev, slug }) {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        soumettre();
+      }}
+      className="flex min-h-[100dvh] flex-col"
+    >
       <EnteteInvite ev={ev} />
       <main className="relative mx-auto -mt-8 flex w-full max-w-[560px] flex-1 flex-col gap-3 px-3 pb-2 sm:-mt-10 sm:gap-4 sm:pb-8">
         {erreursServeur.general && (
@@ -364,8 +362,7 @@ function Formulaire({ ev, slug }) {
       <div className="sticky bottom-0 z-10 -mt-7 bg-gradient-to-b from-transparent via-fond via-45% to-fond px-4 pb-3 pt-5 sm:pb-4 sm:pt-6">
         <div className="mx-auto max-w-[560px]">
           <button
-            type="button"
-            onClick={soumettre}
+            type="submit"
             aria-busy={envoi}
             className={`btn-principal flex h-[52px] w-full sm:h-14 cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 pl-5 pr-2 text-[16px] font-semibold active:scale-[.98] ${envoi ? 'opacity-[.85]' : ''}`}
           >
@@ -377,6 +374,6 @@ function Formulaire({ ev, slug }) {
           </button>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

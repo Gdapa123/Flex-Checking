@@ -17,15 +17,30 @@ test('accessibilité des écrans principaux', async ({ page }) => {
   // Public
   const evts = await page.request.get('/api/public/evenements/inexistant/');
   expect(evts.status()).toBe(404);
-  problemes.push(...(await auditer(page, '/connexion', () => page.getByRole('heading', { name: 'Espace administrateur' }).waitFor())));
-  problemes.push(...(await auditer(page, '/super/connexion', () => page.getByRole('heading', { name: 'Configuration globale' }).waitFor())));
-  problemes.push(...(await auditer(page, '/i/inexistant', () => page.getByRole('heading', { name: 'Ce lien n’est plus valide' }).waitFor())));
+  problemes.push(
+    ...(await auditer(page, '/connexion', () =>
+      page.getByRole('heading', { name: 'Espace administrateur' }).waitFor(),
+    )),
+  );
+  problemes.push(
+    ...(await auditer(page, '/super/connexion', () =>
+      page.getByRole('heading', { name: 'Configuration globale' }).waitFor(),
+    )),
+  );
+  problemes.push(
+    ...(await auditer(page, '/i/inexistant', () =>
+      page.getByRole('heading', { name: 'Ce lien n’est plus valide' }).waitFor(),
+    )),
+  );
 
   // Connexion super admin (accès à tous les espaces)
   await page.getByRole('link', { name: 'Aller sur mde.ci' }).waitFor();
   await page.goto('/super/connexion');
   await page.getByLabel('Email').fill('direction.evenements@mde.ci');
-  expect(process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN, 'définir DEMO_MOT_DE_PASSE_SUPER_ADMIN (fichier .env ou CI)').toBeTruthy();
+  expect(
+    process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN,
+    'définir DEMO_MOT_DE_PASSE_SUPER_ADMIN (fichier .env ou CI)',
+  ).toBeTruthy();
   await page.getByLabel('Mot de passe').fill(process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN);
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.getByRole('heading', { name: 'Vue globale' }).waitFor();
@@ -34,14 +49,20 @@ test('accessibilité des écrans principaux', async ({ page }) => {
   const pmd = evenements.find((e) => e.programmeNom === 'PMD' && e.etatInscriptions === 'OUVERT');
   const encours = evenements.find((e) => e.statut === 'AUJOURDHUI') || evenements[0];
 
-  problemes.push(...(await auditer(page, `/i/${pmd.slugInscription}`, () => page.getByRole('heading', { name: pmd.nomAffiche }).waitFor())));
   problemes.push(
-    ...(await auditer(page, `/i/${pmd.slugInscription}/pratique`, () => page.getByRole('heading', { name: 'Itinéraire' }).waitFor())),
+    ...(await auditer(page, `/i/${pmd.slugInscription}`, () =>
+      page.getByRole('heading', { name: pmd.nomAffiche }).waitFor(),
+    )),
+  );
+  problemes.push(
+    ...(await auditer(page, `/i/${pmd.slugInscription}/pratique`, () =>
+      page.getByRole('heading', { name: 'Itinéraire' }).waitFor(),
+    )),
   );
   const ecrans = [
     ['/super', 'Vue globale'],
     ['/super/programmes', 'Programmes'],
-    ['/super/evenements', 'Événements'],
+    ['/super/evenements', 'Cérémonies'],
     ['/super/invites', 'Tous les invités'],
     ['/super/admins', 'Comptes admins'],
     ['/super/parametres', 'Paramètres'],
@@ -54,7 +75,10 @@ test('accessibilité des écrans principaux', async ({ page }) => {
     [`/admin/evenements/${encours.id}/invites`, 'Gestion des invités'],
     ['/scan', 'Démarrer l’émargement'],
   ];
-  for (const [url, titre] of ecrans) problemes.push(...(await auditer(page, url, () => page.getByRole('heading', { name: titre, exact: true }).first().waitFor())));
+  for (const [url, titre] of ecrans)
+    problemes.push(
+      ...(await auditer(page, url, () => page.getByRole('heading', { name: titre, exact: true }).first().waitFor())),
+    );
 
   expect(problemes, problemes.join('\n')).toEqual([]);
 });

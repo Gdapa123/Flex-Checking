@@ -42,17 +42,11 @@ describe('agenda et itinéraire', () => {
     expect(url.searchParams.get('subject')).toBe(ev.nomAffiche);
   });
 
-  it('itinéraires en mode navigation : Google Maps et Plans uniquement', () => {
+  it('itinéraire en mode navigation : Google Maps uniquement', () => {
     const liens = parCle(liensItineraire(ev));
     const dest = encodeURIComponent(adresse(ev));
-    expect(Object.keys(liens)).toEqual(['google', 'apple']);
+    expect(Object.keys(liens)).toEqual(['google']);
     expect(liens.google.href).toBe(`https://www.google.com/maps/dir/?api=1&destination=${dest}`);
-    expect(liens.apple.href).toBe(`https://maps.apple.com/?daddr=${dest}`);
-  });
-
-  it('propose Plans en premier sur iPhone', () => {
-    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' });
-    expect(liensItineraire(ev)[0].cle).toBe('apple');
   });
 });
 

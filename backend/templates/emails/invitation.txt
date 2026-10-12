@@ -6,7 +6,7 @@ INFOS PRATIQUES
 - {{ date_longue }}
 - {{ heure_debut }} · accueil dès {{ heure_accueil }}
 - {{ lieu }}
-- Itinéraire (Google Maps, Plans) : {{ lien_itineraire }}
+- Itinéraire (Google Maps) : {{ lien_itineraire }}
 - Ajouter à l'agenda (Google Agenda, Microsoft 365) : {{ lien_agenda }}
 
 --

@@ -5,7 +5,12 @@ import { useSecours } from '../../lib/tempsReel';
 export const useProgrammes = () => useQuery({ queryKey: ['programmes'], queryFn: () => api.get('/programmes/') });
 export function useEvenements() {
   const secours = useSecours(15000);
-  return useQuery({ queryKey: ['evenements'], queryFn: () => api.get('/evenements/'), refetchInterval: secours });
+  return useQuery({
+    queryKey: ['evenements'],
+    queryFn: () => api.get('/evenements/'),
+    // en échec, nouvel essai toutes les 30 s même si le temps réel est connecté (il ne relance rien)
+    refetchInterval: (q) => (q.state.error ? 30_000 : secours),
+  });
 }
 export const useAdmins = () => useQuery({ queryKey: ['admins'], queryFn: () => api.get('/admins/') });
 

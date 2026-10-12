@@ -4,8 +4,7 @@ import hashlib
 from datetime import UTC
 
 from django.core.cache import cache
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.http import Http404, HttpResponse
 from django.utils.text import slugify
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
@@ -50,8 +49,16 @@ class RenvoiEmailThrottle(LimiteSensible):
         return self.cache_format % {"scope": self.scope, "ident": cle}
 
 
-def evenement_public(slug):
-    return get_object_or_404(Evenement.objects.select_related("programme"), slug_inscription=slug)
+def evenement_public(slug, anciens=True):
+    """Événement d'un lien public. `anciens` : accepte aussi un lien remplacé par une régénération (lecture,
+    agenda, renvoi de l'invitation) ; les nouvelles inscriptions passent uniquement par le lien actuel."""
+    qs = Evenement.objects.select_related("programme")
+    ev = qs.filter(slug_inscription=slug).first()
+    if ev is None and anciens:
+        ev = qs.filter(anciens_slugs__slug=slug).first()
+    if ev is None:
+        raise Http404
+    return ev
 
 
 class EvenementPublicView(APIView):
@@ -64,15 +71,20 @@ class EvenementPublicView(APIView):
         # vidée dès que l'événement, son programme ou ses inscriptions changent
         donnees = cache.get(caches.cle_public(slug))
         if donnees is None:
-            donnees = self._donnees(evenement_public(slug))
-            cache.set(caches.cle_public(slug), donnees, caches.DUREE)
+            ev = evenement_public(slug)
+            donnees = self._donnees(ev, slug)
+            if ev.slug_inscription == slug:
+                cache.set(caches.cle_public(slug), donnees, caches.DUREE)
         return Response(donnees)
 
     @staticmethod
-    def _donnees(ev):
+    def _donnees(ev, slug):
         debut, fin = bornes(ev)
+        ancien = ev.slug_inscription != slug
         return {
-            "slug": ev.slug_inscription,
+            # ancien lien : on renvoie le slug demandé, jamais le nouveau (la régénération sert à retirer un lien
+            # qui a trop circulé) et les inscriptions y sont présentées comme fermées
+            "slug": slug,
             "nomAffiche": ev.nom_affiche,
             "programme": ev.programme.nom,
             "annee": ev.annee,
@@ -86,11 +98,11 @@ class EvenementPublicView(APIView):
             "agenda": {
                 "debut": debut.astimezone(UTC).isoformat().replace("+00:00", "Z"),
                 "fin": fin.astimezone(UTC).isoformat().replace("+00:00", "Z"),
-                "description": description_agenda(ev),
+                "description": description_agenda(ev, slug),
             },
             "dateLimiteInscription": ev.date_limite_inscription,
             "magazineActif": bool(ev.programme.magazine_actif and ev.programme.lien_magazine),
-            "etat": services.etat_inscriptions(ev),
+            "etat": services.FERME if ancien else services.etat_inscriptions(ev),
         }
 
 
@@ -101,7 +113,7 @@ class InscriptionView(APIView):
 
     @extend_schema(request=InscriptionSerializer, responses={201: None, 400: None, 409: None})
     def post(self, request, slug):
-        ev = evenement_public(slug)
+        ev = evenement_public(slug, anciens=False)
         ser = InscriptionSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
@@ -178,7 +190,7 @@ class AgendaView(APIView):
     @extend_schema(responses={(200, "text/calendar"): bytes}, summary="Fichier .ics de l'événement")
     def get(self, request, slug):
         ev = evenement_public(slug)
-        reponse = HttpResponse(ics_evenement(ev), content_type="text/calendar; charset=utf-8")
+        reponse = HttpResponse(ics_evenement(ev, slug), content_type="text/calendar; charset=utf-8")
         nom = f"graduation-{slugify(ev.programme.nom)}-{ev.annee}.ics"
         reponse["Content-Disposition"] = f'attachment; filename="{nom}"'
         return reponse

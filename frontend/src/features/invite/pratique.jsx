@@ -1,7 +1,5 @@
-import { useId, useRef } from 'react';
 import Icon from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toasts';
-import useFocusTrap from '../../components/ui/useFocusTrap';
 import { adresse, liensAgenda, liensItineraire } from '../../lib/agenda';
 
 /** Liste d'options (agenda ou application d'itinéraire), chacune ouvrant le bon lien. */
@@ -68,44 +66,44 @@ export function ChoixItineraire({ ev, onChoix }) {
   );
 }
 
-/** Feuille de choix : en bas de l'écran sur téléphone, centrée sur ordinateur. */
-export function FeuilleChoix({ ouvert, titre, sousTitre, onFermer, children }) {
-  const ref = useRef(null);
-  const id = useId();
-  useFocusTrap(ref, ouvert, onFermer);
-  if (!ouvert) return null;
+/** Sections « Ajouter à mon agenda » et « Itinéraire » (page /pratique et écran de confirmation). */
+export function InfosPratiques({ ev }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-voile-fort sm:items-center sm:p-4"
-      onClick={onFermer}
-    >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={`${id}-t`}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90dvh] w-full max-w-[480px] animate-in-up flex-col gap-4 overflow-y-auto rounded-t-carte border border-bordure-carte bg-fond p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-dialogue outline-none sm:rounded-carte sm:p-5"
+    <>
+      <Section id="agenda" icone="calendarPlus" titre="Ajouter à mon agenda" texte="Date, heure et lieu déjà remplis.">
+        <ChoixAgenda ev={ev} />
+      </Section>
+      <Section
+        id="itineraire"
+        icone="navigation"
+        titre="Itinéraire"
+        texte="Ouvrez le trajet dans votre application de navigation."
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 id={`${id}-t`} className="m-0 text-[19px] font-bold tracking-[-0.01em]">
-              {titre}
-            </h2>
-            {sousTitre && <p className="m-0 text-[14px] text-texte-2">{sousTitre}</p>}
-          </div>
-          <button
-            type="button"
-            onClick={onFermer}
-            aria-label="Fermer"
-            className="flex h-10 w-10 flex-none cursor-pointer items-center justify-center rounded-bouton border-0 bg-transparent text-[20px] text-texte-2 hover:bg-surface"
-          >
-            <Icon nom="x" />
-          </button>
+        <ChoixItineraire ev={ev} />
+      </Section>
+    </>
+  );
+}
+
+export function Section({ id, icone, titre, texte, children }) {
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-titre`}
+      className="flex scroll-mt-4 animate-in-up flex-col gap-4 rounded-carte border border-bordure-carte bg-surface p-4 shadow-carte sm:p-5"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-moyen bg-ps text-[20px] text-p">
+          <Icon nom={icone} />
+        </span>
+        <div className="flex flex-col">
+          <h2 id={`${id}-titre`} tabIndex={-1} className="m-0 text-[18px] font-bold tracking-[-0.01em] outline-none">
+            {titre}
+          </h2>
+          <p className="m-0 text-[14px] text-texte-2">{texte}</p>
         </div>
-        {children}
       </div>
-    </div>
+      {children}
+    </section>
   );
 }

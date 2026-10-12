@@ -28,7 +28,10 @@ async function connexion(page) {
   await expect(page.getByRole('heading', { name: 'Vos cérémonies' })).toBeVisible();
 }
 
-test('inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export', async ({ page, request }) => {
+test('inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export', async ({
+  page,
+  request,
+}) => {
   // Événement ouvert aux inscriptions (Graduation PMD de l'année)
   await connexion(page);
   const evenements = await page.evaluate(() => fetch('/api/evenements/').then((r) => r.json()));
@@ -56,15 +59,14 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
   await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
   await expect(p.getByRole('heading', { name: 'Inscription réussie' })).toBeVisible();
   await expect(p.getByText('Inscrit·e')).toBeVisible();
-  // Ajouter à l'agenda : Google Agenda ou Microsoft 365, avec liens pré-remplis
-  await p.getByRole('button', { name: 'Ajouter à l’agenda' }).click();
-  const feuille = p.getByRole('dialog', { name: 'Ajouter à mon agenda' });
-  await expect(feuille.getByRole('link', { name: /Google Agenda/ })).toHaveAttribute('href', /calendar\.google\.com.*TEMPLATE/);
-  await expect(feuille.getByRole('link', { name: /Microsoft 365/ })).toHaveAttribute('href', /outlook\.office\.com/);
-  await p.keyboard.press('Escape');
-  await p.getByRole('button', { name: 'Enregistrer l’itinéraire' }).click();
-  await expect(p.getByRole('dialog', { name: 'Itinéraire' }).getByRole('link', { name: /Google Maps/ })).toBeVisible();
-  await p.keyboard.press('Escape');
+  // Infos pratiques affichées sous la confirmation : agenda (liens pré-remplis) et itinéraire
+  const agenda = p.getByRole('region', { name: 'Ajouter à mon agenda' });
+  await expect(agenda.getByRole('link', { name: /Google Agenda/ })).toHaveAttribute(
+    'href',
+    /calendar\.google\.com.*TEMPLATE/,
+  );
+  await expect(agenda.getByRole('link', { name: /Microsoft 365/ })).toHaveAttribute('href', /outlook\.office\.com/);
+  await expect(p.getByRole('region', { name: 'Itinéraire' }).getByRole('link', { name: /Google Maps/ })).toBeVisible();
   await invite.close();
 
   // 2. Email n°1 : QR (pièce jointe) et code de secours
@@ -100,7 +102,10 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
   await expect(ligne.getByText('Code 4 chiffres')).toBeVisible();
 
   // 7. Export CSV de la vue filtrée
-  const [telechargement] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'CSV' }).click()]);
+  const [telechargement] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'CSV' }).click(),
+  ]);
   const fichier = await telechargement.path();
   const csv = fs.readFileSync(fichier, 'utf8');
   expect(csv.charCodeAt(0)).toBe(0xfeff);

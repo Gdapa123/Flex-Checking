@@ -95,10 +95,13 @@ function presenterResultat(r, { mode, poste }) {
 export default function ScanPoste() {
   const { id } = useParams();
   const evenementId = Number(id);
-  const { data: evenements, isLoading } = useEvenementsScan();
+  const { data: evenements, isFetching, dataUpdatedAt, refetch } = useEvenementsScan();
   const evenement = evenements?.find((e) => e.id === evenementId);
   useTitre(evenement ? `Scan · ${evenement.nomAffiche}` : 'Scan');
-  if (isLoading) {
+  if (evenement) return <Poste evenement={evenement} />;
+  // on ne quitte le poste que si le serveur a confirmé la liste (pas sur une panne réseau)
+  if (dataUpdatedAt > 0) return <Navigate to="/scan" replace />;
+  if (isFetching) {
     return (
       <div
         className="univers-scan flex min-h-[100dvh] items-center justify-center bg-g-fond text-g-texte"
@@ -109,8 +112,25 @@ export default function ScanPoste() {
       </div>
     );
   }
-  if (!evenement) return <Navigate to="/scan" replace />;
-  return <Poste evenement={evenement} />;
+  return (
+    <div className="univers-scan flex min-h-[100dvh] items-center justify-center bg-g-fond px-5 text-g-texte">
+      <div role="alert" className="flex max-w-[400px] flex-col items-center gap-3 text-center">
+        <Icon nom="wifiOff" className="text-[32px] text-g-texte-2" />
+        <h1 className="m-0 text-[20px] font-bold">Cérémonie indisponible hors ligne</h1>
+        <p className="m-0 text-[15px] text-g-texte-2">
+          Cette cérémonie n’a pas encore été chargée sur cet appareil. Reconnectez-vous au réseau puis réessayez.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="btn-principal flex h-12 cursor-pointer items-center justify-center gap-2 rounded-bouton border-0 px-6 text-[16px] font-semibold"
+        >
+          <Icon nom="refresh" className="text-[18px]" />
+          Réessayer
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function Poste({ evenement }) {
@@ -155,9 +175,10 @@ function Poste({ evenement }) {
   useWakeLock(true);
 
   const majReglages = (maj) => setReglages(ecrireReglages(maj));
-  const afficherToast = useCallback((m) => {
-    setToast(m);
-    setTimeout(() => setToast((t) => (t === m ? null : t)), 2600);
+  const afficherToast = useCallback((msg, type = 'ok') => {
+    const t = { msg, type };
+    setToast(t);
+    setTimeout(() => setToast((x) => (x === t ? null : x)), type === 'erreur' ? 5000 : 2600);
   }, []);
 
   useEffect(() => {
@@ -281,8 +302,13 @@ function Poste({ evenement }) {
           setPhase('attente');
           afficherToast(
             e?.status === 429
-              ? 'Trop de tentatives de code. Patientez une minute.'
-              : 'Émargement impossible. Réessayez.',
+              ? e.data?.detail || 'Trop de tentatives de code. Patientez quelques minutes.'
+              : e?.status === 403
+                ? 'Vous n’êtes plus affecté·e à cette cérémonie. Contactez la direction des événements.'
+                : e?.status === 404
+                  ? 'Cette cérémonie n’existe plus. Changez de cérémonie depuis les réglages.'
+                  : e?.data?.detail || 'Émargement impossible. Réessayez.',
+            'erreur',
           );
         }
       } finally {
@@ -382,7 +408,11 @@ function Poste({ evenement }) {
   // ------------------------------------------------------------------ recherche par nom
   const borne = appareil === 'TABLETTE';
   const rechercheActive = vue === 'recherche' && (!borne || q.trim().length >= 3);
-  const { data: recherche, isFetching } = useQuery({
+  const {
+    data: recherche,
+    isFetching,
+    isError: rechercheEnErreur,
+  } = useQuery({
     queryKey: ['scan-recherche', evenementId, q.trim()],
     queryFn: () => api.get(`/evenements/${evenementId}/invites/`, { q: q.trim(), taille: 25, tri: 'nom' }),
     enabled: rechercheActive && enLigne,
@@ -412,7 +442,7 @@ function Poste({ evenement }) {
       setDernier(null);
       setFeuille(null);
     } catch (e) {
-      afficherToast(e?.data?.detail || 'Annulation impossible. Réessayez.');
+      afficherToast(e?.data?.detail || 'Annulation impossible. Réessayez.', 'erreur');
     } finally {
       setAnnulationEnCours(false);
     }
@@ -426,13 +456,14 @@ function Poste({ evenement }) {
       const ok = await camera.basculerTorche();
       afficherToast(
         ok ? (camera.torche ? 'Torche éteinte' : 'Torche allumée') : 'Torche non disponible sur cet appareil',
+        ok ? 'info' : 'erreur',
       );
     },
     camera: () => {
       const f = facing === 'environment' ? 'user' : 'environment';
       setFacing(f);
       majReglages({ camera: f });
-      afficherToast(f === 'environment' ? 'Caméra arrière' : 'Caméra avant');
+      afficherToast(f === 'environment' ? 'Caméra arrière' : 'Caméra avant', 'info');
     },
     reglages: () => setFeuille('reglages'),
   };
@@ -474,6 +505,7 @@ function Poste({ evenement }) {
         onQ={setQ}
         borne={borne}
         enCours={phase === 'detection'}
+        indisponible={!enLigne || (rechercheEnErreur && !recherche)}
         chargement={isFetching && !recherche}
         total={recherche?.total ?? 0}
         resultats={(recherche?.resultats || []).map((r) => ({ ...r, heure: heure(r.presentLe) }))}
@@ -539,6 +571,7 @@ function Poste({ evenement }) {
             vibration={vibration}
             onVibration={(v) => majReglages({ vibration: v })}
             onChanger={() => naviguer('/scan')}
+            onQuitter={() => naviguer(`/admin/evenements/${evenementId}`)}
             onAnnulation={() => setFeuille('annulation')}
             onFermer={() => setFeuille(null)}
           />
@@ -546,8 +579,11 @@ function Poste({ evenement }) {
         {toast && (
           <div role="status" className="pointer-events-none absolute bottom-24 left-4 right-4 z-40 flex justify-center">
             <div className="flex animate-in-up items-center gap-2.5 rounded-[12px] bg-g-texte px-4 py-3 text-[15px] font-medium text-g-fond shadow-feuille">
-              <Icon nom="checkCircle" className="text-[18px] text-succes" />
-              {toast}
+              <Icon
+                nom={toast.type === 'erreur' ? 'alertCircle' : toast.type === 'info' ? 'info' : 'checkCircle'}
+                className={`text-[18px] ${toast.type === 'erreur' ? 'text-erreur' : toast.type === 'info' ? '' : 'text-succes'}`}
+              />
+              {toast.msg}
             </div>
           </div>
         )}

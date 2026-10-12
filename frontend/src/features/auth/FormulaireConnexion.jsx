@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import Bouton from '../../components/ui/Bouton';
 import Champ from '../../components/ui/Champ';
 import Icon from '../../components/ui/Icon';
+import { memoriser, useMoi } from './useMoi';
 
 /**
  * Adresse de retour après connexion : uniquement un chemin interne à l'application. Refuse « //hôte »,
@@ -27,6 +28,7 @@ export default function FormulaireConnexion({ univers, destination, enTete, pied
   const location = useLocation();
   const qc = useQueryClient();
   const mde = univers === 'mde';
+  const { data: connecte } = useMoi();
 
   const soumettre = async (e) => {
     e.preventDefault();
@@ -40,6 +42,8 @@ export default function FormulaireConnexion({ univers, destination, enTete, pied
     try {
       const moi = await api.post('/auth/connexion/', { email: email.trim(), motDePasse: mdp });
       qc.setQueryData(['moi'], moi);
+      // dernier compte connu dès la connexion : le poste de scan reste utilisable si le réseau tombe ensuite
+      memoriser(moi);
       const depuis = cheminInterne(location.state?.depuis);
       naviguer(depuis || destination(moi), { replace: true });
     } catch (err) {
@@ -47,6 +51,9 @@ export default function FormulaireConnexion({ univers, destination, enTete, pied
       setEnvoi(false);
     }
   };
+
+  // déjà connecté (onglet rouvert, retour arrière) : directement vers son espace
+  if (connecte && !envoi) return <Navigate to={destination(connecte)} replace />;
 
   return (
     <form

@@ -10,6 +10,7 @@ import { lireMaj, useEtatTempsReel, useSecours } from '../../lib/tempsReel';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Spinner from '../../components/ui/Spinner';
+import EtatErreur from '../../components/ui/EtatErreur';
 import { ToastProvider, useToast } from '../../components/ui/Toasts';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import TableauDeBord from './TableauDeBord';
@@ -20,12 +21,18 @@ import ApercuEmails from './ApercuEmails';
 export default function EspaceEvenement() {
   const { id } = useParams();
   const secours = useSecours(30_000);
-  const { data: ev, error } = useQuery({
+  const {
+    data: ev,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['evenement', id],
     queryFn: () => api.get(`/evenements/${id}/`),
     refetchInterval: secours,
   });
   if (error?.status === 404) return <Navigate to="/admin" replace />;
+  if (!ev && error)
+    return <EtatErreur pleinePage titre="Cérémonie indisponible" erreur={error} onReessayer={() => refetch()} />;
   if (!ev)
     return (
       <div className="flex min-h-screen items-center justify-center text-texte-2" role="status" aria-label="Chargement">
@@ -62,6 +69,19 @@ export default function EspaceEvenement() {
                 </Page>
               }
             />
+            <Route
+              path="*"
+              element={
+                <Page ev={ev} titre="Page introuvable">
+                  <section className="flex flex-col items-start gap-3 rounded-carte border border-bordure-carte bg-surface p-6 shadow-carte">
+                    <p className="m-0 text-[16px] text-texte-2">Cette section n’existe pas ou n’est plus disponible.</p>
+                    <Link to={`/admin/evenements/${ev.id}`} className="flex min-h-11 items-center font-semibold text-p">
+                      Revenir au tableau de bord
+                    </Link>
+                  </section>
+                </Page>
+              }
+            />
           </Routes>
         </div>
       </ToastProvider>
@@ -77,7 +97,7 @@ function BarreLaterale({ ev }) {
   const liens = [
     { to: base, label: 'Tableau de bord', icone: 'grid', fin: true },
     { to: `${base}/invites`, label: 'Invités', icone: 'users' },
-    { to: '/scan', label: 'Scan', icone: 'scan', externe: true },
+    { to: `/scan?evenement=${ev.id}`, label: 'Scan', icone: 'scan', externe: true },
     { to: `${base}/emails`, label: 'Emails', icone: 'mail' },
   ];
   return (
@@ -187,6 +207,8 @@ function BoutonRapport({ ev }) {
 
 function Page({ ev, titre, children }) {
   useTitre(`${titre} · ${ev.nomAffiche}`);
+  const deconnexion = useDeconnexion();
+  const naviguer = useNavigate();
   const base = `/admin/evenements/${ev.id}`;
   return (
     <main className="flex min-w-0 flex-1 flex-col" aria-labelledby="titre-page">
@@ -194,7 +216,7 @@ function Page({ ev, titre, children }) {
         <div className="relative flex min-w-0 flex-col gap-2">
           <Link
             to="/admin"
-            className="flex min-h-7 items-center gap-1.5 text-[14px] font-medium text-op no-underline hover:text-op"
+            className="flex min-h-11 items-center gap-1.5 self-start text-[14px] font-medium text-op no-underline hover:text-op"
           >
             <Icon nom="chevL" className="text-[16px]" />
             Toutes les cérémonies
@@ -216,12 +238,25 @@ function Page({ ev, titre, children }) {
           <IndicateurTempsReel />
           <BoutonRapport ev={ev} />
           <Link
-            to="/scan"
+            to={`/scan?evenement=${ev.id}`}
             className="flex h-11 items-center gap-2 rounded-bouton bg-surface px-4 text-[15px] font-semibold text-texte no-underline shadow-blanc hover:bg-fond hover:text-texte"
           >
             <Icon nom="scan" className="text-[18px]" />
             Ouvrir le scan
           </Link>
+          {/* la barre latérale (et sa déconnexion) est masquée sous 961 px */}
+          <button
+            type="button"
+            aria-label="Se déconnecter"
+            title="Se déconnecter"
+            onClick={async () => {
+              await deconnexion();
+              naviguer('/connexion');
+            }}
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-blanc-24 bg-noir-20 text-[20px] text-inherit hover:bg-noir-16 min-[961px]:hidden"
+          >
+            <Icon nom="logout" />
+          </button>
         </div>
         <nav aria-label="Sections" className="relative flex w-full gap-1 min-[961px]:hidden">
           {[
@@ -234,7 +269,7 @@ function Page({ ev, titre, children }) {
               to={to}
               end
               className={({ isActive }) =>
-                `rounded-bouton px-3 py-2 text-[14px] font-semibold no-underline ${isActive ? 'bg-surface text-texte' : 'text-op hover:text-op'}`
+                `flex min-h-11 items-center rounded-bouton px-3 text-[14px] font-semibold no-underline ${isActive ? 'bg-surface text-texte' : 'text-op hover:text-op'}`
               }
             >
               {l}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { jourHeure } from '../../lib/format';
@@ -13,14 +13,19 @@ import { useMoi } from '../auth/useMoi';
 import { PageSuper } from './SuperApp';
 import { CHAMP_MDE, useAdmins, useEvenements } from './donnees';
 
-/** SA6 · Comptes admins : création (mot de passe temporaire affiché une fois), désactivation, réinitialisation, affectations. */
+/**
+ * SA6 · Comptes admins : création (mot de passe temporaire affiché une fois), modification, désactivation,
+ * réinitialisation, suppression, affectations.
+ */
 export default function Comptes() {
   const qc = useQueryClient();
   const toast = useToast();
   const { data: admins } = useAdmins();
   const { data: evenements = [] } = useEvenements();
-  const [creation, setCreation] = useState(null);
+  const [formulaire, setFormulaire] = useState(null); // création ({ id: undefined }) ou modification d'un compte
   const [erreurs, setErreurs] = useState({});
+  const [envoi, setEnvoi] = useState(false);
+  const idFormulaire = useId();
   const [mdp, setMdp] = useState(null);
   const [confirmer, setConfirmer] = useState(null);
   const [suppression, setSuppression] = useState(null);
@@ -44,17 +49,32 @@ export default function Comptes() {
     }
   };
 
-  const creer = async () => {
+  const ouvrirFormulaire = (valeur) => {
     setErreurs({});
+    setFormulaire(valeur);
+  };
+
+  const enregistrer = async () => {
+    if (envoi) return;
+    setErreurs({});
+    setEnvoi(true);
+    const { id, nom, email, role } = formulaire;
     try {
-      const r = await api.post('/admins/', creation);
-      setCreation(null);
-      setMdp({ nom: r.nom, email: r.email, mdp: r.motDePasseTemporaire });
+      if (id) {
+        const r = await api.patch(`/admins/${id}/`, { nom, email, role });
+        toast(`Compte modifié · ${r.nom}`);
+      } else {
+        const r = await api.post('/admins/', formulaire);
+        setMdp({ nom: r.nom, email: r.email, mdp: r.motDePasseTemporaire });
+      }
+      setFormulaire(null);
       rafraichir();
     } catch (e) {
-      if (e.status === 400)
+      if (e.status === 400 && e.data && !e.data.detail)
         setErreurs(Object.fromEntries(Object.entries(e.data).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])));
       else toast(messageErreur(e), 'erreur');
+    } finally {
+      setEnvoi(false);
     }
   };
 
@@ -90,16 +110,16 @@ export default function Comptes() {
     <PageSuper
       titre="Comptes admins"
       action="Créer un compte"
-      onAction={() => setCreation({ nom: '', email: '', role: 'ADMIN', evenements: [] })}
+      onAction={() => ouvrirFormulaire({ nom: '', email: '', role: 'ADMIN', evenements: [] })}
     >
       <Carte mde as="section" className="overflow-hidden" aria-labelledby="t-comptes">
         <div className="border-b border-mde-bordure px-5 py-4">
           <h2 id="t-comptes" className="m-0 text-[17px] font-semibold">
-            Comptes et affectation aux événements
+            Comptes et affectation aux cérémonies
           </h2>
         </div>
         <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse text-[15px]">
+          <table className="w-full min-w-[1080px] border-collapse text-[15px]">
             <thead>
               <tr className="bg-mde-entete text-[13px] text-mde-texte-2">
                 <th className="px-5 py-3 text-left font-semibold">Compte</th>
@@ -156,7 +176,10 @@ export default function Comptes() {
                   {colonnes.map((e) => (
                     <td key={e.id} className="p-2 text-center">
                       {a.role === 'SUPER_ADMIN' ? (
-                        <span className="text-[13px] text-mde-texte-2" title="Le super admin voit tous les événements">
+                        <span
+                          className="text-[13px] text-mde-texte-2"
+                          title="Le super admin voit toutes les cérémonies"
+                        >
                           Tous
                         </span>
                       ) : (
@@ -176,24 +199,39 @@ export default function Comptes() {
                     <div className="flex justify-end gap-1.5">
                       <Bouton
                         variante="mde-secondaire"
-                        taille="xs"
-                        onClick={() => setConfirmer({ type: 'mdp', admin: a })}
+                        taille="md"
+                        icone="edit"
+                        aria-label={`Modifier le compte de ${a.nom}`}
+                        onClick={() => ouvrirFormulaire({ id: a.id, nom: a.nom, email: a.email, role: a.role })}
+                        className="!text-[13px]"
                       >
-                        Réinitialiser le mot de passe
+                        Modifier
                       </Bouton>
                       <Bouton
                         variante="mde-secondaire"
-                        taille="xs"
-                        onClick={() => setConfirmer({ type: 'actif', admin: a })}
+                        taille="md"
+                        onClick={() => setConfirmer({ type: 'mdp', admin: a })}
+                        className="!text-[13px]"
                       >
-                        {a.actif ? 'Désactiver' : 'Réactiver'}
+                        Réinitialiser le mot de passe
                       </Bouton>
+                      {/* son propre compte : ni désactivation ni suppression (refusées par le serveur) */}
                       {moi?.id !== a.id && (
                         <Bouton
                           variante="mde-secondaire"
-                          taille="xs"
+                          taille="md"
+                          onClick={() => setConfirmer({ type: 'actif', admin: a })}
+                          className="!text-[13px]"
+                        >
+                          {a.actif ? 'Désactiver' : 'Réactiver'}
+                        </Bouton>
+                      )}
+                      {moi?.id !== a.id && (
+                        <Bouton
+                          variante="mde-secondaire"
+                          taille="md"
                           icone="trash"
-                          className="!text-erreur"
+                          className="!text-[13px] !text-erreur"
                           aria-label={`Supprimer le compte de ${a.nom}`}
                           onClick={() => setSuppression(a)}
                         >
@@ -210,25 +248,33 @@ export default function Comptes() {
       </Carte>
 
       <Dialogue
-        ouvert={!!creation}
-        titre="Créer un compte"
-        icone="userPlus"
+        ouvert={!!formulaire}
+        titre={formulaire?.id ? `Modifier le compte de ${formulaire.nom || '…'}` : 'Créer un compte'}
+        icone={formulaire?.id ? 'edit' : 'userPlus'}
         tonalite="info"
-        onFermer={() => setCreation(null)}
+        onFermer={() => setFormulaire(null)}
         actions={
           <>
-            <Bouton variante="mde-secondaire" onClick={() => setCreation(null)}>
+            <Bouton variante="mde-secondaire" onClick={() => setFormulaire(null)}>
               Annuler
             </Bouton>
-            <Bouton variante="mde" onClick={creer}>
-              Créer le compte
+            <Bouton variante="mde" type="submit" form={idFormulaire} chargement={envoi}>
+              {formulaire?.id ? 'Enregistrer' : 'Créer le compte'}
             </Bouton>
           </>
         }
       >
-        {creation && (
-          <div className="flex flex-col gap-3 text-mde-texte">
-            <p className="m-0">Un mot de passe temporaire sera généré et affiché une seule fois.</p>
+        {formulaire && (
+          <form
+            id={idFormulaire}
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              enregistrer();
+            }}
+            className="flex flex-col gap-3 text-mde-texte"
+          >
+            {!formulaire.id && <p className="m-0">Un mot de passe temporaire sera généré et affiché une seule fois.</p>}
             {[
               ['nom', 'Nom complet', 'text'],
               ['email', 'Email', 'email'],
@@ -237,9 +283,9 @@ export default function Comptes() {
                 {l}
                 <input
                   type={t}
-                  value={creation[k]}
+                  value={formulaire[k]}
                   data-autofocus={k === 'nom' || undefined}
-                  onChange={(e) => setCreation({ ...creation, [k]: e.target.value })}
+                  onChange={(e) => setFormulaire({ ...formulaire, [k]: e.target.value })}
                   className={CHAMP_MDE}
                 />
                 {erreurs[k] && <span className="text-[14px] font-normal text-erreur">{erreurs[k]}</span>}
@@ -248,15 +294,27 @@ export default function Comptes() {
             <label className="flex flex-col gap-1.5 text-[15px] font-medium">
               Rôle
               <select
-                value={creation.role}
-                onChange={(e) => setCreation({ ...creation, role: e.target.value })}
+                value={formulaire.role}
+                disabled={formulaire.id === moi?.id}
+                onChange={(e) => setFormulaire({ ...formulaire, role: e.target.value })}
                 className={CHAMP_MDE}
               >
-                <option value="ADMIN">Admin (événements affectés)</option>
+                <option value="ADMIN">Admin (cérémonies affectées)</option>
                 <option value="SUPER_ADMIN">Super admin</option>
               </select>
+              {formulaire.id === moi?.id && (
+                <span className="text-[13px] font-normal text-mde-texte-2">
+                  Vous ne pouvez pas changer votre propre rôle.
+                </span>
+              )}
+              {erreurs.role && <span className="text-[14px] font-normal text-erreur">{erreurs.role}</span>}
             </label>
-          </div>
+            {(erreurs.nonFieldErrors || erreurs.evenements) && (
+              <p role="alert" className="m-0 text-[14px] text-erreur">
+                {erreurs.nonFieldErrors || erreurs.evenements}
+              </p>
+            )}
+          </form>
         )}
       </Dialogue>
 
@@ -294,6 +352,7 @@ export default function Comptes() {
         titre="Mot de passe temporaire"
         icone="lock"
         tonalite="info"
+        fermable={false}
         onFermer={() => setMdp(null)}
         actions={
           <Bouton variante="mde" onClick={() => setMdp(null)} data-autofocus>
