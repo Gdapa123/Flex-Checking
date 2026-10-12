@@ -98,3 +98,30 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
   expect(csv).toContain('Présent');
   void request;
 });
+
+test('temps réel : une inscription apparaît chez l’admin sans rechargement', async ({ page, request }) => {
+  await connexion(page);
+  const evenements = await page.evaluate(() => fetch('/api/evenements/').then((r) => r.json()));
+  const ev = evenements.find((e) => e.programmeNom === 'PMD' && e.etatInscriptions === 'OUVERT');
+  const email = `direct.${Date.now()}@sib.ci`;
+
+  await page.goto(`/admin/evenements/${ev.id}/invites?q=${encodeURIComponent(email)}`);
+  await expect(page.getByText(/En direct/)).toBeVisible(); // WebSocket connecté : interrogation périodique coupée
+  await expect(page.getByRole('row', { name: /Yao KONAN/ })).toHaveCount(0);
+
+  const r = await request.post(`/api/public/evenements/${ev.slugInscription}/inscription/`, {
+    data: {
+      civilite: 'M',
+      nom: 'Konan',
+      prenom: 'Yao',
+      email,
+      telephone: '0701020304',
+      entreprise: 'SIB',
+      fonction: 'Analyste',
+      consentementDonnees: true,
+    },
+  });
+  expect(r.status()).toBe(201);
+  // sans WebSocket, la liste ne serait rafraîchie par aucune interrogation : l'apparition prouve la notification
+  await expect(page.getByRole('row', { name: /Yao KONAN/ })).toBeVisible({ timeout: 4000 });
+});

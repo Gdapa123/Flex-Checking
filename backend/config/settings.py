@@ -26,6 +26,7 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 APP_PUBLIC_URL = env("APP_PUBLIC_URL", default="https://flex-checking.localhost").rstrip("/")
 
 INSTALLED_APPS = [
+    "daphne",  # runserver ASGI (WebSocket temps réel)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "drf_spectacular",
+    "channels",
     "apps.comptes",
     "apps.noyau",
 ]
@@ -57,6 +59,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": {
@@ -176,6 +179,14 @@ if not DEBUG:
     SECURE_REDIRECT_EXEMPT = [r"^api/sante/$"]
 
 # --- Celery ---
+# --- Temps réel (WebSocket) : messages relayés par Redis entre Django, Celery et les écrans ---
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL], "capacity": 500, "expiry": 30},
+    }
+}
+
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)

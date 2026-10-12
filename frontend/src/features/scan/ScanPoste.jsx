@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { heure, MODES, nombre } from '../../lib/format';
+import { useSecours } from '../../lib/tempsReel';
 import useTitre from '../../lib/useTitre';
 import ThemeScope from '../../theme/ThemeScope';
 import Icon from '../../components/ui/Icon';
@@ -115,6 +116,7 @@ export default function ScanPoste() {
 function Poste({ evenement }) {
   const naviguer = useNavigate();
   const qc = useQueryClient();
+  const secours = useSecours(5000);
   const evenementId = evenement.id;
   const [reglages, setReglages] = useState(lireReglages);
   const appareil = appareilEffectif(reglages);
@@ -161,11 +163,11 @@ function Poste({ evenement }) {
   useEffect(() => ecrireSession(CLE_HISTO(evenementId), historique.slice(0, 40)), [historique, evenementId]);
   useEffect(() => ecrireSession(`fc-scan-dernier-${evenementId}`, dernier), [dernier, evenementId]);
 
-  // Compteurs temps réel (polling 5 s)
+  // Compteurs temps réel (WebSocket ; interrogation toutes les 5 s en secours)
   const { data: recents } = useQuery({
     queryKey: ['recents', evenementId],
     queryFn: () => api.get(`/evenements/${evenementId}/emargements/recents/`),
-    refetchInterval: 5000,
+    refetchInterval: secours,
     enabled: enLigne,
   });
   useEffect(() => {

@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { api, messageErreur } from '../../lib/api';
 import { heure, jour, MODES } from '../../lib/format';
-import { marquerMaj } from '../../lib/tempsReel';
+import { marquerMaj, useSecours } from '../../lib/tempsReel';
 import { suivreTache, telecharger } from '../../lib/telechargement';
 import useUrlState from '../../lib/useUrlState';
 import Icon from '../../components/ui/Icon';
@@ -64,11 +64,12 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
     programme: f.programme,
   };
   const params = { ...filtres, tri: f.tri, page: f.page, taille: f.taille };
+  const secours = useSecours(5000);
   const { data, isLoading, isFetching, error, dataUpdatedAt } = useQuery({
     queryKey: ['invites', base, params],
     queryFn: () => api.get(base, params),
     placeholderData: keepPreviousData,
-    refetchInterval: 5000,
+    refetchInterval: secours,
   });
   useEffect(() => {
     if (dataUpdatedAt) marquerMaj(dataUpdatedAt);

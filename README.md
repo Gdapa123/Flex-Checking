@@ -140,7 +140,11 @@ vérification à la reconnexion » ; ils sont synchronisés automatiquement au r
 ## 7. Production (indications)
 
 - `DJANGO_DEBUG=0`, `EMAIL_BACKEND` SMTP, vraie `DJANGO_SECRET_KEY`, `APP_PUBLIC_URL` en HTTPS.
-- `docker build backend` (gunicorn par défaut) + un worker `celery -A config worker`.
+- `docker build backend` (serveur ASGI Daphne : HTTP et WebSocket) + un worker `celery -A config worker`. Redis est
+  obligatoire : file Celery, cache et relais des messages temps réel.
+- Le proxy doit laisser passer les WebSocket sur `/api/ws/` (Caddy le fait sans configuration). Un hébergement de
+  frontend qui ne relaie pas les WebSocket (réécritures Vercel) fonctionne quand même : les écrans repassent en
+  interrogation périodique.
 - `npm run build` puis servir `frontend/dist` avec `infra/Caddyfile.prod` (en-têtes CSP et HSTS, `/api/*` vers Django).
 - `python manage.py migrate` (crée statuts, programmes et paramètres). Créer le premier super admin :
   `python manage.py shell -c "from apps.comptes.models import Admin; Admin.objects.create_superuser('email', 'Nom', 'mot-de-passe')"`.
@@ -150,11 +154,13 @@ vérification à la reconnexion » ; ils sont synchronisés automatiquement au r
 
 ```
 backend/
-  config/                 settings (variables d’env), urls, celery
+  config/                 settings (variables d’env), urls, celery, asgi (HTTP + WebSocket)
   apps/comptes/           Admin (AUTH_USER_MODEL, Argon2), JWT en cookies httpOnly + CSRF, permissions
   apps/noyau/
     models.py             Programme, Evenement, Statut, Invite, Emargement, EmailEnvoye, JournalActivite, Parametres
     services.py           inscription, émargement atomique et idempotent, annulation
+    temps_reel.py         signaux → notifications regroupées, envoyées après commit (Channels + Redis)
+    consumers.py          WebSocket /api/ws/ : session par cookie, groupes par événement, aucune donnée personnelle
     emails.py, tasks.py   rendu des emails (HTML + texte, CID, .ics), envoi Celery avec 3 nouvelles tentatives
     theme.py              dérivation des tokens (miroir de frontend/src/theme/tokens.js)
     vues_*.py             API : public, scan, invités, super admin
@@ -163,6 +169,7 @@ frontend/src/
   theme/                  tokens.js (dérivation), ThemeScope (variables CSS du programme)
   styles/tokens.css       seul fichier contenant des couleurs (univers MDE, programme, graphite, statuts)
   components/ui/          primitives du design system
+  lib/tempsReel.js        connexion WebSocket unique, reconnexion, rechargement ciblé des requêtes
   features/invite|scan|admin|invites|super|auth
 shared/token-fixtures.json  cas de référence communs aux tests JS et Python
 design-source/            maquettes Claude Design (référence, non déployées)
@@ -172,6 +179,14 @@ design-source/            maquettes Claude Design (référence, non déployées)
 
 Les contradictions entre le design et le cahier des charges sont listées dans `PLAN.md` (section 7). Choix complémentaires :
 
+- **Temps réel** : WebSocket `/api/ws/` (Django Channels, relais Redis). Chaque changement (inscription, scan,
+  annulation, statut d’email, invité modifié, événement, programme, compte, paramètres, journal) est annoncé après
+  commit aux seuls écrans autorisés (un admin ne reçoit que ses événements). Le message ne contient que des sujets
+  (« invites », « statistiques »…) : le navigateur recharge par l’API REST, qui applique les droits. Connexion
+  authentifiée par le cookie de session, origine vérifiée, fermée à l’expiration du jeton (le navigateur rafraîchit
+  la session et se reconnecte) et dès qu’un compte est désactivé. En cas de coupure, les écrans reviennent à
+  l’interrogation périodique (5 s pour le tableau de bord, les invités et le scan) et rechargent tout à la
+  reconnexion. L’en-tête admin affiche « En direct » ou « Reconnexion… ».
 - **Comptes admins** : création par le super admin avec mot de passe temporaire affiché une seule fois, à changer à la
   première connexion (même mécanisme pour la réinitialisation). « Mot de passe oublié ? » affiche la marche à suivre
   (contacter la direction des événements).

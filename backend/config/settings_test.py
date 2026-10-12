@@ -13,3 +13,4 @@ CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 MEDIA_ROOT = BASE_DIR / "media-tests"  # noqa: F405
 SECRET_KEY = "cle-de-test-suffisamment-longue-pour-hmac-sha256"
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}

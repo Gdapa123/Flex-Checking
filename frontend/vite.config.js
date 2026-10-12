@@ -37,7 +37,7 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
-    proxy: { '/api': { target: API, changeOrigin: false, xfwd: true } },
+    proxy: { '/api': { target: API, changeOrigin: false, xfwd: true, ws: true } },
     fs: { allow: ['..'] },
   },
   test: {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { jourHeure, MODES } from '../../lib/format';
+import { useSecours } from '../../lib/tempsReel';
 import { erreursParChamp, formaterTelephone, schemaInvite } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
 import Champ from '../../components/ui/Champ';
@@ -37,15 +38,16 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
   const [edition, setEdition] = useState(null);
   const [erreurs, setErreurs] = useState({});
   const [envoi, setEnvoi] = useState(false);
+  const secours = useSecours(5000);
   const {
     data: inv,
     refetch,
     error,
-  } = useQuery({ queryKey: ['invite', id], queryFn: () => api.get(`/invites/${id}/`), refetchInterval: 5000 });
+  } = useQuery({ queryKey: ['invite', id], queryFn: () => api.get(`/invites/${id}/`), refetchInterval: secours });
   const { data: histo, refetch: refetchHisto } = useQuery({
     queryKey: ['historique', id],
     queryFn: () => api.get(`/invites/${id}/historique/`),
-    refetchInterval: 5000,
+    refetchInterval: secours,
   });
   const recharger = () => {
     refetch();

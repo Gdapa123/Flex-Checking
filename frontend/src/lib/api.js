@@ -37,6 +37,9 @@ async function rafraichir() {
   return r.ok;
 }
 
+/** Rafraîchit la session (cookie d'accès) ; utilisé aussi par la connexion temps réel. */
+export const rafraichirSession = () => rafraichir().catch(() => false);
+
 const ECRITURE = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 export async function requete(url, { method = 'GET', body, params, brut = false, signal, reessai = true } = {}) {

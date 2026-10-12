@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { useSecours } from '../../lib/tempsReel';
 
 export const useProgrammes = () => useQuery({ queryKey: ['programmes'], queryFn: () => api.get('/programmes/') });
-export const useEvenements = () =>
-  useQuery({ queryKey: ['evenements'], queryFn: () => api.get('/evenements/'), refetchInterval: 15000 });
+export function useEvenements() {
+  const secours = useSecours(15000);
+  return useQuery({ queryKey: ['evenements'], queryFn: () => api.get('/evenements/'), refetchInterval: secours });
+}
 export const useAdmins = () => useQuery({ queryKey: ['admins'], queryFn: () => api.get('/admins/') });
 
 export const BADGE_STATUT = {

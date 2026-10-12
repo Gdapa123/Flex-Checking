@@ -104,18 +104,31 @@ export default function ScanSetup() {
             <Icon nom="monitor" className="text-[20px] text-g-texte-2" />
             <input
               id="poste"
-              list="postes"
               value={r.poste}
               maxLength={60}
+              autoComplete="off"
               onChange={(e) => setR({ ...r, poste: e.target.value })}
               placeholder="Accueil principal"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[17px] text-g-texte outline-none"
+              aria-describedby="postes-suggeres"
+              className="min-w-0 flex-1 border-0 bg-transparent text-[17px] text-g-texte outline-none placeholder:text-g-texte-2"
             />
-            <datalist id="postes">
-              {POSTES_SUGGERES.map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
+          </div>
+          {/* Suggestions intégrées (la liste native du navigateur s'affiche en blanc, hors du thème) */}
+          <div id="postes-suggeres" role="group" aria-label="Postes suggérés" className="flex flex-wrap gap-2">
+            {POSTES_SUGGERES.map((p) => {
+              const on = r.poste.trim() === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setR({ ...r, poste: p })}
+                  className={`h-9 cursor-pointer rounded-full border px-3.5 text-[14px] font-medium ${on ? 'border-g-texte bg-g-texte text-g-fond' : 'border-texte-2 bg-transparent text-g-texte-2 hover:text-g-texte'}`}
+                >
+                  {p}
+                </button>
+              );
+            })}
           </div>
         </div>
 

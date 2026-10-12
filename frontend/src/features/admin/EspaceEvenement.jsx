@@ -5,7 +5,7 @@ import { api } from '../../lib/api';
 import { dateCourte } from '../../lib/format';
 import ThemeScope from '../../theme/ThemeScope';
 import useTitre from '../../lib/useTitre';
-import { lireMaj } from '../../lib/tempsReel';
+import { lireMaj, useEtatTempsReel, useSecours } from '../../lib/tempsReel';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Spinner from '../../components/ui/Spinner';
@@ -18,10 +18,11 @@ import ApercuEmails from './ApercuEmails';
 /** Mise en page admin : barre latérale, en-tête en dégradé du programme, contenu qui chevauche. */
 export default function EspaceEvenement() {
   const { id } = useParams();
+  const secours = useSecours(30_000);
   const { data: ev, error } = useQuery({
     queryKey: ['evenement', id],
     queryFn: () => api.get(`/evenements/${id}/`),
-    refetchInterval: 30_000,
+    refetchInterval: secours,
   });
   if (error?.status === 404) return <Navigate to="/admin" replace />;
   if (!ev)
@@ -134,15 +135,23 @@ function IndicateurTempsReel() {
     const i = setInterval(() => setT((n) => n + 1), 1000);
     return () => clearInterval(i);
   }, []);
+  const etat = useEtatTempsReel();
   const derniere = lireMaj();
   const s = Math.max(1, Math.round((Date.now() - derniere) / 1000));
+  const enDirect = etat === 'connecte';
+  const depuis = s < 60 ? `${s} s` : `${Math.round(s / 60)} min`;
   return (
     <span
       key={location.pathname}
+      title={
+        enDirect
+          ? 'Les changements s’affichent instantanément.'
+          : 'Connexion temps réel interrompue : actualisation périodique.'
+      }
       className="inline-flex h-9 items-center gap-2 rounded-full border border-blanc-24 bg-noir-20 px-3 text-[14px] font-medium"
     >
-      <span className="h-2 w-2 animate-blink rounded-full bg-live" />
-      Temps réel · mis à jour il y a {s} s
+      <span className={`h-2 w-2 rounded-full ${enDirect ? 'animate-blink bg-live' : 'bg-current opacity-50'}`} />
+      {enDirect ? 'En direct' : 'Reconnexion…'} · mis à jour il y a {depuis}
     </span>
   );
 }

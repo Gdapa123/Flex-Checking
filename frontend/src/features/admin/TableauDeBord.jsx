@@ -4,16 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { api } from '../../lib/api';
 import { nombre } from '../../lib/format';
-import { marquerMaj } from '../../lib/tempsReel';
+import { marquerMaj, useSecours } from '../../lib/tempsReel';
 import Carte from '../../components/ui/Carte';
 import Icon from '../../components/ui/Icon';
 import Squelette from '../../components/ui/Squelette';
 
 const COULEURS_MODES = ['bg-p', 'barre-segment-mode-1', 'barre-segment-mode-2', 'bg-neutre'];
 
-/** A3 · Tableau de bord temps réel (polling 5 s). */
+/** A3 · Tableau de bord temps réel (WebSocket ; interrogation toutes les 5 s en secours). */
 export default function TableauDeBord({ ev }) {
   const naviguer = useNavigate();
+  const secours = useSecours(5000);
   const {
     data: s,
     error,
@@ -21,7 +22,7 @@ export default function TableauDeBord({ ev }) {
   } = useQuery({
     queryKey: ['statistiques', ev.id],
     queryFn: () => api.get(`/evenements/${ev.id}/statistiques/`),
-    refetchInterval: 5000,
+    refetchInterval: secours,
   });
   useEffect(() => {
     if (dataUpdatedAt) marquerMaj(dataUpdatedAt);

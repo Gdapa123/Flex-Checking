@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { jourHeure } from '../../lib/format';
+import { useSecours } from '../../lib/tempsReel';
 import { telecharger } from '../../lib/telechargement';
 import useUrlState from '../../lib/useUrlState';
 import Carte from '../../components/ui/Carte';
@@ -25,12 +26,13 @@ export default function Journal() {
   const toast = useToast();
   const [f, maj] = useUrlState({ categorie: '', auteur: '', du: '', au: '', page: '1' });
   const [enCours, setEnCours] = useState('');
+  const secours = useSecours(15000);
   const { data: comptes = [] } = useQuery({ queryKey: ['comptes'], queryFn: () => api.get('/comptes/') });
   const { data, isLoading } = useQuery({
     queryKey: ['journal', f],
     queryFn: () => api.get('/journal/', f),
     placeholderData: keepPreviousData,
-    refetchInterval: 15000,
+    refetchInterval: secours,
   });
   const filtresJournal = { categorie: f.categorie, auteur: f.auteur, du: f.du, au: f.au };
 
