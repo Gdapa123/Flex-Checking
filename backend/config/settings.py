@@ -239,6 +239,8 @@ if not REDIS_URL:
     CACHES = caches_sans_redis()
     CHANNEL_LAYERS = {}
 
+# Sans Redis, pas de worker : les emails sont envoyés dans la requête, en une seule tentative
+ENVOI_SANS_FILE = not REDIS_URL
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=not REDIS_URL)

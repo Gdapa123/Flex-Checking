@@ -16,6 +16,7 @@ RUN grep -v '^mysqlclient' requirements.txt > /tmp/requirements.txt \
     && pip install --no-cache-dir -r /tmp/requirements.txt \
     && useradd --system --uid 10001 --home /app flex
 COPY --chown=flex . .
+RUN mkdir -p /app/media && chown flex /app/media
 USER flex
 EXPOSE 8000
 CMD ["gunicorn", "config.asgi:application", "-c", "gunicorn.conf.py"]

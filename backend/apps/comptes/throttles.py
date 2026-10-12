@@ -25,6 +25,14 @@ class CacheDeSecours:
     def set(self, cle, valeur, duree=None):
         return self._appel("set", cle, valeur, duree)
 
+    def incrementer(self, cle, duree):
+        """Compteur à fenêtre fixe : crée la clé à 1 (durée `duree`) ou l'incrémente."""
+        if self._appel("add", cle, 1, duree) is False:
+            try:
+                self._appel("incr", cle)
+            except ValueError:  # clé expirée entre les deux appels
+                self._appel("set", cle, 1, duree)
+
 
 def email_soumis(request):
     """Adresse email du corps de la requête, normalisée. Un corps JSON qui n'est pas un objet (liste,

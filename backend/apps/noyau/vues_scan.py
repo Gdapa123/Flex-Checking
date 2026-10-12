@@ -1,6 +1,5 @@
 """Scan : émargement (QR, douchette, code, manuel), annulation, derniers passages."""
 
-from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
@@ -8,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.comptes.permissions import EstAdmin, evenements_visibles
+from apps.comptes.throttles import CacheDeSecours
 
 from . import services
 from .models import Emargement, Parametres
@@ -38,7 +38,10 @@ class EmargementView(APIView):
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         cle = _cle_codes_invalides(request.user, evenement)
-        if d.get("code") and cache.get(cle, 0) >= MAX_CODES_INVALIDES:
+        # compteur partagé entre instances (Redis, ou base sans Redis) : le verrouillage ne se contourne pas
+        # en tombant sur un autre processus
+        limites = CacheDeSecours()
+        if d.get("code") and (limites.get(cle) or 0) >= MAX_CODES_INVALIDES:
             return Response(
                 {"code": "TROP_DE_TENTATIVES", "detail": "Trop de codes invalides. Patientez quelques minutes."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -55,11 +58,7 @@ class EmargementView(APIView):
             date_client=d.get("date_client"),
         )
         if d.get("code") and resultat["resultat"] == services.CODE_INVALIDE:
-            if cache.add(cle, 1, FENETRE_CODES_S) is False:
-                try:
-                    cache.incr(cle)
-                except ValueError:
-                    cache.set(cle, 1, FENETRE_CODES_S)
+            limites.incrementer(cle, FENETRE_CODES_S)
         return Response(EmargementResultatSerializer(resultat).data)
 
 

@@ -45,3 +45,34 @@ def test_limites_connexion_partagees_entre_instances():
             assert APIClient().post("/api/auth/connexion/", corps, format="json").status_code == 429
         finally:
             caches["limites"].clear()
+
+
+def test_envoi_sans_file_une_seule_tentative(evenement, settings):
+    """Sans worker (Vercel), un email en échec ne bloque pas la requête par 4 tentatives d'affilée."""
+    from apps.noyau.emails import planifier
+    from apps.noyau.models import EmailEnvoye, StatutEmail, TypeEmail
+
+    from .conftest import nouvel_invite
+
+    inv = nouvel_invite(evenement)
+    settings.ENVOI_SANS_FILE = True
+    settings.EMAIL_BACKEND = "apps.noyau.tests.test_emails.BackendEnPanne"
+    e = planifier(inv, TypeEmail.INVITATION)
+    e = EmailEnvoye.objects.get(pk=e.pk)
+    assert e.statut == StatutEmail.ECHEC and e.tentatives == 1
+
+
+def test_compteur_de_codes_invalides_partage(client_admin, evenement):
+    """Le verrouillage après trop de codes invalides tient même si la mémoire locale est vidée
+    (autre instance, redémarrage)."""
+    from django.core.cache import caches
+
+    from apps.noyau.vues_scan import MAX_CODES_INVALIDES
+
+    url = f"/api/evenements/{evenement.pk}/emargement/"
+    corps = {"code": "0000", "mode": "CODE", "appareil": "ORDINATEUR"}
+    for _ in range(MAX_CODES_INVALIDES):
+        client_admin.post(url, corps, format="json")
+    caches["limites_local"].clear()
+    caches["default"].clear()
+    assert client_admin.post(url, corps, format="json").status_code == 429

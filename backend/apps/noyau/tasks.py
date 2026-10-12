@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 
 from celery import shared_task
+from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 
@@ -38,7 +39,9 @@ def _envoyer(self, email_id, verrou):
         construire_message(email).send(fail_silently=False)
     except Exception as exc:  # noqa: BLE001 — toute erreur SMTP/rendu compte comme un échec
         email.erreur = f"{type(exc).__name__}: {exc}"[:2000]
-        if email.tentatives <= len(DELAIS):
+        # Sans file d'attente (environnement de test Vercel) : une seule tentative, pour ne jamais bloquer la
+        # requête de l'utilisateur ; l'email apparaît alors « à renvoyer » pour un renvoi manuel.
+        if email.tentatives <= len(DELAIS) and not settings.ENVOI_SANS_FILE:
             email.save(update_fields=["tentatives", "erreur"])
             logger.warning("Email %s : échec de la tentative %s, nouvel essai programmé.", email.pk, email.tentatives)
             cache.delete(verrou)  # la nouvelle tentative doit pouvoir reprendre le verrou
