@@ -5,6 +5,7 @@ import Spinner from './components/ui/Spinner';
 
 const Inscription = lazy(() => import('./features/invite/InscriptionPage'));
 const Confirmation = lazy(() => import('./features/invite/ConfirmationPage'));
+const Pratique = lazy(() => import('./features/invite/PratiquePage'));
 const ConnexionAdmin = lazy(() => import('./features/auth/ConnexionAdmin'));
 const ConnexionSuper = lazy(() => import('./features/auth/ConnexionSuper'));
 const AdminApp = lazy(() => import('./features/admin/AdminApp'));
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/connexion" replace />} />
         <Route path="/i/:slug" element={<Inscription />} />
         <Route path="/i/:slug/confirmation" element={<Confirmation />} />
+        <Route path="/i/:slug/pratique" element={<Pratique />} />
         <Route path="/connexion" element={<ConnexionAdmin />} />
         <Route path="/super/connexion" element={<ConnexionSuper />} />
         <Route

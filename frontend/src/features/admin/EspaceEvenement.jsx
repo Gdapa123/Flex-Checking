@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, messageErreur } from '../../lib/api';
+import { telecharger } from '../../lib/telechargement';
 import { dateCourte } from '../../lib/format';
 import ThemeScope from '../../theme/ThemeScope';
 import useTitre from '../../lib/useTitre';
@@ -9,7 +10,7 @@ import { lireMaj, useEtatTempsReel, useSecours } from '../../lib/tempsReel';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Spinner from '../../components/ui/Spinner';
-import { ToastProvider } from '../../components/ui/Toasts';
+import { ToastProvider, useToast } from '../../components/ui/Toasts';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import TableauDeBord from './TableauDeBord';
 import GestionInvites from '../invites/GestionInvites';
@@ -156,6 +157,34 @@ function IndicateurTempsReel() {
   );
 }
 
+/** Rapport PDF de la cérémonie (graphiques, emails, comparaison annuelle ; données agrégées). */
+function BoutonRapport({ ev }) {
+  const toast = useToast();
+  const [enCours, setEnCours] = useState(false);
+  const generer = async () => {
+    setEnCours(true);
+    try {
+      await telecharger(`/evenements/${ev.id}/rapport/`, { defaut: 'rapport.pdf' });
+      toast('Rapport PDF téléchargé.');
+    } catch (e) {
+      toast(messageErreur(e, 'Le rapport n’a pas pu être généré. Réessayez.'), 'erreur');
+    } finally {
+      setEnCours(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={generer}
+      disabled={enCours}
+      className="flex h-11 cursor-pointer items-center gap-2 rounded-[12px] border border-blanc-24 bg-noir-20 px-4 text-[15px] font-semibold text-inherit hover:bg-noir-16 disabled:opacity-70"
+    >
+      {enCours ? <Spinner taille={16} /> : <Icon nom="download" className="text-[18px]" />}
+      Rapport PDF
+    </button>
+  );
+}
+
 function Page({ ev, titre, children }) {
   useTitre(`${titre} · ${ev.nomAffiche}`);
   const base = `/admin/evenements/${ev.id}`;
@@ -185,6 +214,7 @@ function Page({ ev, titre, children }) {
         </div>
         <div className="relative flex flex-wrap items-center gap-3">
           <IndicateurTempsReel />
+          <BoutonRapport ev={ev} />
           <Link
             to="/scan"
             className="flex h-11 items-center gap-2 rounded-[12px] bg-surface px-4 text-[15px] font-semibold text-texte no-underline shadow-blanc hover:bg-fond hover:text-texte"

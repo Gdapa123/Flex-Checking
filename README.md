@@ -7,7 +7,7 @@ Quatre espaces :
 
 | Espace | URL | Pour qui |
 |---|---|---|
-| Invité | `/i/<lien d’inscription>` | Public, mobile d’abord, sans compte |
+| Invité | `/i/<lien d’inscription>` (+ `/pratique` : agenda et itinéraire) | Public, mobile d’abord, sans compte |
 | Scan | `/scan` | Hôtes d’accueil (téléphone, tablette borne, ordinateur + douchette ou webcam) |
 | Admin | `/connexion` → `/admin` | Admins des cérémonies (tableau de bord temps réel, invités) |
 | Super admin | `/super/connexion` → `/super` | Direction des événements (configuration globale) |
@@ -24,16 +24,21 @@ Prérequis : Docker Desktop, [mkcert](https://github.com/FiloSottile/mkcert).
 ```bash
 cp .env.example .env                 # puis adaptez les valeurs si besoin
 ./infra/certs.sh                     # certificats HTTPS locaux (mkcert)
-docker compose up -d --build         # mysql, redis, django, celery, frontend, proxy (Caddy)
+docker compose up -d --build         # mysql, redis, mailpit, django, celery, frontend, proxy (Caddy)
 docker compose exec django python manage.py seed_demo
 ```
 
 Ouvrez **https://flex-checking.localhost** (la caméra exige HTTPS hors `localhost`).
 
+Avec Docker Compose, les emails ne partent jamais sur Internet : Django et Celery les remettent à **Mailpit**, qui les
+affiche sur http://localhost:8025 (QR code, pièces jointes, rendu mobile). Pour un vrai envoi, renseignez un serveur
+SMTP dans `.env` et retirez les variables `EMAIL_*` du bloc `x-backend` de `docker-compose.yml`.
+
 | Service | Rôle | Port hôte |
 |---|---|---|
 | `mysql` | MySQL 8, utf8mb4 | 3307 |
-| `redis` | broker Celery, cache, limitation de débit | 6380 |
+| `redis` | broker Celery, cache, limitation de débit, relais temps réel | 6380 |
+| `mailpit` | boîte mail de test : tous les emails de l’application, **http://localhost:8025** | 8025, 1025 (ce poste seulement) |
 | `django` | API (`/api/`), migrations au démarrage | 8000 |
 | `celery` | envois d’emails, actions groupées et exports lourds | — |
 | `frontend` | Vite (dev) | 5173 |
@@ -137,18 +142,51 @@ API documentée (OpenAPI) : `/api/docs/` (Swagger) et `/api/schema/`.
 Hors ligne : coupez le réseau du téléphone, les passages sont mis en file (IndexedDB) et affichés « Enregistré,
 vérification à la reconnexion » ; ils sont synchronisés automatiquement au retour du réseau.
 
-## 7. Production (indications)
+## 7. Production : `docker-compose.prod.yml`
 
-- `DJANGO_DEBUG=0`, `EMAIL_BACKEND` SMTP, vraie `DJANGO_SECRET_KEY`, `APP_PUBLIC_URL` en HTTPS.
-- `docker build backend` (serveur ASGI Daphne : HTTP et WebSocket) + un worker `celery -A config worker`. Redis est
-  obligatoire : file Celery, cache et relais des messages temps réel.
-- Le proxy doit laisser passer les WebSocket sur `/api/ws/` (Caddy le fait sans configuration). Un hébergement de
-  frontend qui ne relaie pas les WebSocket (réécritures Vercel) fonctionne quand même : les écrans repassent en
-  interrogation périodique.
-- `npm run build` puis servir `frontend/dist` avec `infra/Caddyfile.prod` (en-têtes CSP et HSTS, `/api/*` vers Django).
-- `python manage.py migrate` (crée statuts, programmes et paramètres). Créer le premier super admin :
-  `python manage.py shell -c "from apps.comptes.models import Admin; Admin.objects.create_superuser('email', 'Nom', 'mot-de-passe')"`.
-- Les comptes de démonstration ne doivent pas exister en production (ne pas lancer `seed_demo`).
+```bash
+cd frontend && npm ci && npm run build && cd ..          # fichiers statiques servis par Caddy
+docker compose -f docker-compose.prod.yml up -d --build    # mysql, redis, migrate, django, celery, celery-beat, proxy
+docker compose -f docker-compose.prod.yml exec django python manage.py shell -c \
+  "from apps.comptes.models import Admin; Admin.objects.create_superuser('email', 'Nom', 'mot-de-passe')"
+```
+
+`.env` de production : `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` (≥ 32 caractères), `DOMAINE`, `APP_PUBLIC_URL` en HTTPS,
+`DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, mots de passe MySQL forts, SMTP (`EMAIL_BACKEND` smtp). Ne jamais lancer
+`seed_demo` en production.
+
+**Charge (plus de 1 000 personnes simultanées)**
+
+| Élément | Réglage |
+|---|---|
+| Serveur web | Gunicorn + workers Uvicorn (`backend/gunicorn.conf.py`) : HTTP et WebSocket sur plusieurs processus ; `WEB_CONCURRENCY` (défaut 2 × cœurs). Plus de conteneurs : `--scale django=3`, Caddy répartit (moins de connexions actives) et retire un conteneur en panne (`/api/sante/`). |
+| Base | MySQL `max_connections=600`, mémoire InnoDB `MYSQL_INNODB_BUFFER` (défaut 1G) ; index sur les tris et la relance des emails ; une connexion par requête (ASGI) avec délai de connexion de 5 s. |
+| Cache Redis (base 1) | statistiques du tableau de bord, page publique d’inscription, analyses : vidés à chaque changement (chiffres toujours exacts). Redis indisponible : lecture en base, sans erreur. |
+| File et temps réel (Redis base 0) | `maxmemory-policy volatile-lru` : seules les clés à durée de vie sont évincées, jamais la file des emails. |
+| Emails | workers Celery séparés (`CELERY_CONCURRENCY`), 3 nouvelles tentatives, relance automatique des emails restés en attente (Celery beat, toutes les 5 min). |
+| Limites de débit | par IP larges (une salle ou un opérateur mobile partage une IP) : 600 req/min anonymes, 60 inscriptions/h ; strictes par compte et par email : connexion 5/min par IP et email, 20/h par compte, renvoi du QR 3/h par email, rapports PDF 30/h. Réglables : `LIMITE_ANONYME`, `LIMITE_INSCRIPTION_IP`, `LIMITE_COMPTE`. |
+| Frontend | fichiers versionnés en cache un an (`immutable`), page d’entrée revalidée ; compression zstd/gzip ; la page d’inscription publique pèse ~100 Ko compressés (graphiques chargés seulement dans les espaces admin). |
+
+**Test de charge** (`infra/charge/`, procédure et résultats détaillés) : 1 000 ouvertures simultanées du lien
+d’inscription, 500 inscriptions simultanées, 300 tableaux de bord et un scénario mixte de 1 500 requêtes : 100 % de
+réussite ; 500 écrans WebSocket notifiés en moins de 0,1 s. Une file d’attente par processus (`config/concurrence.py`,
+`DB_CONCURRENCE`) borne les connexions MySQL : au lieu d’échouer, les requêtes en surplus attendent leur tour.
+
+**Résilience (l’utilisateur n’est pas impacté par une panne)**
+
+- File d’emails indisponible : l’inscription ou le scan réussit quand même ; l’email part dès le retour de la file.
+- Redis indisponible : pas de cache ni de temps réel, l’application continue (interrogation périodique).
+- WebSocket coupé : reconnexion progressive, rechargement des données manquées.
+- Scan sans réseau : file locale (IndexedDB), synchronisée au retour du réseau.
+- Erreur imprévue : message neutre à l’utilisateur, détail dans **Super admin › Erreurs**.
+- Conteneurs redémarrés automatiquement (`restart: unless-stopped`), contrôles de santé MySQL, Redis, Django, Celery.
+
+**Sécurité de l’exploitation**
+
+- Conteneur applicatif sans privilèges (utilisateur `flex`), MySQL et Redis non exposés hors du réseau Docker.
+- En-têtes CSP, HSTS, COOP, `Permissions-Policy` ; corps de requête limité à 5 Mo ; documentation de l’API
+  (`/api/docs/`) réservée au super admin.
+- Dépendances auditées (`pip-audit`, `npm audit`) : aucune vulnérabilité connue en production à la date du dernier audit.
 
 ## 8. Architecture
 
@@ -220,6 +258,20 @@ Les contradictions entre le design et le cahier des charges sont listées dans `
 - **Écran de présentation** : en ouvrant le lien, l’invité voit d’abord les étapes (inscription et réception du QR
   code et du code, scan le jour de la graduation, réception du lien du magazine si l’email n°2 est actif), puis
   « Commencer mon inscription ».
+- **Tri des tableaux d’invités** : menu « Trier par » (inscriptions récentes ou anciennes, nom et prénom de A à Z ou
+  de Z à A, entreprise, arrivées récentes ou anciennes, présents ou non présents d’abord, événement pour le super
+  admin), synchronisé avec les en-têtes cliquables et l’URL ; le dernier choix est mémorisé sur l’appareil. Seul le
+  critère principal change de sens : les égalités restent classées par nom de A à Z.
+- **Erreurs techniques** : les interfaces n’affichent jamais de détail technique (message simple, bouton « Recharger »).
+  Les erreurs du navigateur (écran planté, erreur JavaScript), du serveur (réponse 500 neutre), des tâches Celery,
+  des envois d’email en échec définitif et du relais temps réel sont enregistrées dans **Super admin › Erreurs**
+  (`/super/erreurs`), en temps réel : regroupées par signature avec compteur d’occurrences, détail dépliable
+  (trace, navigateur), « Résolue » / « Rouvrir » (une erreur résolue qui revient est rouverte), conservation 30 jours.
+  Emails et téléphones sont masqués, les URL sont gardées sans paramètres ; signalement public limité à 30/min.
+- **Agenda et itinéraire** : « Ajouter à l’agenda » propose Google Agenda, Apple Calendrier (fichier .ics), Outlook et
+  Microsoft 365 (événement pré-rempli, rappel 2 h avant) ; « Enregistrer l’itinéraire » ouvre le trajet dans Google
+  Maps, Waze ou Plans, ou copie l’adresse. Apple est proposé en premier sur iPhone et iPad. Les boutons de l’email
+  mènent à la page publique `/i/<lien>/pratique` (mêmes choix) ; le fichier .ics reste joint à l’email.
 - **Champs obligatoires** : tous les champs du formulaire d’inscription et de l’ajout manuel (entreprise et fonction
   comprises) sont obligatoires, côté client et côté API ; formulaire mobile compacté pour tenir sur un écran.
 - **Exports lourds** : le fichier produit par Celery est supprimé dès son téléchargement ; les fichiers oubliés sont purgés après 6 h.

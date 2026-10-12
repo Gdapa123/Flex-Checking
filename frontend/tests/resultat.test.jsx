@@ -6,7 +6,13 @@ describe('résultat de scan', () => {
   it('affiche titre, nom et compte à rebours', () => {
     render(
       <ResultatPleinEcran
-        resultat={{ type: 'PRESENT', titre: 'Présence enregistrée', nom: 'Mme Aya KOUASSI', meta: '18h42 · QR caméra', note: 'Email n°2 envoyé' }}
+        resultat={{
+          type: 'PRESENT',
+          titre: 'Présence enregistrée',
+          nom: 'Mme Aya KOUASSI',
+          meta: '18h42 · QR caméra',
+          note: 'Email n°2 envoyé',
+        }}
         appareil="TELEPHONE"
         progression={0.2}
         pause={false}

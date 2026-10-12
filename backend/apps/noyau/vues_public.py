@@ -1,7 +1,9 @@
 """Espace invité : public, sans compte, avec limitation de débit."""
 
 import hashlib
+from datetime import UTC
 
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
@@ -9,11 +11,13 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from . import emails, services
-from .ics import ics_evenement
+from apps.comptes.throttles import LimiteSensible
+
+from . import caches, emails, services
+from .ics import bornes, description_agenda, ics_evenement
 from .models import Evenement, Invite, TypeEmail
 from .serializers import InscriptionSerializer, tokens_programme
 from .validation import valider_email
@@ -32,7 +36,7 @@ class RenvoiIpThrottle(AnonRateThrottle):
     scope = "renvoi_ip"
 
 
-class RenvoiEmailThrottle(SimpleRateThrottle):
+class RenvoiEmailThrottle(LimiteSensible):
     """3 renvois par heure et par adresse (clé hachée : aucune adresse en clair dans le cache)."""
 
     scope = "renvoi_email"
@@ -55,24 +59,38 @@ class EvenementPublicView(APIView):
 
     @extend_schema(responses={200: None, 404: None}, summary="Infos publiques d'un événement (+ couleurs)")
     def get(self, request, slug):
-        ev = evenement_public(slug)
-        return Response(
-            {
-                "slug": ev.slug_inscription,
-                "nomAffiche": ev.nom_affiche,
-                "programme": ev.programme.nom,
-                "annee": ev.annee,
-                "tokens": tokens_programme(ev.programme),
-                "date": ev.date,
-                "heureDebut": ev.heure_debut.strftime("%H:%M"),
-                "heureAccueil": ev.heure_accueil.strftime("%H:%M"),
-                "lieu": ev.lieu,
-                "lienCarte": ev.lien_carte,
-                "dateLimiteInscription": ev.date_limite_inscription,
-                "magazineActif": bool(ev.programme.magazine_actif and ev.programme.lien_magazine),
-                "etat": services.etat_inscriptions(ev),
-            }
-        )
+        # page la plus consultée (lien d'inscription partagé à des centaines d'invités) : mise en cache,
+        # vidée dès que l'événement, son programme ou ses inscriptions changent
+        donnees = cache.get(caches.cle_public(slug))
+        if donnees is None:
+            donnees = self._donnees(evenement_public(slug))
+            cache.set(caches.cle_public(slug), donnees, caches.DUREE)
+        return Response(donnees)
+
+    @staticmethod
+    def _donnees(ev):
+        debut, fin = bornes(ev)
+        return {
+            "slug": ev.slug_inscription,
+            "nomAffiche": ev.nom_affiche,
+            "programme": ev.programme.nom,
+            "annee": ev.annee,
+            "tokens": tokens_programme(ev.programme),
+            "date": ev.date,
+            "heureDebut": ev.heure_debut.strftime("%H:%M"),
+            "heureAccueil": ev.heure_accueil.strftime("%H:%M"),
+            "lieu": ev.lieu,
+            "lienCarte": ev.lien_carte,
+            # bornes UTC pour les liens Google Agenda / Outlook (même contenu que le fichier .ics)
+            "agenda": {
+                "debut": debut.astimezone(UTC).isoformat().replace("+00:00", "Z"),
+                "fin": fin.astimezone(UTC).isoformat().replace("+00:00", "Z"),
+                "description": description_agenda(ev),
+            },
+            "dateLimiteInscription": ev.date_limite_inscription,
+            "magazineActif": bool(ev.programme.magazine_actif and ev.programme.lien_magazine),
+            "etat": services.etat_inscriptions(ev),
+        }
 
 
 class InscriptionView(APIView):

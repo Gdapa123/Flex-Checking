@@ -14,12 +14,23 @@ import threading
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import transaction
-from django.db.models.signals import m2m_changed, post_delete, post_save
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from apps.comptes.models import Admin
 
-from .models import EmailEnvoye, Emargement, Evenement, Invite, JournalActivite, Parametres, Programme
+from .caches import CLE_ANALYTIQUE, cle_public, cle_statistiques, invalider
+from .models import (
+    EmailEnvoye,
+    Emargement,
+    ErreurTechnique,
+    Evenement,
+    Invite,
+    JournalActivite,
+    Parametres,
+    Programme,
+    SourceErreur,
+)
 
 journal = logging.getLogger(__name__)
 
@@ -72,8 +83,17 @@ def _envoyer():
         }
         try:
             async_to_sync(couche.group_send)(groupe, message)
-        except Exception:  # noqa: BLE001 — Redis indisponible : les écrans repassent en interrogation périodique
+        except Exception as exc:  # noqa: BLE001 — Redis indisponible : les écrans repassent en interrogation périodique
             journal.warning("Notification temps réel impossible (%s)", groupe, exc_info=True)
+            from .erreurs import enregistrer_exception
+
+            # pas de notification de cette erreur-ci : elle échouerait de la même façon
+            _local.sans_notification = True
+            try:
+                enregistrer_exception(SourceErreur.SERVEUR, exc, lieu="Relais temps réel (Redis)")
+            finally:
+                _local.sans_notification = False
+            return
 
 
 # ---------------------------------------------------------------------------- signaux
@@ -81,18 +101,28 @@ def _envoyer():
 SUJETS_INVITES = ("invites", "statistiques", "recents", "evenements")
 
 
+def _slug(evenement_id):
+    return Evenement.objects.filter(pk=evenement_id).values_list("slug_inscription", flat=True).first()
+
+
 @receiver([post_save, post_delete], sender=Invite)
 def _invite(sender, instance, **kwargs):
+    # places restantes de la page publique et statistiques : caches vidés immédiatement
+    # (événement déjà chargé : pas de requête supplémentaire par invité, ex. suppression en cascade)
+    slug = instance.evenement.slug_inscription if Invite.evenement.is_cached(instance) else _slug(instance.evenement_id)
+    invalider(cle_statistiques(instance.evenement_id), cle_public(slug), CLE_ANALYTIQUE)
     notifier_evenement(instance.evenement_id, SUJETS_INVITES)
 
 
 @receiver(post_save, sender=Emargement)
 def _emargement(sender, instance, **kwargs):
+    invalider(cle_statistiques(instance.invite.evenement_id), CLE_ANALYTIQUE)
     notifier_evenement(instance.invite.evenement_id, SUJETS_INVITES)
 
 
 @receiver(post_save, sender=EmailEnvoye)
 def _email(sender, instance, **kwargs):
+    invalider(cle_statistiques(instance.invite.evenement_id))
     notifier_evenement(instance.invite.evenement_id, ("invites", "statistiques"))
 
 
@@ -101,8 +131,20 @@ def _journal(sender, instance, **kwargs):
     notifier([TOUS], ("journal",))
 
 
+@receiver(pre_save, sender=Evenement)
+def _evenement_avant(sender, instance, **kwargs):
+    # lien régénéré : l'ancien lien doit cesser de fonctionner tout de suite (pas de réponse en cache)
+    instance._slug_precedent = _slug(instance.pk) if instance.pk else None
+
+
 @receiver([post_save, post_delete], sender=Evenement)
 def _evenement(sender, instance, **kwargs):
+    invalider(
+        cle_statistiques(instance.pk),
+        cle_public(instance.slug_inscription),
+        cle_public(getattr(instance, "_slug_precedent", None)),
+        CLE_ANALYTIQUE,
+    )
     notifier_evenement(instance.pk, ("evenement", "evenements", "statistiques"))
 
 
@@ -110,7 +152,9 @@ def _evenement(sender, instance, **kwargs):
 def _programme(sender, instance, **kwargs):
     groupes = [TOUS]
     if kwargs.get("signal") is post_save:
-        groupes += [groupe_evenement(pk) for pk in instance.evenements.values_list("pk", flat=True)]
+        evenements = list(instance.evenements.values_list("pk", "slug_inscription"))
+        invalider(*[cle_public(slug) for _, slug in evenements], *[cle_statistiques(pk) for pk, _ in evenements])
+        groupes += [groupe_evenement(pk) for pk, _ in evenements]
     notifier(groupes, ("programmes", "evenement", "evenements", "apercu-emails"))
 
 
@@ -147,3 +191,9 @@ def _affectations(sender, instance, action, reverse, pk_set, **kwargs):
         comptes = list(pk_set or ())
     notifier([TOUS], ("admins", "evenements"))
     notifier([groupe_compte(pk) for pk in comptes], type_message="perimetre")
+
+
+@receiver(post_save, sender=ErreurTechnique)
+def _erreur(sender, instance, **kwargs):
+    if not getattr(_local, "sans_notification", False):
+        notifier([TOUS], ("erreurs",))

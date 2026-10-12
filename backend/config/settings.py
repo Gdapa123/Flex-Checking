@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "apps.noyau.mesures.MesuresMiddleware",  # durée et statut de chaque requête API (graphiques techniques)
     "django.middleware.security.SecurityMiddleware",
     "apps.noyau.middleware.EnTetesSecuriteMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -69,7 +70,15 @@ DATABASES = {
         "PASSWORD": env("MYSQL_PASSWORD", default="flex_checking"),
         "HOST": env("DB_HOST", default="127.0.0.1"),
         "PORT": env("DB_PORT", default="3306"),
-        "OPTIONS": {"charset": "utf8mb4", "init_command": "SET sql_mode='STRICT_TRANS_TABLES'"},
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            # une base saturée ou injoignable doit échouer vite plutôt que bloquer les requêtes
+            "connect_timeout": 5,
+        },
+        # Sous ASGI, chaque requête ouvre et ferme sa connexion (pas de connexions persistantes partagées
+        # entre threads) ; le nombre de connexions MySQL autorisées est dimensionné en conséquence.
+        "CONN_MAX_AGE": 0,
         "TEST": {"CHARSET": "utf8mb4", "COLLATION": "utf8mb4_unicode_ci"},
     }
 }
@@ -97,12 +106,26 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Cache / limitation de débit ---
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379/0")
+# Base Redis séparée pour le cache : le vider ne doit jamais effacer la file Celery ni le temps réel
+REDIS_CACHE_URL = env("REDIS_CACHE_URL", default=REDIS_URL.rsplit("/", 1)[0] + "/1")
+_REDIS_OPTIONS = {
+    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    # délais courts : un Redis bloqué ne doit pas ralentir les requêtes
+    "SOCKET_CONNECT_TIMEOUT": 0.5,
+    "SOCKET_TIMEOUT": 0.5,
+    "CONNECTION_POOL_KWARGS": {"max_connections": env.int("REDIS_MAX_CONNEXIONS", default=200)},
+}
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient", "IGNORE_EXCEPTIONS": True},
-    }
+        "LOCATION": REDIS_CACHE_URL,
+        # Redis indisponible : l'application continue sans cache (jamais d'erreur pour l'utilisateur)
+        "OPTIONS": {**_REDIS_OPTIONS, "IGNORE_EXCEPTIONS": True},
+    },
+    # Limites anti-abus sensibles (connexion, renvoi d'email) : les erreurs Redis remontent pour que
+    # `apps.comptes.throttles.CacheDeSecours` bascule sur une mémoire locale au lieu de tout laisser passer.
+    "limites": {"BACKEND": "django_redis.cache.RedisCache", "LOCATION": REDIS_CACHE_URL, "OPTIONS": _REDIS_OPTIONS},
+    "limites_local": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "limites"},
 }
 
 # --- Django REST Framework ---
@@ -121,12 +144,23 @@ REST_FRAMEWORK = {
     # ajoutée à X-Forwarded-For. Sans ce réglage, l'en-tête complet (falsifiable) servait d'identifiant
     # et permettait de contourner toutes les limites de débit par IP.
     "NUM_PROXIES": env.int("NUM_PROXIES", default=1),
+    # Limites de débit. Les limites par IP restent larges : le jour J, des centaines de personnes partagent
+    # la même adresse (Wi-Fi de la salle, opérateurs mobiles) ; les limites par compte et par email
+    # protègent contre la force brute et l'abus d'envoi.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {
-        "connexion": "5/min",
+        "anon": env("LIMITE_ANONYME", default="600/min"),
+        "user": env("LIMITE_COMPTE", default="1200/min"),
+        "connexion": "5/min",  # par IP et par email : des hôtes partageant une IP ne se bloquent pas
         "connexion_compte": "20/hour",
-        "inscription": "10/hour",
-        "renvoi_ip": "10/hour",
+        "inscription": env("LIMITE_INSCRIPTION_IP", default="60/hour"),
+        "renvoi_ip": "30/hour",
         "renvoi_email": "3/hour",
+        "signalement_erreur": "30/min",
+        "rapport": "30/hour",
     },
     "EXCEPTION_HANDLER": "apps.noyau.exceptions.gestionnaire_exceptions",
     # « ?format=xlsx|csv » désigne le format d'export, pas un rendu DRF
@@ -138,8 +172,8 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API d'émargement des cérémonies de graduation de MDE Business School.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    # documentation de l'API réservée aux comptes connectés
-    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
+    # documentation de l'API réservée au super admin
+    "SERVE_PERMISSIONS": ["apps.comptes.permissions.EstSuperAdmin"],
     "SERVE_AUTHENTICATION": ["apps.comptes.authentication.CookieJWTAuthentication"],
     "CAMELIZE_NAMES": True,
     "POSTPROCESSING_HOOKS": [
@@ -193,6 +227,17 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = False
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # répartit la charge entre workers (envois d'emails en rafale)
+CELERY_TASK_SOFT_TIME_LIMIT = 90
+CELERY_TASK_TIME_LIMIT = 120
+# File injoignable : échouer vite (l'email reste « en attente » et sera relancé par la tâche planifiée)
+CELERY_BROKER_CONNECTION_TIMEOUT = 2
+CELERY_BROKER_TRANSPORT_OPTIONS = {"socket_connect_timeout": 2, "socket_timeout": 5, "max_retries": 1}
+CELERY_TASK_PUBLISH_RETRY_POLICY = {"max_retries": 1, "interval_start": 0, "interval_step": 0.5}
+CELERY_BEAT_SCHEDULE = {
+    "relancer-emails-en-attente": {"task": "apps.noyau.tasks.relancer_emails_en_attente", "schedule": 300},
+    "purger-exports": {"task": "apps.noyau.tasks.purger", "schedule": 3600},
+}
 
 # --- Emails ---
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")

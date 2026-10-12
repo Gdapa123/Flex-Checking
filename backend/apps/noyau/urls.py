@@ -3,7 +3,7 @@ from rest_framework.routers import SimpleRouter
 
 from apps.comptes import views as auth
 
-from . import vues_admin, vues_invites, vues_public, vues_scan
+from . import vues_admin, vues_erreurs, vues_invites, vues_public, vues_scan
 
 routeur = SimpleRouter(trailing_slash=True)
 routeur.register("programmes", vues_admin.ProgrammeViewSet, basename="programme")
@@ -18,6 +18,15 @@ urlpatterns = [
     path("auth/rafraichir/", auth.RafraichirView.as_view()),
     path("auth/moi/", auth.MoiView.as_view()),
     path("auth/mot-de-passe/", auth.ChangerMotDePasseView.as_view()),
+    # Analyses (super admin)
+    path("analytique/", vues_admin.AnalytiqueView.as_view()),
+    path("analytique/technique/", vues_admin.TechniqueView.as_view()),
+    path("rapports/global/", vues_admin.RapportGlobalView.as_view()),
+    # Erreurs techniques (signalement par le navigateur ; consultation super admin)
+    path("erreurs/", vues_erreurs.SignalementView.as_view()),
+    path("erreurs-techniques/", vues_erreurs.ErreursView.as_view()),
+    path("erreurs-techniques/actions/", vues_erreurs.ErreursActionView.as_view()),
+    path("erreurs-techniques/<int:pk>/", vues_erreurs.ErreurDetailView.as_view()),
     # Public (invité)
     path("public/evenements/<slug:slug>/", vues_public.EvenementPublicView.as_view()),
     path("public/evenements/<slug:slug>/inscription/", vues_public.InscriptionView.as_view()),

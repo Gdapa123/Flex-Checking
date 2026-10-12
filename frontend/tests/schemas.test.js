@@ -17,7 +17,9 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
     expect(schemaInscription.safeParse(OK).success).toBe(true);
   });
   it('refuse les champs invalides avec les messages du design', () => {
-    const e = erreursParChamp(schemaInscription.safeParse({ ...OK, civilite: '', prenom: '', email: 'aya@orange', telephone: '07 12 34' }));
+    const e = erreursParChamp(
+      schemaInscription.safeParse({ ...OK, civilite: '', prenom: '', email: 'aya@orange', telephone: '07 12 34' }),
+    );
     expect(e.civilite).toBe('Choisissez une civilité.');
     expect(e.prenom).toBe('Indiquez votre prénom.');
     expect(e.email).toBe('Adresse email invalide, par exemple nom@entreprise.ci.');
@@ -29,7 +31,9 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
     expect(e.fonction).toBe('Indiquez votre fonction.');
   });
   it('exige le consentement', () => {
-    expect(erreurChamp(schemaInscription, 'consentementDonnees', { ...OK, consentementDonnees: false })).toMatch(/accord/);
+    expect(erreurChamp(schemaInscription, 'consentementDonnees', { ...OK, consentementDonnees: false })).toMatch(
+      /accord/,
+    );
   });
   it('formate le téléphone pendant la saisie', () => {
     expect(formaterTelephone('0712345678999')).toBe('07 12 34 56 78');

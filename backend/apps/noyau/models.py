@@ -151,6 +151,7 @@ class Invite(models.Model):
             models.Index(fields=["evenement", "statut"]),
             models.Index(fields=["evenement", "present_le"]),
             models.Index(fields=["evenement", "nom"]),
+            models.Index(fields=["evenement", "inscrit_le"]),  # tri par défaut et courbes d'inscription
         ]
         ordering = ["-inscrit_le"]
 
@@ -211,7 +212,10 @@ class EmailEnvoye(models.Model):
 
     class Meta:
         ordering = ["-cree_le"]
-        indexes = [models.Index(fields=["invite", "type", "statut"])]
+        indexes = [
+            models.Index(fields=["invite", "type", "statut"]),
+            models.Index(fields=["statut", "tentatives", "cree_le"]),  # relance des emails restés en attente
+        ]
 
 
 class JournalActivite(models.Model):
@@ -271,3 +275,36 @@ class Parametres(models.Model):
     def charger(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class SourceErreur(models.TextChoices):
+    NAVIGATEUR = "NAVIGATEUR", "Navigateur"
+    SERVEUR = "SERVEUR", "Serveur"
+    TACHE = "TACHE", "Tâche d’arrière-plan"
+    EMAIL = "EMAIL", "Envoi d’email"
+
+
+class ErreurTechnique(models.Model):
+    """Erreur technique, regroupée par signature (même source, type, message et lieu).
+
+    Visible du seul super admin ; les interfaces n'affichent qu'un message simple. Les emails et
+    numéros de téléphone sont masqués à l'enregistrement, les URL sont conservées sans paramètres.
+    """
+
+    source = models.CharField(max_length=12, choices=SourceErreur.choices, db_index=True)
+    signature = models.CharField(max_length=64, unique=True)
+    type = models.CharField(max_length=120)
+    message = models.TextField()
+    lieu = models.CharField(max_length=300, blank=True)
+    details = models.TextField(blank=True)
+    navigateur = models.CharField(max_length=300, blank=True)
+    occurrences = models.PositiveIntegerField(default=1)
+    premiere = models.DateTimeField(default=timezone.now)
+    derniere = models.DateTimeField(default=timezone.now, db_index=True)
+    resolue = models.BooleanField(default=False, db_index=True)
+    resolue_le = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-derniere"]
+        verbose_name = "erreur technique"
+        verbose_name_plural = "erreurs techniques"

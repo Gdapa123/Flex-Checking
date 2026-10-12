@@ -49,14 +49,12 @@
               <a href="{{ lien_agenda }}" style="display:block;padding:13px 12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;color:{{ t.on_primary }};text-decoration:none;border-radius:10px;"><img src="{{ ic.calendarPlus }}" width="18" height="18" alt="" style="vertical-align:-3px;margin-right:8px;">Ajouter à l’agenda</a>
             </td></tr></table>
         </td>
-        {% if lien_carte %}
         <td class="bouton-col" width="50%" style="padding:0 0 0 6px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr>
             <td align="center" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #868D93;border-radius:10px;">
-              <a href="{{ lien_carte }}" style="display:block;padding:12px 12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;color:#1B1D20;text-decoration:none;border-radius:10px;"><img src="{{ ic.navigation }}" width="18" height="18" alt="" style="vertical-align:-3px;margin-right:8px;">Enregistrer l’itinéraire</a>
+              <a href="{{ lien_itineraire }}" style="display:block;padding:12px 12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;color:#1B1D20;text-decoration:none;border-radius:10px;"><img src="{{ ic.navigation }}" width="18" height="18" alt="" style="vertical-align:-3px;margin-right:8px;">Enregistrer l’itinéraire</a>
             </td></tr></table>
         </td>
-        {% endif %}
       </tr>
     </table>
     <p style="margin:12px 0 0 0;font-size:13px;line-height:1.5;color:#5F666C;">Le fichier d’agenda (.ics) et votre QR code sont également joints à cet email.</p>

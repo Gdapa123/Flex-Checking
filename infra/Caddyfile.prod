@@ -1,21 +1,58 @@
-# Production : fichiers statiques du frontend (npm run build → frontend/dist) + API Django (gunicorn).
-# En-têtes de sécurité (CSP, HSTS) appliqués à l'application web.
+# Production : fichiers statiques du frontend (npm run build → frontend/dist) + API Django (Gunicorn/Uvicorn).
+# En-têtes de sécurité (CSP, HSTS) appliqués à l'application web. Certificat HTTPS automatique.
 {$DOMAINE:emargement.mde.ci} {
-	encode gzip
+	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' wss://{host}; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' wss://{host}; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
 		Referrer-Policy strict-origin-when-cross-origin
-		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+		Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy same-origin
 		-Server
 	}
-	handle /api/* {
-		reverse_proxy django:8000
+
+	# corps de requête limité (aucun envoi de fichier volumineux dans l'application)
+	request_body {
+		max_size 5MB
 	}
+
+	handle /api/* {
+		# répartition entre les conteneurs django (docker compose --scale django=N), contrôle de santé actif :
+		# un conteneur en panne est retiré automatiquement, les requêtes vont aux autres
+		reverse_proxy {
+			dynamic a django 8000 {
+				refresh 10s
+			}
+			lb_policy least_conn
+			lb_try_duration 5s
+			health_uri /api/sante/
+			health_interval 10s
+			health_timeout 3s
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 60s
+			}
+		}
+	}
+
 	handle {
 		root * /srv/frontend
+		# fichiers versionnés (nom avec empreinte) : mis en cache un an par les navigateurs
+		@versionnes path /assets/*
+		header @versionnes Cache-Control "public, max-age=31536000, immutable"
+		# page d'entrée et service worker : toujours revalidés (mise à jour immédiate après déploiement)
+		@entree path / /index.html /sw.js /registerSW.js /manifest.webmanifest
+		header @entree Cache-Control "no-cache"
 		try_files {path} /index.html
-		file_server
+		file_server {
+			precompressed zstd gzip
+		}
+	}
+
+	log {
+		output stdout
+		format json
 	}
 }

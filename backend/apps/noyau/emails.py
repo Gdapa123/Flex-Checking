@@ -7,6 +7,7 @@ est remplacée par la carte QR (ou magazine), le texte après dans une carte sui
 """
 
 import base64
+import logging
 import re
 from email.mime.image import MIMEImage
 from pathlib import Path
@@ -21,7 +22,7 @@ from django.utils.safestring import mark_safe
 
 from . import dates
 from .icones_email import icone_png
-from .ics import ics_evenement
+from .ics import ics_evenement, lien_pratique
 from .models import EmailEnvoye, Parametres, StatutEmail, TypeEmail
 from .qr import qr_png
 from .theme import deriver_tokens
@@ -141,7 +142,9 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "heure_accueil": dates.heure(ev.heure_accueil),
         "lieu": ev.lieu,
         "lien_carte": ev.lien_carte,
-        "lien_agenda": f"{settings.APP_PUBLIC_URL}/api/public/evenements/{ev.slug_inscription}/agenda.ics",
+        # page « Infos pratiques » : choix de l'agenda (Google, Outlook, Apple…) et de l'application d'itinéraire
+        "lien_agenda": lien_pratique(ev, "agenda"),
+        "lien_itineraire": lien_pratique(ev, "itineraire"),
         "lien_public": lien_public,
         "lien_magazine": prog.lien_magazine,
         "code": source.code,
@@ -211,8 +214,21 @@ def planifier(invite, type_email):
     from .tasks import envoyer_email
 
     email = EmailEnvoye.objects.create(invite=invite, type=type_email, statut=StatutEmail.EN_ATTENTE)
-    transaction.on_commit(lambda: envoyer_email.delay(email.pk))
+    transaction.on_commit(lambda: _lancer(envoyer_email, email.pk))
     return email
+
+
+def _lancer(tache, email_id):
+    """Met l'envoi en file sans jamais faire échouer l'action de l'utilisateur (inscription, scan) :
+    si la file est indisponible, l'email reste « en attente » et la tâche planifiée le relancera."""
+    try:
+        tache.delay(email_id)
+    except Exception as exc:  # noqa: BLE001
+        from .erreurs import enregistrer_exception
+        from .models import SourceErreur
+
+        logging.getLogger(__name__).warning("File d'envoi indisponible : email %s relancé plus tard.", email_id)
+        enregistrer_exception(SourceErreur.TACHE, exc, lieu="Mise en file d'un email")
 
 
 def magazine_deja_parti(invite):

@@ -6,6 +6,17 @@ import Bouton from '../../components/ui/Bouton';
 import Champ from '../../components/ui/Champ';
 import Icon from '../../components/ui/Icon';
 
+/**
+ * Adresse de retour après connexion : uniquement un chemin interne à l'application. Refuse « //hôte »,
+ * « /\\hôte » et tout schéma (redirection ouverte vers un site tiers).
+ */
+export function cheminInterne(chemin) {
+  if (typeof chemin !== 'string' || !chemin.startsWith('/')) return null;
+  if (/^\/[\\/]/.test(chemin) || chemin.includes('\\')) return null;
+  if ([...chemin].some((c) => c.charCodeAt(0) < 32)) return null; // caractères de contrôle
+  return chemin;
+}
+
 /** Formulaire email + mot de passe commun aux deux connexions. */
 export default function FormulaireConnexion({ univers, destination, enTete, piedDePage }) {
   const [email, setEmail] = useState('');
@@ -29,7 +40,7 @@ export default function FormulaireConnexion({ univers, destination, enTete, pied
     try {
       const moi = await api.post('/auth/connexion/', { email: email.trim(), motDePasse: mdp });
       qc.setQueryData(['moi'], moi);
-      const depuis = location.state?.depuis;
+      const depuis = cheminInterne(location.state?.depuis);
       naviguer(depuis || destination(moi), { replace: true });
     } catch (err) {
       setErreur(err.status === 401 ? 'Email ou mot de passe incorrect.' : messageErreur(err));

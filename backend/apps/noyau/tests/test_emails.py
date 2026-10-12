@@ -53,3 +53,15 @@ def test_envoi_ok(evenement):
     inv = nouvel_invite(evenement)
     e = EmailEnvoye.objects.get(invite=inv)
     assert e.statut == StatutEmail.ENVOYE and e.envoye_le and len(mail.outbox) == 1
+
+
+def test_boutons_agenda_et_itineraire_vers_infos_pratiques(evenement, settings):
+    evenement.lien_carte = ""  # le bouton itinéraire est présent même sans lien de carte saisi
+    evenement.save()
+    inv = nouvel_invite(evenement)
+    r = rendre(TypeEmail.INVITATION, Source.depuis_invite(inv))
+    base = f"{settings.APP_PUBLIC_URL}/i/{evenement.slug_inscription}/pratique"
+    for ancre in ("agenda", "itineraire"):
+        assert f'href="{base}#{ancre}"' in r["html"]
+        assert f"{base}#{ancre}" in r["texte"]
+    assert any(nom == "graduation.ics" for nom, *_ in r["pieces_jointes"])

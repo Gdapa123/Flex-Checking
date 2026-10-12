@@ -138,6 +138,16 @@ def test_agenda_ics(client, evenement):
     r = client.get(url(evenement, "agenda.ics"))
     assert r.status_code == 200 and r["Content-Type"].startswith("text/calendar")
     assert b"BEGIN:VEVENT" in r.content
+    assert f"/i/{evenement.slug_inscription}/pratique#itineraire".encode() in r.content
+
+
+def test_infos_agenda_publiques(client, evenement):
+    """Bornes UTC pour Google Agenda / Outlook : accueil 17:15, fin = lancement 18:00 + 3 h (Abidjan = UTC)."""
+    agenda = client.get(url(evenement)).json()["agenda"]
+    jour = evenement.date.strftime("%Y-%m-%d")
+    assert agenda["debut"] == f"{jour}T17:15:00Z"
+    assert agenda["fin"] == f"{jour}T21:00:00Z"
+    assert "Itinéraire" in agenda["description"]
 
 
 @pytest.mark.parametrize(

@@ -3,7 +3,8 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _cache_vide():
-    from django.core.cache import cache
+    from django.core.cache import caches
 
-    cache.clear()
+    for alias in ("default", "limites", "limites_local"):
+        caches[alias].clear()
     yield

@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from . import statuts
 from .dates import combiner, heure
-from .models import EmailEnvoye, Evenement, ModeEmargement, StatutEmail, TypeEmail
+from .models import EmailEnvoye, Emargement, Evenement, ModeEmargement, StatutEmail, TypeEmail
 
 TRANCHE = timedelta(minutes=15)
 
@@ -50,6 +50,25 @@ def statistiques(evenement):
     # --- répartition par mode ---
     par_mode = dict(invites.filter(statut__code=statuts.PRESENT).values_list("mode_emargement").annotate(n=Count("id")))
     modes = [{"mode": m.value, "libelle": m.label, "nb": par_mode.get(m.value, 0)} for m in ModeEmargement]
+
+    # --- arrivées par poste d'accueil (émargements non annulés) ---
+    postes = [
+        {"poste": p or "Non précisé", "nb": n}
+        for p, n in Emargement.objects.filter(invite__evenement=evenement, annule_le__isnull=True)
+        .values_list("poste")
+        .annotate(n=Count("id"))
+        .order_by("-n")[:8]
+    ]
+
+    # --- inscriptions par jour (cumul) ---
+    jours = {}
+    for d in invites.values_list("inscrit_le", flat=True):
+        cle = timezone.localtime(d).date()
+        jours[cle] = jours.get(cle, 0) + 1
+    cumul, inscriptions = 0, []
+    for jour in sorted(jours):
+        cumul += jours[jour]
+        inscriptions.append({"date": jour.isoformat(), "nb": jours[jour], "cumul": cumul})
 
     # --- emails : statut du dernier envoi de chaque type par invité ---
     emails = EmailEnvoye.objects.filter(invite__evenement=evenement)
@@ -97,6 +116,9 @@ def statistiques(evenement):
         "trancheCourante": courante,
         "pic": pic if pic and pic["arrivees"] else None,
         "modes": modes,
+        "postes": postes,
+        "inscriptions": inscriptions[-60:],
+        "remplissage": round(inscrits / evenement.capacite * 100) if evenement.capacite else 0,
         "emails": {
             "invitationsEnvoyees": sum(1 for s in inv.values() if s == StatutEmail.ENVOYE),
             "invitationsEchec": sum(1 for s in inv.values() if s == StatutEmail.ECHEC),

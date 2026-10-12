@@ -7,4 +7,6 @@ class NoyauConfig(AppConfig):
     verbose_name = "Émargement"
 
     def ready(self):
-        from . import temps_reel  # noqa: F401  (signaux de diffusion temps réel)
+        from . import erreurs, temps_reel  # noqa: F401  (signaux de diffusion temps réel)
+
+        erreurs.brancher()

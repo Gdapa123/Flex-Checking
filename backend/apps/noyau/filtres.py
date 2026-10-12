@@ -12,6 +12,7 @@ from .models import StatutEmail
 
 TRIS = {
     "nom": ["nom", "prenom"],
+    "prenom": ["prenom", "nom"],
     "entreprise": ["entreprise", "nom"],
     "statut": ["statut__ordre", "nom"],
     "inscritLe": ["inscrit_le"],
@@ -67,10 +68,10 @@ def trier_invites(qs, params):
     tri = params.get("tri") or "-inscritLe"
     desc = tri.startswith("-")
     champs = TRIS.get(tri.lstrip("-"), TRIS["inscritLe"])
-    ordre = []
-    for c in champs:
-        expr = F(c)
-        ordre.append(expr.desc(nulls_last=True) if desc else expr.asc(nulls_last=True))
+    # seul le critère principal change de sens ; les égalités restent classées de A à Z
+    principal, *secondaires = champs
+    ordre = [F(principal).desc(nulls_last=True) if desc else F(principal).asc(nulls_last=True)]
+    ordre += [F(c).asc(nulls_last=True) for c in secondaires]
     return qs.order_by(*ordre, "pk")
 
 

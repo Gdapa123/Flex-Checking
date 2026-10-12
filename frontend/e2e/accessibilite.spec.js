@@ -35,6 +35,9 @@ test('accessibilité des écrans principaux', async ({ page }) => {
   const encours = evenements.find((e) => e.statut === 'AUJOURDHUI') || evenements[0];
 
   problemes.push(...(await auditer(page, `/i/${pmd.slugInscription}`, () => page.getByRole('heading', { name: pmd.nomAffiche }).waitFor())));
+  problemes.push(
+    ...(await auditer(page, `/i/${pmd.slugInscription}/pratique`, () => page.getByRole('heading', { name: 'Itinéraire' }).waitFor())),
+  );
   const ecrans = [
     ['/super', 'Vue globale'],
     ['/super/programmes', 'Programmes'],
@@ -43,6 +46,9 @@ test('accessibilité des écrans principaux', async ({ page }) => {
     ['/super/admins', 'Comptes admins'],
     ['/super/parametres', 'Paramètres'],
     ['/super/journal', 'Exports et journal d’activité'],
+    ['/super/analyses', 'Analyses'],
+    ['/super/analyses?onglet=technique', 'Analyses'],
+    ['/super/erreurs', 'Erreurs techniques'],
     ['/admin', 'Choisissez une cérémonie'],
     [`/admin/evenements/${encours.id}`, 'Tableau de bord'],
     [`/admin/evenements/${encours.id}/invites`, 'Gestion des invités'],

@@ -13,10 +13,11 @@ from channels.security.websocket import AllowedHostsOriginValidator  # noqa: E40
 from django.urls import path  # noqa: E402
 
 from apps.noyau.consumers import TempsReelConsumer  # noqa: E402
+from config.concurrence import LimiteConcurrence  # noqa: E402
 
 application = ProtocolTypeRouter(
     {
-        "http": application_http,
+        "http": LimiteConcurrence(application_http),
         "websocket": AllowedHostsOriginValidator(URLRouter([path("api/ws/", TempsReelConsumer.as_asgi())])),
     }
 )

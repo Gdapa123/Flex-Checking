@@ -29,6 +29,43 @@ const DEFAUTS = {
   programme: '',
 };
 
+/** Options d'affichage du tableau (même paramètre `tri` que les en-têtes de colonnes cliquables). */
+const TRIS = [
+  ['-inscritLe', 'Inscriptions les plus récentes'],
+  ['inscritLe', 'Inscriptions les plus anciennes'],
+  ['nom', 'Nom de A à Z'],
+  ['-nom', 'Nom de Z à A'],
+  ['prenom', 'Prénom de A à Z'],
+  ['-prenom', 'Prénom de Z à A'],
+  ['entreprise', 'Entreprise de A à Z'],
+  ['-entreprise', 'Entreprise de Z à A'],
+  ['-presentLe', 'Arrivées les plus récentes'],
+  ['presentLe', 'Arrivées les plus anciennes'],
+  ['-statut', 'Présents d’abord'],
+  ['statut', 'Non présents d’abord'],
+];
+const TRIS_EVENEMENT = [
+  ['evenement', 'Événement le plus proche'],
+  ['-evenement', 'Événement le plus lointain'],
+];
+const CLE_TRI = (univers) => `fc-tri-invites-${univers}`;
+
+/** Dernier tri choisi sur cet appareil (préférence d'affichage, sans donnée personnelle). */
+function lireTri(univers) {
+  try {
+    return localStorage.getItem(CLE_TRI(univers)) || DEFAUTS.tri;
+  } catch {
+    return DEFAUTS.tri;
+  }
+}
+function memoriserTri(univers, tri) {
+  try {
+    localStorage.setItem(CLE_TRI(univers), tri);
+  } catch {
+    // stockage indisponible (navigation privée) : le tri reste dans l'URL
+  }
+}
+
 /**
  * A4 · Gestion des invités (admin) et SA9 · Tous les invités (super admin, `univers="mde"`).
  * Recherche, filtres, tri et page synchronisés avec l'URL ; tri et pagination côté serveur ;
@@ -38,7 +75,13 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
   const mde = univers === 'mde';
   const toast = useToast();
   const qc = useQueryClient();
-  const [f, majUrl] = useUrlState(DEFAUTS);
+  const defauts = useMemo(() => ({ ...DEFAUTS, tri: lireTri(univers) }), [univers]);
+  const [f, majUrl] = useUrlState(defauts);
+  const tris = evenement ? TRIS : [...TRIS, ...TRIS_EVENEMENT];
+  const choisirTri = (tri) => {
+    memoriserTri(univers, tri);
+    majUrl({ tri, page: 1 });
+  };
   const [recherche, setRecherche] = useState(f.q);
   const [selection, setSelection] = useState(() => new Set());
   const [ajout, setAjout] = useState(false);
@@ -254,7 +297,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
   const trier = (cle) => {
     const actuel = f.tri.replace('-', '');
     const desc = f.tri.startsWith('-');
-    majUrl({ tri: actuel === cle ? (desc ? cle : `-${cle}`) : cle, page: 1 });
+    choisirTri(actuel === cle ? (desc ? cle : `-${cle}`) : cle);
   };
 
   const actifKpi =
@@ -395,6 +438,20 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               </select>
             </>
           )}
+          <label className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[14px] font-semibold">
+              <Icon nom="sort" className="text-[17px]" />
+              Trier par
+            </span>
+            <select value={f.tri} onChange={(e) => choisirTri(e.target.value)} className={select}>
+              {tris.map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+              {!tris.some(([v]) => v === f.tri) && <option value={f.tri}>Colonne choisie dans le tableau</option>}
+            </select>
+          </label>
           <select
             aria-label="Mode d’émargement"
             value={f.mode}

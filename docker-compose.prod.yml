@@ -1,0 +1,130 @@
+# Production : docker compose -f docker-compose.prod.yml up -d --build
+# Prérequis : .env de production (DJANGO_DEBUG=0, DJANGO_SECRET_KEY, mots de passe forts, SMTP, DOMAINE)
+# et frontend construit (cd frontend && npm ci && npm run build).
+#
+# Montée en charge (plus de 1 000 personnes simultanées) :
+#   - django : WEB_CONCURRENCY processus Uvicorn par conteneur ; ajouter des conteneurs avec
+#     `docker compose -f docker-compose.prod.yml up -d --scale django=3` (Caddy répartit la charge) ;
+#   - MySQL : max_connections et mémoire InnoDB dimensionnés ;
+#   - Redis : cache, file Celery et relais temps réel ; seules les clés à durée de vie sont évincées ;
+#   - Celery : workers d'envoi d'emails indépendants du web.
+name: flex-checking-prod
+
+x-backend: &backend
+  build:
+    context: ./backend
+    target: prod
+  image: flex-checking-backend:prod
+  env_file: .env
+  environment:
+    DB_HOST: mysql
+    DB_PORT: "3306"
+    REDIS_URL: redis://redis:6379/0
+    DJANGO_DEBUG: "0"
+    NUM_PROXIES: "1"
+  restart: unless-stopped
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  mysql:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+      - --max-connections=600
+      - --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER:-1G}
+      - --innodb-flush-log-at-trx-commit=2
+      - --skip-name-resolve
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes: [mysql-data:/var/lib/mysql]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # aucun port publié : la base n'est joignable que par les conteneurs de l'application
+
+  redis:
+    image: redis:7-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-512mb}
+      - --maxmemory-policy
+      - volatile-lru # n'évince que les clés à durée de vie (cache, mesures), jamais la file d'emails
+      - --appendonly
+      - "yes"
+      - --save
+      - ""
+    volumes: [redis-data:/data]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    <<: *backend
+    command: python manage.py migrate --noinput
+    restart: "no"
+
+  django:
+    <<: *backend
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_DEBUG: "0"
+      NUM_PROXIES: "1"
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-4}
+      # requêtes traitées en même temps par processus (les autres attendent leur tour) :
+      # WEB_CONCURRENCY × DB_CONCURRENCE × nombre de conteneurs doit rester sous max-connections (600)
+      DB_CONCURRENCE: ${DB_CONCURRENCE:-24}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  celery:
+    <<: *backend
+    command: celery -A config worker -l info --concurrency ${CELERY_CONCURRENCY:-4} --max-tasks-per-child 500
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 5 || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+
+  celery-beat:
+    <<: *backend
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
+
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      DOMAINE: ${DOMAINE:-emargement.mde.ci}
+    volumes:
+      - ./infra/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/srv/frontend:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    ports: ["80:80", "443:443", "443:443/udp"]
+    restart: unless-stopped
+    depends_on: [django]
+
+volumes:
+  mysql-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

@@ -15,14 +15,6 @@ export function useEvenementPublic(slug) {
 
 export const CLE_CONFIRMATION = (slug) => `fc-confirmation-${slug}`;
 
-export function lienItineraire(ev) {
-  return ev.lienCarte || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lieu)}`;
-}
-
-export function lienAgenda(slug) {
-  return `/api/public/evenements/${slug}/agenda.ics`;
-}
-
 /** En-tête en dégradé du programme (I1 à I7). */
 export function EnteteInvite({ ev, variante = 'formulaire', children }) {
   const logoBlanc = ev.tokens?.op === '#FFFFFF';

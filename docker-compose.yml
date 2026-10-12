@@ -1,12 +1,21 @@
 name: flex-checking
 
 x-backend: &backend
-  build: ./backend
+  build:
+    context: ./backend
+    target: dev
   env_file: .env
   environment:
     DB_HOST: mysql
     DB_PORT: "3306"
     REDIS_URL: redis://redis:6379/0
+    # Emails de développement : capturés par Mailpit (http://localhost:8025), jamais envoyés sur Internet
+    EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+    EMAIL_HOST: mailpit
+    EMAIL_PORT: "1025"
+    EMAIL_USE_TLS: "0"
+    EMAIL_HOST_USER: ""
+    EMAIL_HOST_PASSWORD: ""
   volumes:
     - ./backend:/app
     - ./shared:/shared:ro
@@ -15,11 +24,13 @@ x-backend: &backend
       condition: service_healthy
     redis:
       condition: service_started
+    mailpit:
+      condition: service_started
 
 services:
   mysql:
     image: mysql:8.0
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00"]
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00", "--max-connections=300"]
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -37,6 +48,13 @@ services:
     image: redis:7-alpine
     ports: ["6380:6379"]
 
+  # Boîte mail de test : interface http://localhost:8025, SMTP localhost:1025 (accessibles depuis ce poste seulement)
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    ports: ["127.0.0.1:8025:8025", "127.0.0.1:1025:1025"]
+    environment:
+      MP_MAX_MESSAGES: "2000"
+
   django:
     <<: *backend
     command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
@@ -45,6 +63,11 @@ services:
   celery:
     <<: *backend
     command: celery -A config worker -l info --concurrency 2
+
+  # tâches planifiées : relance des emails restés en attente, purge des exports et des erreurs anciennes
+  celery-beat:
+    <<: *backend
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
 
   frontend:
     image: node:20-alpine

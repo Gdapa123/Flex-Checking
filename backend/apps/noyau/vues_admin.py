@@ -12,18 +12,21 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.comptes.models import Admin
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 
-from . import exports
+from . import caches, exports
+from .analytique import analytique, technique
 from .emails import Source, rendre
 from .exceptions import ErreurMetier
 from .journal import CATEGORIES, journaliser
 from .journal_texte import precharger_cibles
 from .models import Evenement, Invite, JournalActivite, Parametres, Programme, TypeEmail
 from .qr import qr_png
+from .rapports import rapport_evenement, rapport_global
 from .serializers import (
     AdminSerializer,
     ApercuEmailSerializer,
@@ -38,6 +41,19 @@ from .vues_invites import exporter, reponse_fichier
 
 
 # ---------------------------------------------------------------- Programmes
+class RapportThrottle(UserRateThrottle):
+    """Génération de PDF : coûteuse, limitée par compte."""
+
+    scope = "rapport"
+
+
+def reponse_pdf(contenu, nom):
+    reponse = HttpResponse(contenu, content_type="application/pdf")
+    reponse["Content-Disposition"] = f'attachment; filename="{nom}"'
+    reponse["Cache-Control"] = "no-store"
+    return reponse
+
+
 class ProgrammeViewSet(viewsets.ModelViewSet):
     serializer_class = ProgrammeSerializer
 
@@ -79,7 +95,7 @@ class EvenementViewSet(viewsets.ModelViewSet):
     serializer_class = EvenementSerializer
 
     def get_permissions(self):
-        lecture = ("list", "retrieve", "statistiques", "apercu_emails")
+        lecture = ("list", "retrieve", "statistiques", "apercu_emails", "rapport")
         return [EstAdmin()] if self.action in lecture else [EstSuperAdmin()]
 
     def get_queryset(self):
@@ -133,7 +149,18 @@ class EvenementViewSet(viewsets.ModelViewSet):
     @extend_schema(responses={200: None})
     @action(detail=True, methods=["get"])
     def statistiques(self, request, pk=None):
-        return Response(statistiques(self.get_object()))
+        ev = self.get_object()  # contrôle d'accès avant toute lecture du cache
+        return Response(caches.lire(caches.cle_statistiques(ev.pk), lambda: statistiques(ev)))
+
+    @extend_schema(responses={(200, "application/pdf"): bytes}, summary="Rapport PDF de la cérémonie")
+    @action(detail=True, methods=["get"], url_path="rapport", throttle_classes=[RapportThrottle])
+    def rapport(self, request, pk=None):
+        ev = self.get_object()
+        s = caches.lire(caches.cle_statistiques(ev.pk), lambda: statistiques(ev))
+        contenu = rapport_evenement(ev, s, request.user.nom)
+        journaliser(request.user, "EXPORT", ev, format="pdf", type="rapport")
+        nom = f"rapport-{slugify(ev.programme.nom)}-{ev.annee}-{timezone.localtime():%Y%m%d-%H%M}.pdf"
+        return reponse_pdf(contenu, nom)
 
     @extend_schema(responses={200: None}, summary="Aperçu des deux emails du programme (lecture seule)")
     @action(detail=True, methods=["get"], url_path="apercu-emails")
@@ -350,3 +377,31 @@ class ComptesResumeView(APIView):
     @extend_schema(responses={200: None})
     def get(self, request):
         return Response([{"id": a.pk, "nom": a.nom, "role": a.role} for a in Admin.objects.order_by("nom")])
+
+
+# ---------------------------------------------------------------- Analyses (super admin)
+class AnalytiqueView(APIView):
+    permission_classes = [EstSuperAdmin]
+
+    @extend_schema(responses={200: None}, summary="Analyses de tous les événements (super admin)")
+    def get(self, request):
+        return Response(caches.lire(caches.CLE_ANALYTIQUE, analytique))
+
+
+class TechniqueView(APIView):
+    permission_classes = [EstSuperAdmin]
+
+    @extend_schema(responses={200: None}, summary="Indicateurs techniques : trafic, erreurs, emails, santé")
+    def get(self, request):
+        return Response(technique())
+
+
+class RapportGlobalView(APIView):
+    permission_classes = [EstSuperAdmin]
+    throttle_classes = [RapportThrottle]
+
+    @extend_schema(responses={(200, "application/pdf"): bytes}, summary="Rapport PDF global (analytique et technique)")
+    def get(self, request):
+        contenu = rapport_global(caches.lire(caches.CLE_ANALYTIQUE, analytique), technique(), request.user.nom)
+        journaliser(request.user, "EXPORT", None, format="pdf", type="rapport_global")
+        return reponse_pdf(contenu, f"rapport-global-{timezone.localtime():%Y%m%d-%H%M}.pdf")

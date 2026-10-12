@@ -51,6 +51,27 @@ def test_filtres_et_tri(client_admin, evenement, peuple):
     assert client_admin.get(url(evenement), {"email1": "ECHEC"}).json()["total"] == 1
 
 
+@pytest.mark.parametrize(
+    "tri,attendu",
+    [
+        ("nom", ["Konan", "Kouassi", "Traoré"]),
+        ("-nom", ["Traoré", "Kouassi", "Konan"]),
+        ("prenom", ["Traoré", "Kouassi", "Konan"]),  # Awa, Aya, Yao
+        ("-prenom", ["Konan", "Kouassi", "Traoré"]),
+        ("entreprise", ["Konan", "Kouassi", "Traoré"]),  # Orange, puis SIB par nom
+        ("-entreprise", ["Kouassi", "Traoré", "Konan"]),  # SIB par nom (A → Z), puis Orange
+        ("inscritLe", ["Kouassi", "Konan", "Traoré"]),
+        ("-inscritLe", ["Traoré", "Konan", "Kouassi"]),
+        ("-statut", ["Konan", "Kouassi", "Traoré"]),  # présent d'abord, puis par nom
+        ("-presentLe", ["Konan", "Kouassi", "Traoré"]),  # arrivée la plus récente, sans arrivée en dernier
+    ],
+)
+def test_options_de_tri(client_admin, evenement, peuple, tri, attendu):
+    client_admin.post(f"/api/invites/{peuple[1].pk}/presence/")
+    noms = [r["nom"] for r in client_admin.get(url(evenement), {"tri": tri}).json()["resultats"]]
+    assert noms == attendu
+
+
 def test_ajout_manuel(client_admin, evenement):
     mail.outbox.clear()
     r = client_admin.post(

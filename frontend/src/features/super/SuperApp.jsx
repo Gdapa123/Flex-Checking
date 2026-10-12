@@ -11,15 +11,19 @@ import TousInvites from './TousInvites';
 import Comptes from './Comptes';
 import Parametres from './Parametres';
 import Journal from './Journal';
+import Erreurs, { useErreursATraiter } from './Erreurs';
+import Analyses from './Analyses';
 
 const NAV = [
   ['', 'Vue globale', 'globe'],
+  ['analyses', 'Analyses', 'chart'],
   ['programmes', 'Programmes', 'palette'],
   ['evenements', 'Événements', 'calendar'],
   ['invites', 'Invités', 'users'],
   ['admins', 'Comptes admins', 'shield'],
   ['parametres', 'Paramètres', 'sliders'],
   ['journal', 'Exports et journal', 'file'],
+  ['erreurs', 'Erreurs', 'alertCircle'],
 ];
 
 export default function SuperApp() {
@@ -36,6 +40,8 @@ export default function SuperApp() {
             <Route path="admins" element={<Comptes />} />
             <Route path="parametres" element={<Parametres />} />
             <Route path="journal" element={<Journal />} />
+            <Route path="erreurs" element={<Erreurs />} />
+            <Route path="analyses" element={<Analyses />} />
           </Routes>
         </div>
       </ToastProvider>
@@ -47,6 +53,7 @@ function BarreLaterale() {
   const { data: moi } = useMoi();
   const deconnexion = useDeconnexion();
   const naviguer = useNavigate();
+  const aTraiter = useErreursATraiter();
   return (
     <aside className="hidden w-[248px] flex-none flex-col gap-6 border-r border-mde-bordure bg-surface px-4 py-5 min-[961px]:flex">
       <div className="flex flex-col gap-2.5">
@@ -69,7 +76,15 @@ function BarreLaterale() {
             {({ isActive }) => (
               <>
                 <Icon nom={icone} className={`text-[20px] ${isActive ? 'text-mde-bordeaux' : 'text-mde-texte-2'}`} />
-                {label}
+                <span className="flex-1">{label}</span>
+                {to === 'erreurs' && aTraiter > 0 && (
+                  <span
+                    aria-label={`${aTraiter} à traiter`}
+                    className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-erreur px-1.5 text-[12px] font-bold text-blanc tabular-nums"
+                  >
+                    {aTraiter > 99 ? '99+' : aTraiter}
+                  </span>
+                )}
               </>
             )}
           </NavLink>

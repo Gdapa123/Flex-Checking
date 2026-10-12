@@ -18,12 +18,30 @@ def _utc(dt):
     return dt.astimezone(UTC).strftime(FORMAT)
 
 
-def ics_evenement(evenement):
+def lien_pratique(evenement, ancre=""):
+    """Page publique « Infos pratiques » (choix de l'agenda et de l'application d'itinéraire)."""
+    lien = f"{settings.APP_PUBLIC_URL}/i/{evenement.slug_inscription}/pratique"
+    return f"{lien}#{ancre}" if ancre else lien
+
+
+def bornes(evenement):
+    """Début (heure d'accueil) et fin estimée (lancement + 3 h) de l'événement, conscients du fuseau."""
     debut = combiner(evenement.date, evenement.heure_accueil)
     fin = combiner(evenement.date, evenement.heure_debut) + timedelta(hours=3)
-    description = f"Accueil dès {evenement.heure_accueil:%H:%M}. Présentez votre QR code à l'accueil."
-    if evenement.lien_carte:
-        description += f"\nItinéraire : {evenement.lien_carte}"
+    return debut, fin
+
+
+def description_agenda(evenement):
+    return (
+        f"Accueil dès {evenement.heure_accueil:%H:%M}, lancement à {evenement.heure_debut:%H:%M}. "
+        "Présentez votre QR code à l'accueil.\n"
+        f"Itinéraire : {lien_pratique(evenement, 'itineraire')}"
+    )
+
+
+def ics_evenement(evenement):
+    debut, fin = bornes(evenement)
+    description = description_agenda(evenement)
     lignes = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",

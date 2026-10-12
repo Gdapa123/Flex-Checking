@@ -13,7 +13,7 @@ export const REQUETES_PAR_SUJET = {
   invites: [['invites'], ['invite'], ['historique'], ['scan-recherche']],
   statistiques: [['statistiques']],
   recents: [['recents']],
-  evenements: [['evenements']],
+  evenements: [['evenements'], ['analytique']],
   evenement: [['evenement']],
   journal: [['journal']],
   admins: [['admins'], ['comptes']],
@@ -21,6 +21,7 @@ export const REQUETES_PAR_SUJET = {
   parametres: [['parametres'], ['parametres-scan']],
   'apercu-emails': [['apercu-emails']],
   moi: [['moi']],
+  erreurs: [['erreurs-techniques'], ['analytique-technique']],
 };
 
 const FERMETURE_SESSION = 4001;

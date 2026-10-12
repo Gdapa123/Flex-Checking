@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { dateLongue, heureTexte, INSCRIT_E } from '../../lib/format';
@@ -8,7 +8,8 @@ import Badge from '../../components/ui/Badge';
 import Icon from '../../components/ui/Icon';
 import { ToastProvider, useToast } from '../../components/ui/Toasts';
 import LienInvalide from './LienInvalide';
-import { CLE_CONFIRMATION, EnteteInvite, lienAgenda, lienItineraire, useEvenementPublic } from './commun';
+import { CLE_CONFIRMATION, EnteteInvite, useEvenementPublic } from './commun';
+import { ChoixAgenda, ChoixItineraire, FeuilleChoix } from './pratique';
 
 function lireConfirmation(slug, etat) {
   if (etat?.invite) return etat;
@@ -42,6 +43,8 @@ function Contenu({ ev, conf, slug }) {
   const toast = useToast();
   const [renvoye, setRenvoye] = useState(false);
   const [envoi, setEnvoi] = useState(false);
+  const [feuille, setFeuille] = useState(null); // 'agenda' | 'itineraire'
+  const fermer = useCallback(() => setFeuille(null), []);
   const { invite } = conf;
   useEffect(() => window.scrollTo(0, 0), []);
   const nomComplet = `${invite.civiliteAffichee} ${invite.prenom} ${invite.nom.toUpperCase()}`;
@@ -118,23 +121,22 @@ function Contenu({ ev, conf, slug }) {
           className="grid animate-in-up gap-3 [animation-delay:.15s]"
           style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,200px),1fr))' }}
         >
-          <a
-            href={lienAgenda(slug)}
-            download
-            className="btn-principal flex h-[52px] items-center justify-center gap-2 rounded-bouton text-[16px] font-semibold no-underline hover:text-op active:scale-[.98]"
+          <button
+            type="button"
+            onClick={() => setFeuille('agenda')}
+            className="btn-principal flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-bouton border-0 text-[16px] font-semibold active:scale-[.98]"
           >
             <Icon nom="calendarPlus" className="text-[20px]" />
             Ajouter à l’agenda
-          </a>
-          <a
-            href={lienItineraire(ev)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-[52px] items-center justify-center gap-2 rounded-bouton border border-champ bg-surface text-[16px] font-semibold text-texte no-underline shadow-champ transition-colors hover:bg-fond hover:text-texte active:scale-[.98]"
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeuille('itineraire')}
+            className="flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-bouton border border-champ bg-surface text-[16px] font-semibold text-texte shadow-champ transition-colors hover:bg-fond active:scale-[.98]"
           >
             <Icon nom="navigation" className="text-[20px]" />
             Enregistrer l’itinéraire
-          </a>
+          </button>
         </div>
         <div className="flex justify-center">
           <button
@@ -150,6 +152,22 @@ function Contenu({ ev, conf, slug }) {
           </button>
         </div>
       </main>
+      <FeuilleChoix
+        ouvert={feuille === 'agenda'}
+        titre="Ajouter à mon agenda"
+        sousTitre="Choisissez votre agenda : l’événement s’y ajoute avec un rappel 2 h avant."
+        onFermer={fermer}
+      >
+        <ChoixAgenda ev={ev} onChoix={fermer} />
+      </FeuilleChoix>
+      <FeuilleChoix
+        ouvert={feuille === 'itineraire'}
+        titre="Itinéraire"
+        sousTitre="Ouvrez le trajet dans votre application de navigation."
+        onFermer={fermer}
+      >
+        <ChoixItineraire ev={ev} onChoix={fermer} />
+      </FeuilleChoix>
     </>
   );
 }

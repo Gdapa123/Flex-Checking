@@ -5,9 +5,9 @@
 INFOS PRATIQUES
 - {{ date_longue }}
 - {{ heure_debut }} · accueil dès {{ heure_accueil }}
-- {{ lieu }}{% if lien_carte %}
-- Itinéraire : {{ lien_carte }}{% endif %}
-- Ajouter à l'agenda : {{ lien_agenda }}
+- {{ lieu }}
+- Itinéraire (Google Maps, Waze, Plans) : {{ lien_itineraire }}
+- Ajouter à l'agenda (Google, Outlook, Apple) : {{ lien_agenda }}
 
 --
 {{ expediteur }}
