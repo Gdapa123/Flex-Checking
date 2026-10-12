@@ -22,15 +22,14 @@ export default function Presentation({ ev, onCommencer }) {
     {
       icone: 'scan',
       titre: 'Le jour de la graduation',
-      texte:
-        'Je présente mon QR code à l’accueil : il est scanné en une seconde. Le code à 4 chiffres sert de secours.',
+      texte: 'Je présente mon QR code à l’accueil : il est scanné rapidement. Le code à 4 chiffres sert de secours.',
     },
     ...(ev.magazineActif
       ? [
           {
             icone: 'book',
             titre: 'Je reçois le magazine',
-            texte: `Une fois ma présence enregistrée, je reçois par email le lien du magazine de la ${ev.nomAffiche}.`,
+            texte: `Une fois ma présence enregistrée, je reçois par email le lien du magazine de la promotion ${ev.nomAffiche.replace(/^Graduation\s+/i, '')}.`,
           },
         ]
       : []),
