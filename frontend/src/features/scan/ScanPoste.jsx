@@ -14,6 +14,7 @@ import {
   BadgeGraphite,
   CadreVisee,
   FeuilleAnnulation,
+  FeuilleDeverrouillage,
   FeuilleReglages,
   PastilleDetection,
   PointLecture,
@@ -31,6 +32,8 @@ import { useEvenementsScan } from './useEvenementsScan';
 import useWakeLock from './useWakeLock';
 
 const ANTI_REBOND_MS = 3000;
+// côté de la zone de lecture de la borne : grand, mais toujours contenu dans l'écran de la tablette
+const TAILLE_BORNE = 'min(38vw, 56dvh, 560px)';
 const CLE_HISTO = (id) => `fc-scan-historique-${id}`;
 
 function lireSession(cle, defaut) {
@@ -161,7 +164,9 @@ function Poste({ evenement }) {
   const [compteurs, setCompteurs] = useState({ presents: evenement.nbPresents, inscrits: evenement.nbInscrits });
   const [enLigne, setEnLigne] = useState(navigator.onLine);
   const [enAttente, setEnAttente] = useState(0);
-  const [feuille, setFeuille] = useState(null); // 'reglages' | 'annulation'
+  const [feuille, setFeuille] = useState(null); // 'reglages' | 'annulation' | 'deverrouillage'
+  // borne : hôte identifié par son mot de passe (session complète) tant qu'une feuille de l'espace hôte est ouverte
+  const [hoteIdentifie, setHoteIdentifie] = useState(false);
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
   const [toast, setToast] = useState(null);
   const [chiffres, setChiffres] = useState('');
@@ -173,6 +178,32 @@ function Poste({ evenement }) {
   const douchette = useRef(null);
 
   useWakeLock(true);
+
+  // Borne : dès que l'hôte quitte son espace (réglages, annulation… quelle que soit la feuille ou le bouton utilisé),
+  // la session redevient restreinte pour le public.
+  useEffect(() => {
+    if (appareil !== 'TABLETTE' || !hoteIdentifie || feuille !== null) return;
+    setHoteIdentifie(false);
+    api
+      .post('/auth/borne/')
+      .then(() => qc.invalidateQueries({ queryKey: ['moi'] }))
+      .catch(() => {});
+  }, [appareil, hoteIdentifie, feuille, qc]);
+
+  // Borne libre-service : le bouton retour (navigateur, geste ou touche système) ne doit pas faire quitter l'accueil
+  // des invités vers la configuration du scan puis l'espace admin. Une entrée d'historique identique est empilée :
+  // « retour » y revient (même page), on la remet aussitôt et on demande le mot de passe de l'hôte.
+  useEffect(() => {
+    if (appareil !== 'TABLETTE') return undefined;
+    const garder = () => window.history.pushState(window.history.state, '', window.location.href);
+    garder();
+    const retour = () => {
+      garder();
+      setFeuille('deverrouillage');
+    };
+    window.addEventListener('popstate', retour);
+    return () => window.removeEventListener('popstate', retour);
+  }, [appareil]);
 
   const majReglages = (maj) => setReglages(ecrireReglages(maj));
   const afficherToast = useCallback((msg, type = 'ok') => {
@@ -414,7 +445,10 @@ function Poste({ evenement }) {
     isError: rechercheEnErreur,
   } = useQuery({
     queryKey: ['scan-recherche', evenementId, q.trim()],
-    queryFn: () => api.get(`/evenements/${evenementId}/invites/`, { q: q.trim(), taille: 25, tri: 'nom' }),
+    queryFn: () =>
+      borne
+        ? api.get(`/evenements/${evenementId}/borne/recherche/`, { q: q.trim() })
+        : api.get(`/evenements/${evenementId}/invites/`, { q: q.trim(), taille: 25, tri: 'nom' }),
     enabled: rechercheActive && enLigne,
     placeholderData: (p) => p,
     staleTime: 3000,
@@ -465,7 +499,8 @@ function Poste({ evenement }) {
       majReglages({ camera: f });
       afficherToast(f === 'environment' ? 'Caméra arrière' : 'Caméra avant', 'info');
     },
-    reglages: () => setFeuille('reglages'),
+    // borne libre-service : le public ne doit pas atteindre les réglages ni l'espace admin sans le mot de passe de l'hôte
+    reglages: () => setFeuille(appareil === 'TABLETTE' ? 'deverrouillage' : 'reglages'),
   };
 
   const commun = {
@@ -559,6 +594,16 @@ function Poste({ evenement }) {
             dernier={dernier}
             enCours={annulationEnCours}
             onAnnuler={annulerDernier}
+            onFermer={() => setFeuille(null)}
+          />
+        )}
+        {feuille === 'deverrouillage' && (
+          <FeuilleDeverrouillage
+            onDeverrouille={() => {
+              qc.invalidateQueries({ queryKey: ['moi'] });
+              setHoteIdentifie(true);
+              setFeuille('reglages');
+            }}
             onFermer={() => setFeuille(null)}
           />
         )}
@@ -661,28 +706,29 @@ function DispositionTelephone({ evenement, reglages, compteurs, enLigne, enAtten
       <BandeauHorsLigne enLigne={enLigne} enAttente={enAttente} />
       <div className="relative flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,var(--g-eleve)_0%,var(--g-sombre)_60%,var(--g-fond)_100%)]">
         <Video camera={camera} facing={facing} />
-        <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+        <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between">
           <span className="inline-flex h-8 items-center gap-2 rounded-full border border-g-bordure bg-g-voile px-3 text-[13px] font-medium">
             <PointLecture />
           </span>
           <span className="text-[13px] text-g-texte-2">{facing === 'user' ? 'Caméra avant' : 'Caméra arrière'}</span>
         </div>
-        <div className="absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2">
-          <CadreVisee phase={phase} />
-        </div>
-        <div className="absolute left-6 right-6 flex justify-center text-center" style={{ top: 'calc(44% + 142px)' }}>
-          {phase === 'detection' ? (
-            <PastilleDetection />
-          ) : camera.etat === 'demarrage' ? (
-            <span className="inline-flex items-center gap-2 text-[15px] text-g-texte-2">
-              <Spinner taille={16} />
-              Démarrage de la caméra…
-            </span>
-          ) : (
-            <p className="m-0 max-w-[300px] text-[16px] leading-[1.5] [text-wrap:pretty]">
-              Invitez la personne à tendre son téléphone avec le QR code : la lecture est automatique
-            </p>
-          )}
+        {/* grande zone de visée : 82 % de la largeur, bornée par la hauteur disponible ; vidéo assombrie autour */}
+        <div className="absolute inset-x-0 bottom-0 top-14 flex flex-col items-center justify-center gap-6 px-6 pb-6">
+          <CadreVisee phase={phase} taille="min(82vw, 50dvh, 440px)" voile />
+          <div className="relative z-10 flex min-h-12 justify-center text-center">
+            {phase === 'detection' ? (
+              <PastilleDetection />
+            ) : camera.etat === 'demarrage' ? (
+              <span className="inline-flex items-center gap-2 text-[15px] text-g-texte-2">
+                <Spinner taille={16} />
+                Démarrage de la caméra…
+              </span>
+            ) : (
+              <p className="m-0 max-w-[300px] text-[16px] leading-[1.5] [text-wrap:pretty]">
+                Invitez la personne à tendre son téléphone avec le QR code : la lecture est automatique
+              </p>
+            )}
+          </div>
         </div>
       </div>
       {dernier && (
@@ -746,11 +792,12 @@ function DispositionBorne({ evenement, reglages, compteurs, enLigne, enAttente, 
           <div className="flex h-12 items-center">{phase === 'detection' && <PastilleDetection grand />}</div>
         </div>
         <div className="relative flex justify-center">
-          <div className="relative h-[380px] w-[380px] overflow-hidden rounded-carte">
+          {/* zone de lecture adaptée à la tablette (jusqu'à 560 px) */}
+          <div className="relative overflow-hidden rounded-carte" style={{ width: TAILLE_BORNE, height: TAILLE_BORNE }}>
             <Video camera={camera} facing={reglages.camera} />
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <CadreVisee phase={phase} taille={380} coin={84} epaisseur={5} rayon={16} grand />
+            <CadreVisee phase={phase} taille={TAILLE_BORNE} epaisseur={6} rayon={20} grand />
           </div>
         </div>
       </div>
@@ -879,12 +926,15 @@ function DispositionOrdinateur(props) {
               </div>
             </div>
           ) : (
-            <div className="relative flex h-[300px] items-center justify-center overflow-hidden rounded-[12px] border border-g-bordure bg-[radial-gradient(ellipse_at_50%_50%,var(--g-eleve)_0%,var(--g-fond)_75%)]">
+            <div
+              className="relative flex items-center justify-center overflow-hidden rounded-[12px] border border-g-bordure bg-[radial-gradient(ellipse_at_50%_50%,var(--g-eleve)_0%,var(--g-fond)_75%)]"
+              style={{ height: 'min(56dvh, 480px)' }}
+            >
               <Video camera={camera} facing={reglages.camera} />
-              <span className="absolute left-3.5 top-3.5 inline-flex h-[30px] items-center gap-2 rounded-full border border-g-bordure bg-g-voile px-3 text-[13px]">
+              <CadreVisee phase={phase} taille="min(30vw, 44dvh, 380px)" voile />
+              <span className="absolute left-3.5 top-3.5 z-10 inline-flex h-[30px] items-center gap-2 rounded-full border border-g-bordure bg-g-voile px-3 text-[13px]">
                 <PointLecture>Webcam · lecture automatique</PointLecture>
               </span>
-              <CadreVisee phase={phase} taille={200} coin={44} />
             </div>
           )}
           <div aria-live="assertive" className="contents">

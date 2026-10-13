@@ -2,6 +2,7 @@ import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import { ToastProvider } from '../../components/ui/Toasts';
+import LienEvitement from '../../components/ui/LienEvitement';
 import useTitre from '../../lib/useTitre';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import VueGlobale from './VueGlobale';
@@ -36,6 +37,7 @@ export default function SuperApp() {
   return (
     <div className="univers-mde flex min-h-screen border-t-[6px] border-mde-bordeaux bg-mde-surface text-mde-texte">
       <ToastProvider univers="mde">
+        <LienEvitement />
         <BarreLaterale />
         <div className="flex min-w-0 flex-1 flex-col">
           <Routes>
@@ -157,7 +159,7 @@ export function PageSuper({ titre, action, onAction, children }) {
   useTitre(`${titre} · Super admin`);
   const seDeconnecter = useSeDeconnecter();
   return (
-    <main className="flex min-w-0 flex-1 flex-col">
+    <main id="contenu" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
       <header className="entete-mde hachures flex flex-wrap items-end justify-between gap-4 px-4 pb-[76px] pt-7 sm:px-8">
         <div className="relative flex flex-col gap-2">
           <span className="text-[14px] font-medium">Flex’Checking · configuration globale</span>

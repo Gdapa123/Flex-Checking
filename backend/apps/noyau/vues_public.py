@@ -10,10 +10,9 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from apps.comptes.throttles import CacheDeSecours, LimiteSensible, email_soumis
+from apps.comptes.throttles import CacheDeSecours, LimiteIpPartagee, LimiteSensible, email_soumis
 
 from . import caches, emails, services
 from .exceptions import ErreurMetier
@@ -28,11 +27,11 @@ MESSAGE_RENVOI = (
 )
 
 
-class InscriptionThrottle(AnonRateThrottle):
+class InscriptionThrottle(LimiteIpPartagee):
     scope = "inscription"
 
 
-class RenvoiIpThrottle(AnonRateThrottle):
+class RenvoiIpThrottle(LimiteIpPartagee):
     scope = "renvoi_ip"
 
 

@@ -20,7 +20,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import AccessToken
 
-from apps.comptes.authentication import jeton_revoque
+from apps.comptes.authentication import acces_revoque, jeton_revoque
 from apps.comptes.models import Admin, Role
 from apps.comptes.permissions import evenements_visibles
 from config.concurrence import DB_CONCURRENCE
@@ -29,6 +29,7 @@ from .temps_reel import CONNECTES, TOUS, groupe_compte, groupe_evenement
 
 FERMETURE_SESSION = 4001  # jeton absent ou expiré : rafraîchir la session puis se reconnecter
 FERMETURE_COMPTE = 4003  # compte désactivé ou supprimé : retour à la connexion
+FERMETURE_INDISPONIBLE = 4004  # temps réel non configuré (pas de Redis) : le navigateur interroge périodiquement l'API
 
 
 def _jeton(scope):
@@ -86,12 +87,12 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.groupes = set()
         self.minuteur = None
-        if self.channel_layer is None:
-            # Temps réel désactivé (pas de Redis) : refus de la poignée de main, le navigateur interroge
-            # périodiquement l'API à la place.
-            await self.close()
-            return
         await self.accept()
+        if self.channel_layer is None:
+            # Temps réel désactivé (pas de Redis) : fermeture avec un code explicite, pour que le navigateur sache que
+            # ce n'est pas une coupure passagère et se contente de l'interrogation périodique de l'API.
+            await self.close(code=FERMETURE_INDISPONIBLE)
+            return
         brut = _jeton(self.scope)
         try:
             jeton = AccessToken(brut) if brut else None
@@ -101,7 +102,8 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
         if admin is None:
             await self.close(code=FERMETURE_SESSION if jeton is None else FERMETURE_COMPTE)
             return
-        if jeton_revoque(jeton, admin):  # mot de passe changé depuis l'émission du jeton
+        # mot de passe changé depuis l'émission du jeton, ou session fermée par une déconnexion
+        if jeton_revoque(jeton, admin) or await database_sync_to_async(acces_revoque)(jeton):
             await self.close(code=FERMETURE_SESSION)
             return
         self.admin_id, self.jeton = admin.pk, jeton

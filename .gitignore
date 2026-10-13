@@ -18,3 +18,6 @@ media-tests/
 # Liaison locale aux projets Vercel (vercel link)
 .vercel/
 .env.local
+
+# Coffre Obsidian : état de l’interface propre à chaque poste
+Cerveau/.obsidian/workspace*.json

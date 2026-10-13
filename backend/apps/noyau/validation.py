@@ -64,7 +64,9 @@ def valider_email(valeur):
     valeur = sans_controle((valeur or "").strip().lower())
     if not valeur:
         raise serializers.ValidationError("Indiquez votre adresse email.")
-    if not EMAIL_RE.match(valeur) or len(valeur) > 254:
+    # ASCII uniquement : la collation MySQL (utf8mb4_unicode_ci) confondrait « mdé.ci » et « mde.ci » ; une variante
+    # accentuée échapperait aux limites de renvoi tout en atteignant la vraie adresse
+    if not valeur.isascii() or not EMAIL_RE.match(valeur) or len(valeur) > 254:
         raise serializers.ValidationError("Adresse email invalide, par exemple nom@entreprise.ci.")
     return valeur
 

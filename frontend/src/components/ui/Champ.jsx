@@ -1,7 +1,10 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState } from 'react';
 import Icon from './Icon';
 
-/** Champ de saisie du design : libellé visible, préfixe +225, état valide, erreur sous le champ. */
+/**
+ * Champ de saisie du design : libellé visible, préfixe +225, état valide, erreur sous le champ.
+ * Un champ mot de passe propose « Afficher / Masquer » (saisie vérifiable, gestionnaires de mots de passe compatibles).
+ */
 const Champ = forwardRef(function Champ(
   {
     label,
@@ -15,11 +18,14 @@ const Champ = forwardRef(function Champ(
     className = '',
     aide,
     compact = false,
+    type = 'text',
     ...input
   },
   ref,
 ) {
   const auto = useId();
+  const [visible, setVisible] = useState(false);
+  const motDePasse = type === 'password';
   const domId = id || auto;
   const idErreur = `${domId}-erreur`;
   const bordure = erreur
@@ -57,12 +63,25 @@ const Champ = forwardRef(function Champ(
           id={domId}
           aria-invalid={erreur ? true : undefined}
           aria-describedby={erreur ? idErreur : aide ? `${domId}-aide` : undefined}
-          className={`min-w-0 flex-1 text-ellipsis border-0 bg-transparent pl-3.5 text-[16px] text-texte outline-none placeholder:text-texte-2 ${valide && !erreur ? 'pr-10' : 'pr-3.5'}`}
+          type={motDePasse && visible ? 'text' : type}
+          className={`min-w-0 flex-1 text-ellipsis border-0 bg-transparent pl-3.5 text-[16px] text-texte outline-none placeholder:text-texte-2 ${valide && !erreur ? 'pr-10' : motDePasse ? 'pr-1' : 'pr-3.5'}`}
           {...input}
         />
+        {motDePasse && (
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            aria-pressed={visible}
+            aria-controls={domId}
+            className="flex w-11 flex-none cursor-pointer items-center justify-center border-0 bg-transparent text-[19px] text-texte-2 hover:text-texte"
+          >
+            <Icon nom={visible ? 'eyeOff' : 'eye'} />
+          </button>
+        )}
         {valide && !erreur && (
           <span
-            className="absolute right-3 top-1/2 -mt-2.5 animate-pop text-[20px] text-succes"
+            className={`absolute top-1/2 -mt-2.5 animate-pop text-[20px] text-succes ${motDePasse ? 'right-[52px]' : 'right-3'}`}
             aria-label="Champ valide"
           >
             <Icon nom="checkCircle" />

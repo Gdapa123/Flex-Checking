@@ -10,7 +10,9 @@ export const champEmail = z
   .string()
   .trim()
   .min(1, 'Indiquez votre adresse email.')
-  .regex(EMAIL_RE, 'Adresse email invalide, par exemple nom@entreprise.ci.');
+  .regex(EMAIL_RE, 'Adresse email invalide, par exemple nom@entreprise.ci.')
+  // ASCII uniquement, comme le serveur (une variante accentuée serait confondue avec l'adresse sans accent)
+  .refine((v) => /^[\x20-\x7e]*$/.test(v), 'Adresse email invalide, par exemple nom@entreprise.ci.');
 
 export const champTelephone = z
   .string()

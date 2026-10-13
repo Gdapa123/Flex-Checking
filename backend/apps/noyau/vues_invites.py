@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 
 from apps.comptes.models import Role
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
+from apps.comptes.throttles import LimiteSensible
 
 from . import emails, exports, services, statuts
 from .exceptions import ErreurMetier
@@ -221,8 +222,21 @@ class RenvoiEmailSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=TypeEmail.choices, default=TypeEmail.INVITATION)
 
 
+class RenvoiEmailThrottle(LimiteSensible):
+    """5 renvois par heure, par compte et par invité : pas d'envoi en rafale de l'invitation officielle vers une
+    adresse (réputation de l'expéditeur, harcèlement)."""
+
+    scope = "renvoi_admin"
+
+    def get_cache_key(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return None
+        return self.cache_format % {"scope": self.scope, "ident": f"{request.user.pk}:{view.kwargs.get('pk')}"}
+
+
 class RenvoiEmailView(APIView):
     permission_classes = [EstAdmin]
+    throttle_classes = [RenvoiEmailThrottle]
 
     @extend_schema(request=RenvoiEmailSerializer, responses={202: None}, summary="Renvoi manuel d'un email")
     def post(self, request, pk):

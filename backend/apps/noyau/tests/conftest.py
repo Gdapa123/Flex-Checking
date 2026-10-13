@@ -84,6 +84,8 @@ def admin_autre(db, autre_evenement):
 def client_connecte(user):
     """Client authentifié par cookies JWT réels, avec en-tête CSRF."""
     c = APIClient(enforce_csrf_checks=True)
+    c.get("/api/auth/csrf/")  # la connexion exige l'en-tête CSRF, comme le frontend
+    c.credentials(HTTP_X_CSRFTOKEN=c.cookies["fc_csrftoken"].value)
     r = c.post("/api/auth/connexion/", {"email": user.email, "motDePasse": MDP}, format="json")
     assert r.status_code == 200, r.content
     c.credentials(HTTP_X_CSRFTOKEN=c.cookies["fc_csrftoken"].value)

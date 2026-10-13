@@ -1,10 +1,12 @@
 import { useRef } from 'react';
 import useFocusTrap from './useFocusTrap';
+import useVerrouDefilement from './useVerrouDefilement';
 
 /** Panneau latéral droit (dialog modal) : fiche invité, ajout d'invité. */
 export default function PanneauLateral({ ouvert, label, onFermer, children, style, className = '' }) {
   const ref = useRef(null);
   useFocusTrap(ref, ouvert, onFermer);
+  useVerrouDefilement(ouvert);
   if (!ouvert) return null;
   return (
     <div style={style} className={className}>

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { jourHeure } from '../../lib/format';
 import Bouton from '../../components/ui/Bouton';
+import BoutonIcone from '../../components/ui/BoutonIcone';
 import Carte from '../../components/ui/Carte';
 import Dialogue from '../../components/ui/Dialogue';
 import DialogueSuppression from '../../components/ui/DialogueSuppression';
@@ -119,7 +120,7 @@ export default function Comptes() {
           </h2>
         </div>
         <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[1080px] border-collapse text-[15px]">
+          <table className="w-full min-w-[900px] border-collapse text-[15px]">
             <thead>
               <tr className="bg-mde-entete text-[13px] text-mde-texte-2">
                 <th className="px-5 py-3 text-left font-semibold">Compte</th>
@@ -146,7 +147,7 @@ export default function Comptes() {
                   </tr>
                 ))}
               {admins?.map((a) => (
-                <tr key={a.id} className="border-t border-mde-bordure-ligne">
+                <tr key={a.id} className="border-t border-mde-bordure-ligne transition-colors hover:bg-mde-entete">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-mde-creme text-[13px] font-semibold">
@@ -197,46 +198,31 @@ export default function Comptes() {
                   ))}
                   <td className="px-5 py-3 text-right">
                     <div className="flex justify-end gap-1.5">
-                      <Bouton
-                        variante="mde-secondaire"
-                        taille="md"
+                      <BoutonIcone
                         icone="edit"
-                        aria-label={`Modifier le compte de ${a.nom}`}
+                        libelle={`Modifier le compte de ${a.nom}`}
                         onClick={() => ouvrirFormulaire({ id: a.id, nom: a.nom, email: a.email, role: a.role })}
-                        className="!text-[13px]"
-                      >
-                        Modifier
-                      </Bouton>
-                      <Bouton
-                        variante="mde-secondaire"
-                        taille="md"
+                      />
+                      <BoutonIcone
+                        icone="key"
+                        libelle={`Réinitialiser le mot de passe de ${a.nom}`}
                         onClick={() => setConfirmer({ type: 'mdp', admin: a })}
-                        className="!text-[13px]"
-                      >
-                        Réinitialiser le mot de passe
-                      </Bouton>
+                      />
                       {/* son propre compte : ni désactivation ni suppression (refusées par le serveur) */}
                       {moi?.id !== a.id && (
-                        <Bouton
-                          variante="mde-secondaire"
-                          taille="md"
+                        <BoutonIcone
+                          icone="power"
+                          libelle={`${a.actif ? 'Désactiver' : 'Réactiver'} le compte de ${a.nom}`}
                           onClick={() => setConfirmer({ type: 'actif', admin: a })}
-                          className="!text-[13px]"
-                        >
-                          {a.actif ? 'Désactiver' : 'Réactiver'}
-                        </Bouton>
+                        />
                       )}
                       {moi?.id !== a.id && (
-                        <Bouton
-                          variante="mde-secondaire"
-                          taille="md"
+                        <BoutonIcone
                           icone="trash"
-                          className="!text-[13px] !text-erreur"
-                          aria-label={`Supprimer le compte de ${a.nom}`}
+                          variante="danger"
+                          libelle={`Supprimer le compte de ${a.nom}`}
                           onClick={() => setSuppression(a)}
-                        >
-                          Supprimer
-                        </Bouton>
+                        />
                       )}
                     </div>
                   </td>
@@ -373,7 +359,14 @@ export default function Comptes() {
               <Bouton
                 variante="mde-secondaire"
                 icone="copy"
-                onClick={() => navigator.clipboard?.writeText(mdp.mdp).then(() => toast('Mot de passe copié'))}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(mdp.mdp);
+                    toast('Mot de passe copié');
+                  } catch {
+                    toast('Copie impossible : sélectionnez le mot de passe et copiez-le manuellement.', 'erreur');
+                  }
+                }}
               >
                 Copier
               </Bouton>

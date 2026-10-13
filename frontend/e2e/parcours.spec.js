@@ -23,7 +23,7 @@ async function connexion(page) {
   expect(ADMIN.mdp, 'définir DEMO_MOT_DE_PASSE_ADMIN (fichier .env ou CI)').toBeTruthy();
   await page.goto('/connexion');
   await page.getByLabel('Email').fill(ADMIN.email);
-  await page.getByLabel('Mot de passe').fill(ADMIN.mdp);
+  await page.getByLabel('Mot de passe', { exact: true }).fill(ADMIN.mdp);
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page.getByRole('heading', { name: 'Vos cérémonies' })).toBeVisible();
 }

@@ -1,6 +1,7 @@
 import { useId, useRef } from 'react';
 import Icon from './Icon';
 import useFocusTrap from './useFocusTrap';
+import useVerrouDefilement from './useVerrouDefilement';
 
 /**
  * Dialogue de confirmation (alertdialog) — gabarit « Désactiver le programme ? » du design.
@@ -20,11 +21,12 @@ export default function Dialogue({
   const ref = useRef(null);
   const id = useId();
   useFocusTrap(ref, ouvert, fermable ? onFermer : undefined);
+  useVerrouDefilement(ouvert);
   if (!ouvert) return null;
   const mde = univers === 'mde';
   return (
     <div
-      className={`fixed inset-0 z-50 flex animate-fade-in items-center justify-center p-4 ${mde ? 'bg-voile-mde' : 'bg-voile-fort'} ${mde ? 'univers-mde' : ''}`}
+      className={`fixed inset-0 z-50 flex animate-fade-in items-center justify-center p-4 backdrop-blur-[2px] ${mde ? 'bg-voile-mde' : 'bg-voile-fort'} ${mde ? 'univers-mde' : ''}`}
       onClick={fermable ? onFermer : undefined}
     >
       <div

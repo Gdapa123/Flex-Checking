@@ -126,7 +126,7 @@ export default function Programmes() {
                 type="button"
                 aria-pressed={on}
                 onClick={() => naviguer(`/super/programmes/${p.id}`)}
-                className={`box-border flex cursor-pointer items-center gap-3.5 rounded-bouton bg-surface px-4 py-3.5 text-left text-mde-texte ${on ? 'border-2 border-mde-bordeaux' : 'border border-mde-bordure'} ${p.actif ? '' : 'opacity-60'}`}
+                className={`box-border flex cursor-pointer items-center gap-3.5 rounded-bouton bg-surface px-4 py-3.5 text-left text-mde-texte border transition-[border-color,box-shadow] ${on ? 'border-mde-bordeaux ring-1 ring-mde-bordeaux' : 'border-mde-bordure hover:border-mde-champ hover:shadow-carte-mde'} ${p.actif ? '' : 'opacity-60'}`}
               >
                 <span className="flex flex-none overflow-hidden rounded-petit border border-mde-bordure">
                   <span className="h-10 w-[22px]" style={{ background: p.couleurPrincipale }} />

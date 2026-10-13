@@ -261,3 +261,34 @@ def test_permission_par_defaut_exige_un_compte_utilisable(admin):
         user = admin
 
     assert CompteUtilisable().has_permission(Requete(), None) is False
+
+
+# ---------------------------------------------------------------- espace hôte de la borne
+
+
+def test_verification_du_mot_de_passe_de_l_hote(admin):
+    c = client_connecte(admin)
+    assert c.post("/api/auth/verifier-mot-de-passe/", {"motDePasse": MDP}, format="json").status_code == 204
+    r = c.post("/api/auth/verifier-mot-de-passe/", {"motDePasse": "mauvais"}, format="json")
+    assert r.status_code == 400 and r.json()["code"] == "MOT_DE_PASSE_INCORRECT"
+    assert APIClient().post("/api/auth/verifier-mot-de-passe/", {"motDePasse": MDP}, format="json").status_code == 401
+
+
+def test_verification_du_mot_de_passe_limitee_par_compte(admin):
+    c = client_connecte(admin)
+    codes = [
+        c.post("/api/auth/verifier-mot-de-passe/", {"motDePasse": f"essai-{i}"}, format="json").status_code
+        for i in range(6)
+    ]
+    assert codes[:5] == [400] * 5 and codes[5] == 429
+    # même un mot de passe correct est refusé pendant le blocage (pas de contournement de la limite)
+    assert c.post("/api/auth/verifier-mot-de-passe/", {"motDePasse": MDP}, format="json").status_code == 429
+
+
+def test_changement_de_mot_de_passe_limite_par_compte(admin):
+    c = client_connecte(admin)
+    codes = [
+        c.post("/api/auth/mot-de-passe/", {"actuel": f"essai-{i}", "nouveau": NOUVEAU}, format="json").status_code
+        for i in range(6)
+    ]
+    assert codes[:5] == [400] * 5 and codes[5] == 429

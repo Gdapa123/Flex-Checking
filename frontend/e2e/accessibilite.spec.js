@@ -41,7 +41,7 @@ test('accessibilité des écrans principaux', async ({ page }) => {
     process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN,
     'définir DEMO_MOT_DE_PASSE_SUPER_ADMIN (fichier .env ou CI)',
   ).toBeTruthy();
-  await page.getByLabel('Mot de passe').fill(process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN);
+  await page.getByLabel('Mot de passe', { exact: true }).fill(process.env.DEMO_MOT_DE_PASSE_SUPER_ADMIN);
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.getByRole('heading', { name: 'Vue globale' }).waitFor();
 

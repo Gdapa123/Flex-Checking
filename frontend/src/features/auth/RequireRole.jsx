@@ -43,6 +43,8 @@ export function RequireRole({ roles, connexion, children }) {
   if (nonConnecte || !moi)
     return <Navigate to={connexion} replace state={{ depuis: location.pathname + location.search }} />;
   if (!roles.includes(moi.role)) return <Navigate to={moi.role === 'SUPER_ADMIN' ? '/super' : '/admin'} replace />;
+  // borne libre-service : la session restreinte n'ouvre que l'espace scan (le serveur refuse le reste)
+  if (moi.borne && !scan) return <Navigate to="/scan" replace />;
   if (moi.doitChangerMotDePasse)
     return <ChangerMotDePasse univers={connexion.startsWith('/super') ? 'mde' : 'programme'} />;
   return children;

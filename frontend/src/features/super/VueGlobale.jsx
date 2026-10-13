@@ -1,10 +1,13 @@
-import { Link } from 'react-router-dom';
 import { dateCourte, heureTexte, nombre, prenomSeul } from '../../lib/format';
 import Carte from '../../components/ui/Carte';
+import BoutonIcone from '../../components/ui/BoutonIcone';
 import Squelette from '../../components/ui/Squelette';
 import { PageSuper } from './SuperApp';
 import { BADGE_STATUT, useAdmins, useEvenements } from './donnees';
 import ErreurChargement, { BandeauErreur } from './ErreurChargement';
+
+const texteTemporaires = (n) =>
+  n === 0 ? 'Aucun mot de passe temporaire' : `${n} mot${n > 1 ? 's' : ''} de passe temporaire${n > 1 ? 's' : ''}`;
 
 /** SA2 · Vue globale de toutes les cérémonies et de tous les programmes. */
 export default function VueGlobale() {
@@ -17,7 +20,7 @@ export default function VueGlobale() {
     {
       label: 'Cérémonies à venir',
       valeur: nombre(avenir.length),
-      sub: duJour.length ? `dont ${duJour.length} aujourd’hui` : 'aucun aujourd’hui',
+      sub: duJour.length ? `dont ${duJour.length} aujourd’hui` : 'aucune aujourd’hui',
     },
     {
       label: 'Inscrits cumulés',
@@ -32,18 +35,18 @@ export default function VueGlobale() {
     {
       label: 'Comptes admins',
       valeur: admins ? nombre(admins.length) : '–',
-      sub: admins ? `${admins.filter((a) => a.doitChangerMotDePasse).length} mot(s) de passe temporaire(s)` : '',
+      sub: admins ? texteTemporaires(admins.filter((a) => a.doitChangerMotDePasse).length) : '',
     },
   ];
   return (
     <PageSuper titre="Vue globale">
       {error && !evenements && <ErreurChargement erreur={error} onReessayer={refetch} />}
       {error && evenements && <BandeauErreur erreur={error} onReessayer={refetch} />}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {kpis.map((k) => (
-          <Carte mde key={k.label} className="flex animate-in-up flex-col gap-2 p-5">
+          <Carte mde key={k.label} className="flex min-w-0 animate-in-up flex-col gap-2 p-4 sm:p-5">
             <span className="text-[15px] font-medium text-mde-texte-2">{k.label}</span>
-            <span className="text-[40px] font-bold leading-none tracking-[-0.03em] tabular-nums">
+            <span className="text-[32px] font-bold leading-none tracking-[-0.03em] tabular-nums sm:text-[40px]">
               {evenements ? k.valeur : '–'}
             </span>
             <span className="text-[14px] text-mde-texte-2">{k.sub}</span>
@@ -65,7 +68,7 @@ export default function VueGlobale() {
               <tr className="bg-mde-entete text-left text-[13px] text-mde-texte-2">
                 <th className="px-5 py-3 font-semibold">Cérémonie</th>
                 <th className="p-3 font-semibold">Date</th>
-                <th className="w-[220px] p-3 font-semibold">Inscrits / capacité</th>
+                <th className="p-3 font-semibold">Inscrits / capacité</th>
                 <th className="p-3 text-right font-semibold">Présents</th>
                 <th className="p-3 font-semibold">Statut</th>
                 <th className="p-3 font-semibold">Admins</th>
@@ -87,28 +90,28 @@ export default function VueGlobale() {
               {evenements?.map((e) => {
                 const [label, cls, point] = BADGE_STATUT[e.statut];
                 return (
-                  <tr key={e.id} className="border-t border-mde-bordure-ligne">
+                  <tr key={e.id} className="border-t border-mde-bordure-ligne transition-colors hover:bg-mde-entete">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <span className="h-8 w-1.5 rounded-[3px]" style={{ background: e.tokens.p }} />
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{e.nomAffiche}</span>
-                          <span className="text-[13px] text-mde-texte-2">Programme {e.programmeNom}</span>
-                        </div>
+                        <span className="whitespace-nowrap font-semibold">{e.nomAffiche}</span>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3.5">
-                      {dateCourte(e.date)} · {heureTexte(e.heureDebut)}
+                      <span className="flex flex-col leading-snug">
+                        <span>{dateCourte(e.date)}</span>
+                        <span className="text-[13px] text-mde-texte-2">{heureTexte(e.heureDebut)}</span>
+                      </span>
                     </td>
                     <td className="px-3 py-3.5">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex min-w-[130px] items-center gap-2.5">
                         <span className="h-1.5 flex-1 overflow-hidden rounded-[3px] bg-mde-bordure-ligne">
                           <span
                             className="block h-full bg-mde-bordeaux"
                             style={{ width: `${Math.min(100, (e.nbInscrits / e.capacite) * 100)}%` }}
                           />
                         </span>
-                        <span className="w-[88px] text-right text-[14px] tabular-nums">
+                        <span className="w-[76px] text-right text-[14px] tabular-nums">
                           {nombre(e.nbInscrits)} / {nombre(e.capacite)}
                         </span>
                       </div>
@@ -124,25 +127,21 @@ export default function VueGlobale() {
                         {label}
                       </span>
                     </td>
-                    <td className="px-3 py-3.5 text-[14px] text-mde-texte-2">
+                    <td className="max-w-[140px] px-3 py-3.5 text-[14px] text-mde-texte-2">
                       {e.adminsDetails.map((a) => prenomSeul(a.nom)).join(', ') || '—'}
                     </td>
                     <td className="px-5 py-3.5">
-                      <div className="flex justify-end gap-2">
-                        <Link
+                      <div className="flex justify-end gap-1.5">
+                        <BoutonIcone
                           to={`/admin/evenements/${e.id}`}
-                          aria-label={`Tableau de bord de ${e.nomAffiche}`}
-                          className="inline-flex h-11 items-center whitespace-nowrap rounded-bouton border border-mde-champ bg-surface px-3 text-[13px] font-semibold text-mde-texte no-underline hover:bg-mde-survol hover:text-mde-texte"
-                        >
-                          Tableau de bord
-                        </Link>
-                        <Link
+                          icone="chart"
+                          libelle={`Tableau de bord de ${e.nomAffiche}`}
+                        />
+                        <BoutonIcone
                           to={`/super/evenements/${e.id}`}
-                          aria-label={`Configurer ${e.nomAffiche}`}
-                          className="inline-flex h-11 items-center rounded-bouton border border-mde-champ bg-surface px-3 text-[13px] font-semibold text-mde-texte no-underline hover:bg-mde-survol hover:text-mde-texte"
-                        >
-                          Configurer
-                        </Link>
+                          icone="sliders"
+                          libelle={`Configurer ${e.nomAffiche}`}
+                        />
                       </div>
                     </td>
                   </tr>

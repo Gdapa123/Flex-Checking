@@ -8,7 +8,7 @@ export default function ConnexionAdmin() {
   useTitre('Connexion');
   const [aide, setAide] = useState(false);
   return (
-    <main className="flex min-h-screen items-center justify-center border-t-[6px] border-texte px-4 py-10">
+    <main className="fond-connexion flex min-h-[100dvh] flex-col items-center justify-center gap-6 border-t-[6px] border-texte px-4 py-10">
       <FormulaireConnexion
         univers="programme"
         destination={(moi) => (moi.role === 'SUPER_ADMIN' ? '/super' : '/admin')}
@@ -43,6 +43,7 @@ export default function ConnexionAdmin() {
           </div>
         }
       />
+      <p className="m-0 text-center text-[13px] text-texte-2">MDE Business School · Abidjan, Côte d’Ivoire</p>
     </main>
   );
 }

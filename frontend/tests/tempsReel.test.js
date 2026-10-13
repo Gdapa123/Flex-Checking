@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../src/lib/api', () => ({ rafraichirSession: vi.fn() }));
 
 import { rafraichirSession } from '../src/lib/api';
-import { demarrerTempsReel } from '../src/lib/tempsReel';
+import { demarrerTempsReel, lireEtatTempsReel } from '../src/lib/tempsReel';
 
 class FauxSocket {
   static instances = [];
@@ -77,5 +77,37 @@ describe('temps réel', () => {
     expect(ecoute).toHaveBeenCalled();
     expect(FauxSocket.instances).toHaveLength(1);
     window.removeEventListener('fc:session-expiree', ecoute);
+  });
+
+  it('serveur sans temps réel (code 4004) : état « indisponible », essais espacés et silencieux', () => {
+    arreter = demarrerTempsReel(qc);
+    expect(lireEtatTempsReel()).toBe('connexion');
+    dernier().close(4004);
+    expect(lireEtatTempsReel()).toBe('indisponible');
+    vi.advanceTimersByTime(60_000);
+    expect(FauxSocket.instances).toHaveLength(1);
+    vi.advanceTimersByTime(5 * 60_000);
+    expect(FauxSocket.instances).toHaveLength(2);
+    expect(lireEtatTempsReel()).toBe('indisponible');
+    dernier().recevoir({ type: 'pret' });
+    expect(lireEtatTempsReel()).toBe('connecte');
+  });
+
+  it('coupure réseau avant toute connexion : « Reconnexion… », jamais « indisponible »', () => {
+    arreter = demarrerTempsReel(qc);
+    for (let i = 0; i < 4; i++) {
+      dernier().close(1006);
+      expect(lireEtatTempsReel()).toBe('deconnecte');
+      vi.advanceTimersByTime(40_000);
+    }
+  });
+
+  it('temps réel indisponible : ni le retour du réseau ni le retour sur l’onglet ne relancent de connexion', () => {
+    arreter = demarrerTempsReel(qc);
+    dernier().close(4004);
+    window.dispatchEvent(new Event('online'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(1000);
+    expect(FauxSocket.instances).toHaveLength(1);
   });
 });

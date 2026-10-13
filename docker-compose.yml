@@ -36,7 +36,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    ports: ["3307:3306"]
+    # poste local seulement : la base n'est jamais exposée au réseau (Wi-Fi de la salle, réseau de l'école)
+    ports: ["127.0.0.1:3307:3306"]
     volumes: [mysql-data:/var/lib/mysql]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
@@ -46,7 +47,8 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6380:6379"]
+    # poste local seulement : Redis n'a pas de mot de passe en développement
+    ports: ["127.0.0.1:6380:6379"]
 
   # Boîte mail de test : interface http://localhost:8025, SMTP localhost:1025 (accessibles depuis ce poste seulement)
   mailpit:

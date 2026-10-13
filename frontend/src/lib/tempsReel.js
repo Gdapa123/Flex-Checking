@@ -26,11 +26,15 @@ export const REQUETES_PAR_SUJET = {
 
 const FERMETURE_SESSION = 4001;
 const FERMETURE_COMPTE = 4003;
+// le serveur n'a pas de temps réel (pas de Redis) : nouvel essai espacé, au cas où il serait réactivé
+const FERMETURE_INDISPONIBLE = 4004;
+const ESSAI_SI_INDISPONIBLE_MS = 5 * 60_000;
 const REGROUPEMENT_MS = 250;
 
 // ------------------------------------------------------------------ état partagé
 
-let etat = 'deconnecte'; // 'connexion' | 'connecte' | 'deconnecte'
+// 'connexion' | 'connecte' | 'deconnecte' | 'indisponible' (le serveur refuse le temps réel : environnement sans Redis)
+let etat = 'deconnecte';
 const abonnes = new Set();
 function changerEtat(e) {
   if (e === etat) return;
@@ -43,6 +47,7 @@ const sAbonner = (f) => {
 };
 
 export const useEtatTempsReel = () => useSyncExternalStore(sAbonner, () => etat);
+export const lireEtatTempsReel = () => etat;
 
 /** Intervalle d'interrogation de secours : désactivé tant que le temps réel est connecté. */
 export function useSecours(ms) {
@@ -90,7 +95,8 @@ export function demarrerTempsReel(qc) {
 
   function ouvrir() {
     if (arrete || ws) return;
-    changerEtat('connexion');
+    // temps réel indisponible : les tentatives suivantes se font en silence (l'interrogation périodique prend le relais)
+    if (etat !== 'indisponible') changerEtat('connexion');
     const protocole = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const socket = new WebSocket(`${protocole}://${window.location.host}/api/ws/`);
     ws = socket;
@@ -119,13 +125,18 @@ export function demarrerTempsReel(qc) {
     socket.onclose = async (e) => {
       if (ws === socket) ws = null;
       if (arrete) return;
-      changerEtat('deconnecte');
       if (e.code === FERMETURE_COMPTE) return sessionTerminee();
       if (e.code === FERMETURE_SESSION) {
         // jeton d'accès expiré : rafraîchir la session puis se reconnecter aussitôt
+        changerEtat('deconnecte');
         if (await rafraichirSession()) return planifier(0);
         return sessionTerminee();
       }
+      if (e.code === FERMETURE_INDISPONIBLE) {
+        changerEtat('indisponible');
+        return planifier(ESSAI_SI_INDISPONIBLE_MS);
+      }
+      changerEtat('deconnecte');
       essais += 1;
       const base = Math.min(30_000, 1000 * 2 ** Math.min(essais - 1, 5));
       planifier(base / 2 + Math.random() * (base / 2));
@@ -133,7 +144,8 @@ export function demarrerTempsReel(qc) {
   }
 
   const relancer = () => {
-    if (!arrete && !ws) planifier(0);
+    // temps réel indisponible sur ce serveur : pas de nouvel essai anticipé (l'essai espacé reste programmé)
+    if (!arrete && !ws && etat !== 'indisponible') planifier(0);
   };
   const visibilite = () => document.visibilityState === 'visible' && relancer();
   window.addEventListener('online', relancer);

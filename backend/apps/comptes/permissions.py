@@ -3,6 +3,16 @@ from rest_framework.permissions import BasePermission
 from .models import Role
 
 MOT_DE_PASSE_A_CHANGER = "Changez d’abord votre mot de passe temporaire."
+RESERVE_HOTE = "Action réservée à l’hôte : ouvrez l’espace hôte de la borne."
+
+
+def borne_autorisee(view):
+    """Vue accessible à une session « borne libre-service » : `autorise_borne = True`, ou ensemble d'actions
+    autorisées pour un viewset (`{"list"}`)."""
+    autorise = getattr(view, "autorise_borne", False)
+    if isinstance(autorise, set | frozenset | tuple | list):
+        return getattr(view, "action", None) in autorise
+    return bool(autorise)
 
 
 def _compte_utilisable(user):
@@ -18,6 +28,11 @@ class CompteUtilisable(BasePermission):
 
     def has_permission(self, request, view):
         if _compte_utilisable(request.user):
+            from .authentication import est_borne
+
+            if est_borne(request.auth) and not borne_autorisee(view):
+                self.message = RESERVE_HOTE
+                return False
             return True
         if request.user and request.user.is_authenticated and request.user.doit_changer_mot_de_passe:
             self.message = MOT_DE_PASSE_A_CHANGER

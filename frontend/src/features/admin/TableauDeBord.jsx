@@ -6,19 +6,20 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
-  ComposedChart,
   LabelList,
-  Line,
   Pie,
   PieChart,
+  ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { api } from '../../lib/api';
-import { nombre } from '../../lib/format';
+import { dateLongue, heureTexte, nombre } from '../../lib/format';
 import { marquerMaj, useSecours } from '../../lib/tempsReel';
 import Carte from '../../components/ui/Carte';
 import Icon from '../../components/ui/Icon';
@@ -56,7 +57,8 @@ export default function TableauDeBord({ ev }) {
     queryKey: ['statistiques', ev.id],
     queryFn: () => api.get(`/evenements/${ev.id}/statistiques/`),
     // en cas d'échec, relance périodique même si le temps réel est connecté (il ne renvoie que des changements)
-    refetchInterval: (q) => (q.state.error ? 15_000 : secours),
+    // le jour J, rechargement chaque minute même en temps réel : la tranche en cours avance sans nouvel émargement
+    refetchInterval: (q) => (q.state.error ? 15_000 : secours || (ev.statut === 'AUJOURDHUI' ? 60_000 : false)),
   });
   useEffect(() => {
     if (dataUpdatedAt) marquerMaj(dataUpdatedAt);
@@ -66,7 +68,7 @@ export default function TableauDeBord({ ev }) {
     return <EtatErreur titre="Statistiques indisponibles" erreur={error} onReessayer={() => refetch()} />;
   if (!s)
     return (
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {[1, 2, 3, 4].map((k) => (
           <Squelette key={k} className="h-[140px] !rounded-carte" />
         ))}
@@ -103,108 +105,30 @@ export default function TableauDeBord({ ev }) {
     },
   ];
   const total = s.modes.reduce((a, m) => a + m.nb, 0);
-  const max = Math.max(1, ...s.tranches.map((t) => t.arrivees));
-  let cumul = 0;
-  const donnees = s.tranches.map((t, i) => {
-    cumul += t.arrivees;
-    return { ...t, i, cumul, etiquette: i % 2 === 0 ? t.debut : '' };
-  });
   const maxPoste = Math.max(1, ...s.postes.map((p) => p.nb));
 
   return (
     <>
       {error && <EtatErreur compact erreur={error} onReessayer={() => refetch()} />}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {kpis.map((k) => (
-          <Carte key={k.label} className="flex animate-in-up flex-col gap-2 p-5">
-            <span className="flex items-center gap-2.5 text-[15px] font-medium text-texte-2">
+          <Carte key={k.label} className="flex min-w-0 animate-in-up flex-col gap-2 p-4 sm:p-5">
+            <span className="flex items-center gap-2.5 text-[14px] font-medium text-texte-2 sm:text-[15px]">
               <span className="flex h-9 w-9 items-center justify-center rounded-moyen bg-ps text-[18px] text-p">
                 <Icon nom={k.icone} />
               </span>
               {k.label}
             </span>
-            <span className="text-[44px] font-bold leading-none tracking-[-0.03em] tabular-nums">{k.valeur}</span>
-            <span className="text-[14px] text-texte-2">{k.sub}</span>
+            <span className="text-[34px] font-bold leading-none tracking-[-0.03em] tabular-nums sm:text-[44px]">
+              {k.valeur}
+            </span>
+            <span className="text-[13px] leading-snug text-texte-2 sm:text-[14px]">{k.sub}</span>
           </Carte>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <Carte as="section" className="flex min-w-0 flex-col gap-5 px-6 py-5" aria-labelledby="t-arrivees">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 id="t-arrivees" className="m-0 text-[17px] font-semibold">
-              Arrivées par tranche de 15 minutes
-            </h2>
-            <span className="text-[14px] text-texte-2">
-              {s.pic
-                ? `Pic : ${s.pic.debut} – ${s.pic.fin} · ${nombre(s.pic.arrivees)} arrivées`
-                : 'Aucune arrivée pour le moment'}
-            </span>
-          </div>
-          <div
-            className="h-[230px]"
-            role="img"
-            aria-label={`Arrivées par tranche de 15 minutes. ${s.tranches.map((t) => `${t.debut} : ${t.arrivees}`).join(', ')}`}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={donnees} margin={{ top: 22, right: 4, left: 0, bottom: 0 }} barCategoryGap="18%">
-                <XAxis
-                  dataKey="etiquette"
-                  tickLine={false}
-                  axisLine={{ stroke: 'var(--bordure)' }}
-                  interval={0}
-                  tick={{ fontSize: 12, fill: 'var(--texte-2)' }}
-                />
-                <YAxis yAxisId="arrivees" hide domain={[0, (m) => Math.max(1, m * 1.15)]} />
-                <YAxis yAxisId="cumul" hide orientation="right" domain={[0, (m) => Math.max(1, m * 1.08)]} />
-                <Tooltip
-                  cursor={{ fill: 'var(--fond)' }}
-                  formatter={(v, nom) => [nom === 'cumul' ? `${v} présents au total` : `${v} arrivées`, '']}
-                  labelFormatter={(_, p) => (p?.[0] ? `${p[0].payload.debut} – ${p[0].payload.fin}` : '')}
-                  contentStyle={INFOBULLE}
-                  itemStyle={{ color: 'var(--texte)' }}
-                />
-                <Bar
-                  yAxisId="arrivees"
-                  dataKey="arrivees"
-                  radius={[6, 6, 2, 2]}
-                  maxBarSize={44}
-                  isAnimationActive={false}
-                >
-                  {donnees.map((d) => (
-                    <Cell key={d.i} fill={d.i === s.trancheCourante ? 'var(--p)' : 'var(--ps)'} />
-                  ))}
-                  <LabelList
-                    dataKey="arrivees"
-                    position="top"
-                    formatter={(v) => (v ? v : '')}
-                    style={{ fontSize: 13, fontWeight: 600, fill: 'var(--texte)' }}
-                  />
-                </Bar>
-                <Line
-                  yAxisId="cumul"
-                  dataKey="cumul"
-                  type="monotone"
-                  stroke="var(--s)"
-                  strokeWidth={2.5}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-4 text-[13px] text-texte-2" aria-hidden="true">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-[3px] bg-p" />
-              Arrivées par tranche
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-0.5 w-4 rounded bg-s" />
-              Présents cumulés
-            </span>
-          </div>
-          <span className="sr-only">Maximum : {max} arrivées sur une tranche.</span>
-        </Carte>
+        <ArriveesParTranche ev={ev} s={s} />
 
         <Carte as="section" className="flex min-w-0 flex-col gap-5 px-6 py-5" aria-labelledby="t-modes">
           <h2 id="t-modes" className="m-0 text-[17px] font-semibold">
@@ -288,6 +212,7 @@ export default function TableauDeBord({ ev }) {
                     itemStyle={{ color: 'var(--texte)' }}
                     labelFormatter={jourMois}
                     formatter={(v, nom, p) => [`${v} inscrits (+${p.payload.nb} ce jour)`, '']}
+                    separator=""
                   />
                   <Area
                     type="monotone"
@@ -459,6 +384,187 @@ export default function TableauDeBord({ ev }) {
 
       {!terminee && <LienInscription ev={ev} />}
     </>
+  );
+}
+
+/** « 17h45 » → minutes depuis minuit. */
+const enMinutes = (h) => {
+  const [hh, mm] = String(h).split('h').map(Number);
+  return hh * 60 + mm;
+};
+
+function InfobulleArrivees({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div style={INFOBULLE} className="bg-surface px-3 py-2 text-texte">
+      <div className="font-semibold">
+        {d.debut} – {d.fin}
+      </div>
+      <div>{d.arrivees ? `${nombre(d.arrivees)} ${d.arrivees > 1 ? 'arrivées' : 'arrivée'}` : 'Aucune arrivée'}</div>
+      <div className="text-texte-2">{nombre(d.cumul)} présents au total à la fin de la tranche</div>
+    </div>
+  );
+}
+
+/**
+ * Arrivées à l'accueil par tranche de 15 minutes : nombre d'invités émargés dans chaque tranche, repère du lancement,
+ * tranche en cours le jour J. Sans aucune arrivée, un message explique quand le graphique se remplira.
+ */
+function ArriveesParTranche({ ev, s }) {
+  const jourJ = ev.statut === 'AUJOURDHUI';
+  const terminee = ev.statut === 'TERMINEE';
+  let cumul = 0;
+  const donnees = s.tranches.map((t, i) => {
+    cumul += t.arrivees;
+    return { ...t, i, cumul };
+  });
+  const totalArrivees = cumul;
+  // présences enregistrées hors du jour de la cérémonie (ex. validation manuelle le lendemain) : hors des tranches
+  const horsJour = totalArrivees === 0 && s.presents > 0;
+  const contient = (d, minutes) => enMinutes(d.debut) <= minutes && minutes < enMinutes(d.debut) + 15;
+  const lancement = donnees.find((d) => contient(d, enMinutes(s.heureDebut)));
+  // tranche en cours : fournie par le serveur (heure du serveur, pas celle de l'appareil)
+  const enCours = s.trancheEnCours != null ? donnees[s.trancheEnCours] : null;
+  const accueil = heureTexte(ev.heureAccueil);
+
+  const resume = [
+    { label: 'Arrivées', valeur: nombre(totalArrivees) },
+    s.pic && { label: 'Pic', valeur: `${s.pic.debut} – ${s.pic.fin}`, detail: `${nombre(s.pic.arrivees)} arrivées` },
+    jourJ && { label: '15 dernières minutes', valeur: `+${nombre(s.presents15min)}` },
+  ].filter(Boolean);
+
+  return (
+    <Carte as="section" className="flex min-w-0 flex-col gap-4 px-6 py-5" aria-labelledby="t-arrivees">
+      <div className="flex flex-col gap-1">
+        <h2 id="t-arrivees" className="m-0 text-[17px] font-semibold">
+          Arrivées à l’accueil
+        </h2>
+        <p className="m-0 text-[14px] text-texte-2">
+          Nombre d’invités émargés par tranche de 15 minutes · accueil dès {accueil}, lancement à{' '}
+          {heureTexte(ev.heureDebut)}.
+        </p>
+      </div>
+
+      {totalArrivees === 0 ? (
+        <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-moyen border border-dashed border-bordure bg-fond px-6 py-8 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-moyen bg-ps text-[24px] text-p">
+            <Icon nom="clock" />
+          </span>
+          <p className="m-0 text-[16px] font-semibold">
+            {horsJour
+              ? 'Aucune arrivée le jour de la cérémonie'
+              : terminee
+                ? 'Aucune arrivée enregistrée'
+                : 'Aucune arrivée pour le moment'}
+          </p>
+          <p className="m-0 max-w-[460px] text-[14px] leading-[1.5] text-texte-2">
+            {horsJour
+              ? `${nombre(s.presents)} ${s.presents > 1 ? 'présences ont été enregistrées' : 'présence a été enregistrée'} un autre jour que celui de la cérémonie : ${s.presents > 1 ? 'elles sont comptées' : 'elle est comptée'} dans les présents, pas dans ce graphique.`
+              : terminee
+                ? 'Aucun invité n’a été émargé pour cette cérémonie.'
+                : jourJ
+                  ? `Chaque invité scanné à l’accueil apparaît ici en direct, dans sa tranche de 15 minutes. L’accueil ouvre à ${accueil}.`
+                  : `Le graphique se remplira en direct le ${dateLongue(ev.date, false)}, à chaque invité scanné à l’accueil (dès ${accueil}).`}
+          </p>
+        </div>
+      ) : (
+        <>
+          <dl className="m-0 flex flex-wrap gap-x-8 gap-y-2">
+            {resume.map((r) => (
+              <div key={r.label} className="flex flex-col">
+                <dt className="text-[13px] text-texte-2">{r.label}</dt>
+                <dd className="m-0 text-[18px] font-bold tabular-nums">
+                  {r.valeur}
+                  {r.detail && <span className="ml-1.5 text-[14px] font-medium text-texte-2">{r.detail}</span>}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div
+            className="h-[240px]"
+            role="img"
+            aria-label={`Arrivées par tranche de 15 minutes : ${donnees
+              .filter((d) => d.arrivees)
+              .map((d) => `${d.debut} – ${d.fin} : ${d.arrivees}`)
+              .join(', ')}. Total : ${totalArrivees}.`}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={donnees} margin={{ top: 26, right: 8, left: -8, bottom: 0 }} barCategoryGap="16%">
+                <CartesianGrid vertical={false} stroke="var(--bordure-ligne)" />
+                {enCours && (
+                  <ReferenceArea
+                    x1={enCours.debut}
+                    x2={enCours.debut}
+                    fill="var(--ps)"
+                    fillOpacity={1}
+                    ifOverflow="extendDomain"
+                    label={{ value: 'En cours', position: 'insideTop', fontSize: 12, fill: 'var(--texte-2)' }}
+                  />
+                )}
+                <XAxis
+                  dataKey="debut"
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--bordure)' }}
+                  interval="preserveStartEnd"
+                  minTickGap={14}
+                  tick={{ fontSize: 12, fill: 'var(--texte-2)' }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  domain={[0, (m) => Math.max(4, Math.ceil(m * 1.15))]}
+                  tick={{ fontSize: 12, fill: 'var(--texte-2)' }}
+                />
+                {lancement && (
+                  <ReferenceLine
+                    x={lancement.debut}
+                    position="start"
+                    stroke="var(--texte-2)"
+                    strokeDasharray="4 3"
+                    label={{
+                      value: `Lancement ${heureTexte(ev.heureDebut)}`,
+                      position: 'top',
+                      fontSize: 12,
+                      fill: 'var(--texte-2)',
+                    }}
+                  />
+                )}
+                <Tooltip cursor={{ fill: 'var(--fond)' }} content={<InfobulleArrivees />} />
+                <Bar dataKey="arrivees" fill="var(--p)" radius={[5, 5, 0, 0]} maxBarSize={40} isAnimationActive={false}>
+                  <LabelList
+                    dataKey="arrivees"
+                    position="top"
+                    formatter={(v) => (v ? v : '')}
+                    style={{ fontSize: 12, fontWeight: 600, fill: 'var(--texte)' }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-texte-2" aria-hidden="true">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-[3px] bg-p" />
+              Invités émargés dans la tranche
+            </span>
+            {lancement && (
+              <span className="flex items-center gap-1.5">
+                <span className="h-3 w-0 border-l-2 border-dashed border-texte-2" />
+                Lancement de la cérémonie
+              </span>
+            )}
+            {enCours && (
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-[3px] bg-ps" />
+                Tranche en cours
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </Carte>
   );
 }
 

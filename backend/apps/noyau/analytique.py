@@ -54,8 +54,13 @@ def analytique():
         for e in evenements
     ]
 
-    # par programme et par année (comparaison annuelle)
+    # par programme et par année (comparaison annuelle). Les effectifs comptent toutes les cérémonies ; les TAUX de
+    # présence ne portent que sur les cérémonies terminées : une cérémonie à venir (aucun émargement) ou en cours
+    # (émargement partiel) ferait chuter artificiellement le taux d'un programme, d'une année ou le taux global.
+    aujourd_hui = timezone.localdate().isoformat()
+    terminees = [e for e in lignes if e["date"] < aujourd_hui]
     programmes, annees = {}, {}
+    taux_programmes = {}  # programme -> [présents, inscrits] des cérémonies terminées
     for e in lignes:
         p = programmes.setdefault(
             e["programme"],
@@ -64,14 +69,21 @@ def analytique():
         p["evenements"] += 1
         p["inscrits"] += e["inscrits"]
         p["presents"] += e["presents"]
+        if e["date"] < aujourd_hui:
+            somme = taux_programmes.setdefault(e["programme"], [0, 0])
+            somme[0] += e["presents"]
+            somme[1] += e["inscrits"]
+    for e in terminees:
         a = annees.setdefault(
             (e["annee"], e["programme"]),
             {"annee": e["annee"], "programme": e["programme"], "couleur": e["couleur"], "inscrits": 0, "presents": 0},
         )
         a["inscrits"] += e["inscrits"]
         a["presents"] += e["presents"]
-    for groupe in (*programmes.values(), *annees.values()):
+    for groupe in annees.values():
         groupe["taux"] = _taux(groupe["presents"], groupe["inscrits"])
+    for nom, groupe in programmes.items():
+        groupe["taux"] = _taux(*taux_programmes.get(nom, (0, 0)))
 
     # inscriptions par jour sur 60 jours (toutes cérémonies)
     depuis = timezone.now() - timedelta(days=59)
@@ -99,7 +111,8 @@ def analytique():
             "evenements": len(lignes),
             "inscrits": inscrits,
             "presents": presents,
-            "taux": _taux(presents, inscrits),
+            # cérémonies terminées seulement (voir plus haut)
+            "taux": _taux(sum(e["presents"] for e in terminees), sum(e["inscrits"] for e in terminees)),
             "emailsEnvoyes": emails.get(StatutEmail.ENVOYE, 0),
             "emailsEchec": emails.get(StatutEmail.ECHEC, 0),
             "emailsAttente": emails.get(StatutEmail.EN_ATTENTE, 0),

@@ -12,9 +12,58 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
   }
   body {
     @apply m-0 bg-fond font-sans text-texte antialiased;
+  }
+  /* titres courts répartis sur des lignes équilibrées (pas de mot orphelin) */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: var(--ps);
+    color: var(--texte);
+  }
+  /* retour immédiat au toucher (pas de délai de double-tape) et transitions homogènes des éléments interactifs ;
+     les classes Tailwind `transition-*` d'un composant restent prioritaires */
+  a,
+  button,
+  summary,
+  select,
+  input,
+  textarea,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  a,
+  button,
+  summary,
+  select {
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      opacity 0.15s ease,
+      transform 0.1s ease;
+  }
+  /* listes déroulantes : même apparence que les champs, flèche du design */
+  select:not([multiple]):not([size]) {
+    appearance: none;
+    background-image: var(--chevron-select);
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    background-size: 16px;
+    padding-right: 2.25rem !important;
+    cursor: pointer;
+  }
+  select:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
   a {
     color: var(--lien);
@@ -105,6 +154,29 @@
   }
   .btn-principal:active {
     transform: scale(0.97);
+  }
+  /* Page de connexion admin : halo neutre et léger quadrillage */
+  .fond-connexion {
+    background: var(--halo-connexion),
+      repeating-linear-gradient(0deg, var(--bordure-ligne) 0 1px, transparent 1px 48px),
+      repeating-linear-gradient(90deg, var(--bordure-ligne) 0 1px, transparent 1px 48px), var(--fond);
+  }
+  /* Lien d'évitement : invisible jusqu'au premier Tab */
+  .lien-evitement {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 100;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: var(--texte);
+    color: var(--blanc);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .lien-evitement:focus {
+    top: 12px;
+    color: var(--blanc);
   }
   .squelette {
     background: linear-gradient(90deg, var(--subtil) 0, var(--fond) 40%, var(--subtil) 80%);

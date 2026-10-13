@@ -5,17 +5,17 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from apps.comptes.permissions import EstSuperAdmin
+from apps.comptes.throttles import LimiteIpPartagee
 
 from .erreurs import enregistrer
 from .models import ErreurTechnique, SourceErreur
 from .validation import donnees_objet, entier
 
 
-class SignalementThrottle(AnonRateThrottle):
+class SignalementThrottle(LimiteIpPartagee):
     scope = "signalement_erreur"
 
 

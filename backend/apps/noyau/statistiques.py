@@ -44,7 +44,13 @@ def statistiques(evenement):
         n = sum(1 for h in jour if t <= h < t + TRANCHE)
         tranches.append({"debut": heure(t.time()), "fin": heure((t + TRANCHE).time()), "arrivees": n})
         t += TRANCHE
-    courante = max((i for i, tr in enumerate(tranches) if tr["arrivees"]), default=None)
+    # tranche qui contient l'heure actuelle (jour J seulement) : heure du serveur, jamais celle de l'appareil
+    en_cours = None
+    if evenement.date == timezone.localdate():
+        ici = timezone.localtime(maintenant)
+        en_cours = next(
+            (i for i in range(len(tranches)) if debut + i * TRANCHE <= ici < debut + (i + 1) * TRANCHE), None
+        )
     pic = max(tranches, key=lambda tr: tr["arrivees"], default=None)
 
     # --- répartition par mode ---
@@ -113,7 +119,7 @@ def statistiques(evenement):
         "presents15min": agg["recents"],
         "heureDebut": heure(evenement.heure_debut),
         "tranches": tranches,
-        "trancheCourante": courante,
+        "trancheEnCours": en_cours,
         "pic": pic if pic and pic["arrivees"] else None,
         "modes": modes,
         "postes": postes,

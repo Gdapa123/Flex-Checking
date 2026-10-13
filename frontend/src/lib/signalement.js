@@ -31,18 +31,40 @@ export function signalerErreur(erreur, complement = '') {
   }
 }
 
+/** Scripts de l'application : bundle Vite en production (`/assets/`), modules servis par Vite en développement. */
+const scriptApplication = (url) => {
+  const origine = window.location.origin;
+  return ['/assets/', '/src/', '/node_modules/', '/@vite/', '/@react-refresh'].some((d) => url.startsWith(origine + d));
+};
+const URL_RE =
+  /\b(?:https?|chrome-extension|moz-extension|safari-extension|safari-web-extension|webkit-masked-url):\/\/[^\s)'"]+/g;
+
+/**
+ * Vrai sauf preuve qu'une erreur vient d'ailleurs que de l'application : fichier ou trace pointant uniquement vers
+ * des scripts étrangers (extension du navigateur, script injecté par le navigateur intégré d'une application comme
+ * Instagram ou Facebook, y compris un script en ligne attribué à l'URL de la page). Sans information (pas de trace,
+ * rejet d'une chaîne, échec de chargement d'un fichier de l'application), l'erreur est signalée.
+ */
+export function vientDeLApplication(erreur, fichier = '') {
+  if (fichier) return scriptApplication(fichier);
+  const urls = typeof erreur?.stack === 'string' ? erreur.stack.match(URL_RE) || [] : [];
+  return urls.length === 0 || urls.some(scriptApplication);
+}
+
 /** Capture les erreurs JavaScript non gérées de toute l'application. */
 export function installerSignalement() {
   window.addEventListener('error', (e) => {
     // erreurs de chargement de ressource (image, script) : pas d'objet Error, peu exploitables
     if (!e.error && !e.message) return;
     if (/ResizeObserver loop/.test(e.message || '')) return; // avertissement bénin des navigateurs
+    if (!vientDeLApplication(e.error, e.filename)) return;
     signalerErreur(e.error || e.message);
   });
   window.addEventListener('unhandledrejection', (e) => {
     const raison = e.reason;
     // erreurs d'API déjà traitées par l'interface (4xx) ou enregistrées par le serveur (5xx)
     if (raison?.name === 'AbortError' || typeof raison?.status === 'number') return;
+    if (!vientDeLApplication(raison)) return;
     signalerErreur(raison);
   });
 }

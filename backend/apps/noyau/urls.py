@@ -18,6 +18,8 @@ urlpatterns = [
     path("auth/rafraichir/", auth.RafraichirView.as_view()),
     path("auth/moi/", auth.MoiView.as_view()),
     path("auth/mot-de-passe/", auth.ChangerMotDePasseView.as_view()),
+    path("auth/verifier-mot-de-passe/", auth.VerifierMotDePasseView.as_view()),
+    path("auth/borne/", auth.ModeBorneView.as_view()),
     # Analyses (super admin)
     path("analytique/", vues_admin.AnalytiqueView.as_view()),
     path("analytique/technique/", vues_admin.TechniqueView.as_view()),
@@ -35,6 +37,7 @@ urlpatterns = [
     # Scan
     path("evenements/<int:pk>/emargement/", vues_scan.EmargementView.as_view()),
     path("evenements/<int:pk>/emargements/recents/", vues_scan.RecentsView.as_view()),
+    path("evenements/<int:pk>/borne/recherche/", vues_scan.RechercheBorneView.as_view()),
     path("emargements/<int:pk>/annulation/", vues_scan.AnnulationView.as_view()),
     path("parametres/scan/", vues_scan.ParametresScanView.as_view()),
     # Invités

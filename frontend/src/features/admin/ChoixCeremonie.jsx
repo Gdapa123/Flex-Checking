@@ -9,6 +9,7 @@ import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Squelette from '../../components/ui/Squelette';
 import EtatErreur from '../../components/ui/EtatErreur';
+import LienEvitement from '../../components/ui/LienEvitement';
 
 const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
@@ -22,11 +23,17 @@ const morceauxDate = (iso) => {
   };
 };
 const pourcentage = (n, sur) => (sur ? Math.min(100, Math.round((n / sur) * 100)) : 0);
-/** « PMD » → PMD ; « Public-AMP » → PAM (initiale du premier mot, deux lettres du dernier). */
-const monogramme = (programme) => {
+/** « PMD » → PMD ; « Public-AMP » → PAMP, « Public-ASD » → PASD (initiales des premiers mots, puis le dernier en entier). */
+export const monogramme = (programme) => {
   const mots = (programme || '?').split(/[-\s]+/).filter(Boolean);
-  const m = mots.length > 1 ? mots[0][0] + mots.at(-1).slice(0, 2) : mots[0].slice(0, 3);
-  return m.toUpperCase();
+  const m =
+    mots.length > 1
+      ? mots
+          .slice(0, -1)
+          .map((x) => x[0])
+          .join('') + mots.at(-1)
+      : mots[0];
+  return m.slice(0, 4).toUpperCase();
 };
 
 /** A2 · Choix de la cérémonie : la cérémonie du jour en avant, l'agenda à venir, les éditions passées. */
@@ -62,6 +69,7 @@ export default function ChoixCeremonie() {
 
   return (
     <div className="univers-mde min-h-screen bg-mde-surface text-mde-texte">
+      <LienEvitement />
       <header className="entete-mde hachures px-4 pb-28 pt-6 sm:px-8">
         <div className="relative mx-auto flex max-w-[1120px] flex-col gap-10">
           <div className="flex items-center justify-between gap-4">
@@ -113,7 +121,7 @@ export default function ChoixCeremonie() {
         </div>
       </header>
 
-      <main className="relative -mt-16 px-4 pb-14 sm:px-8">
+      <main id="contenu" tabIndex={-1} className="relative -mt-16 px-4 pb-14 outline-none sm:px-8">
         <div className="mx-auto flex max-w-[1120px] flex-col gap-10">
           {error &&
             (evenements ? (
@@ -281,7 +289,7 @@ function LigneAgenda({ e }) {
           </span>
         </span>
         <span
-          className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-[13px] font-extrabold tracking-[-0.02em] max-sm:hidden"
+          className={`flex h-11 w-11 flex-none items-center justify-center rounded-full font-extrabold tracking-[-0.03em] max-sm:hidden ${monogramme(e.programmeNom).length > 3 ? 'text-[11px]' : 'text-[13px]'}`}
           style={{ background: t.p, color: t.op }}
           aria-hidden="true"
         >

@@ -1,11 +1,25 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { api } from '../../lib/api';
 import Icon from '../../components/ui/Icon';
 import Interrupteur from '../../components/ui/Interrupteur';
 import Segmente from '../../components/ui/Segmente';
 import useFocusTrap from '../../components/ui/useFocusTrap';
 
 /* ------------------------------------------------------------------ Cadre de visée */
-export function CadreVisee({ taille = 236, coin = 52, epaisseur = 4, rayon = 14, phase, grand = false }) {
+/**
+ * Cadre de visée. `taille` : nombre (px) ou longueur CSS adaptative (`min(82vw, 50dvh, 420px)`) ; `coin` : longueur
+ * des coins (par défaut 22 % du cadre). `voile` : assombrit la vidéo autour du cadre pour guider le regard (le parent
+ * doit masquer ce qui dépasse).
+ */
+export function CadreVisee({
+  taille = 236,
+  coin = '22%',
+  epaisseur = 5,
+  rayon = 18,
+  phase,
+  grand = false,
+  voile = false,
+}) {
   const detecte = phase === 'detection';
   const couleur = detecte ? 'var(--g-detect)' : 'var(--s)';
   const coins = [
@@ -22,6 +36,7 @@ export function CadreVisee({ taille = 236, coin = 52, epaisseur = 4, rayon = 14,
         height: taille,
         borderRadius: rayon,
         background: detecte ? 'var(--g-detect-doux)' : 'transparent',
+        boxShadow: voile ? '0 0 0 200vmax var(--g-voile-visee)' : undefined,
       }}
     >
       {coins.map((c, i) => (
@@ -544,6 +559,89 @@ export function FeuilleAnnulation({ dernier, enCours, onAnnuler, onFermer }) {
       >
         Fermer
       </button>
+    </Feuille>
+  );
+}
+
+/**
+ * Espace hôte de la borne libre-service : le mot de passe du compte connecté est vérifié par le serveur (tentatives
+ * limitées) avant d'ouvrir les réglages, qui donnent accès à l'espace admin.
+ */
+export function FeuilleDeverrouillage({ onDeverrouille, onFermer }) {
+  const [mdp, setMdp] = useState('');
+  const [erreur, setErreur] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const valider = async (e) => {
+    e.preventDefault();
+    if (!mdp || envoi) return;
+    setEnvoi(true);
+    setErreur('');
+    try {
+      await api.post('/auth/verifier-mot-de-passe/', { motDePasse: mdp });
+      onDeverrouille();
+    } catch (err) {
+      setMdp('');
+      setErreur(
+        err?.status === 400
+          ? 'Mot de passe incorrect.'
+          : err?.status === 429
+            ? 'Trop de tentatives. Patientez quelques minutes.'
+            : err instanceof TypeError || !navigator.onLine
+              ? 'Connexion au réseau requise pour ouvrir l’espace hôte.'
+              : 'Vérification impossible. Réessayez.',
+      );
+    } finally {
+      setEnvoi(false);
+    }
+  };
+  return (
+    <Feuille label="Espace hôte" onFermer={onFermer}>
+      <form onSubmit={valider} className="flex flex-col gap-4" noValidate>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-moyen bg-g-eleve text-[20px]">
+            <Icon nom="lock" />
+          </span>
+          <div className="flex flex-col">
+            <h2 className="m-0 text-[20px] font-bold">Espace hôte</h2>
+            <span className="text-[14px] text-g-texte-2">Saisissez le mot de passe de votre compte.</span>
+          </div>
+        </div>
+        <label htmlFor="mdp-hote" className="sr-only">
+          Mot de passe
+        </label>
+        <input
+          id="mdp-hote"
+          type="password"
+          autoComplete="current-password"
+          value={mdp}
+          onChange={(e) => setMdp(e.target.value)}
+          data-autofocus
+          aria-invalid={erreur ? true : undefined}
+          aria-describedby={erreur ? 'mdp-hote-erreur' : undefined}
+          className="h-[52px] rounded-moyen border border-texte-2 bg-g-fond px-3.5 text-[17px] text-g-texte outline-none focus:border-g-texte"
+        />
+        {erreur && (
+          <p id="mdp-hote-erreur" role="alert" className="m-0 flex items-center gap-2 text-[15px] text-g-erreur-clair">
+            <Icon nom="alertCircle" className="text-[17px]" />
+            {erreur}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={!mdp || envoi}
+          className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 bg-p text-[16px] font-semibold text-op disabled:opacity-50"
+        >
+          <Icon nom="login" className="text-[20px]" />
+          {envoi ? 'Vérification…' : 'Ouvrir l’espace hôte'}
+        </button>
+        <button
+          type="button"
+          onClick={onFermer}
+          className="h-[52px] cursor-pointer rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
+        >
+          Revenir à l’accueil des invités
+        </button>
+      </form>
     </Feuille>
   );
 }

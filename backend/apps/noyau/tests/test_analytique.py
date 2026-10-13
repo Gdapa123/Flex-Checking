@@ -7,11 +7,11 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.noyau import caches
+from apps.noyau import caches, services
 from apps.noyau.models import EmailEnvoye, ErreurTechnique, JournalActivite, SourceErreur, StatutEmail
 from apps.noyau.tasks import relancer_emails_en_attente
 
-from .conftest import client_connecte, nouvel_invite
+from .conftest import client_connecte, creer_evenement, nouvel_invite
 from .test_inscription import payload, url
 
 pytestmark = pytest.mark.django_db
@@ -42,6 +42,25 @@ def test_analyses_super_admin(client_admin, client_sa, evenement):
     t = client_sa.get("/api/analytique/technique/").json()
     assert t["sante"]["base"] is True and len(t["requetes"]) == 60
     assert {e["source"] for e in t["erreursATraiter"]} == set(SourceErreur.values)
+
+
+def test_taux_limites_aux_ceremonies_terminees(client_sa, programme, super_admin):
+    """Une cérémonie à venir (aucun émargement) ou en cours (émargement partiel) ne fait chuter ni le taux annuel,
+    ni le taux du programme, ni le taux global ; les effectifs, eux, comptent toutes les cérémonies."""
+    aujourd_hui = timezone.localdate()
+    il_y_a_un_an = aujourd_hui - timedelta(days=366)
+    passee = creer_evenement(programme, date=il_y_a_un_an, date_limite_inscription=il_y_a_un_an)
+    present = nouvel_invite(passee, email="present@sib.ci")
+    nouvel_invite(passee, email="absent@sib.ci")
+    services.emarger(passee, super_admin, invite_id=present.pk, mode="MANUEL", appareil="ORDINATEUR")
+    en_cours = creer_evenement(programme, date=aujourd_hui, date_limite_inscription=aujourd_hui)
+    nouvel_invite(en_cours, email="a@sib.ci")
+    nouvel_invite(en_cours, email="b@sib.ci")
+    a = client_sa.get("/api/analytique/").json()
+    assert [(x["annee"], x["taux"]) for x in a["annees"]] == [(il_y_a_un_an.year, 50)]
+    prog = a["programmes"][0]
+    assert (prog["evenements"], prog["inscrits"], prog["presents"], prog["taux"]) == (2, 4, 1, 50)
+    assert (a["totaux"]["inscrits"], a["totaux"]["taux"]) == (4, 50)
 
 
 def test_statistiques_en_cache_et_toujours_exactes(client_admin, evenement):

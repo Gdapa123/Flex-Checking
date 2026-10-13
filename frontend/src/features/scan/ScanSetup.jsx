@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { api } from '../../lib/api';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import { dateCourte, nombre } from '../../lib/format';
 import useTitre from '../../lib/useTitre';
@@ -8,8 +10,9 @@ import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Segmente from '../../components/ui/Segmente';
 import Squelette from '../../components/ui/Squelette';
+import { FeuilleDeverrouillage } from './composants';
 import { debloquerAudio } from './retour';
-import { APPAREILS, MODES_SCAN, POSTES_SUGGERES, ecrireReglages, lireReglages } from './reglages';
+import { APPAREILS, MODES_SCAN, POSTES_SUGGERES, appareilEffectif, ecrireReglages, lireReglages } from './reglages';
 import { useEvenementsScan } from './useEvenementsScan';
 
 /** S1 · Démarrer l'émargement : cérémonie, poste, mode (mémorisés sur l'appareil). */
@@ -33,10 +36,41 @@ export default function ScanSetup() {
       setR((x) => ({ ...x, evenementId: evenements[0].id }));
   }, [evenements, r.evenementId]);
 
-  const demarrer = () => {
-    if (!choisi) return;
+  const qc = useQueryClient();
+  const [demarrage, setDemarrage] = useState(false);
+  const [erreurDemarrage, setErreurDemarrage] = useState('');
+  // session restreinte d'une borne : démarrer un autre type de poste exige d'abord le mot de passe de l'hôte
+  const [deverrouillage, setDeverrouillage] = useState(false);
+
+  const demarrer = async () => {
+    if (!choisi || demarrage) return;
     debloquerAudio();
-    ecrireReglages({ ...r, evenementId: choisi.id, poste: r.poste.trim() || 'Accueil principal' });
+    setErreurDemarrage('');
+    const reglages = ecrireReglages({ ...r, evenementId: choisi.id, poste: r.poste.trim() || 'Accueil principal' });
+    const borne = appareilEffectif(reglages) === 'TABLETTE';
+    if (!borne && moi?.borne) {
+      setDeverrouillage(true);
+      return;
+    }
+    if (borne && !moi?.borne) {
+      // borne libre-service : la session de l'appareil est restreinte côté serveur (émargement et recherche réduite)
+      setDemarrage(true);
+      try {
+        await api.post('/auth/borne/');
+        await qc.invalidateQueries({ queryKey: ['moi'] });
+      } catch (e) {
+        // seule une vraie coupure réseau permet de démarrer sans restriction (verrou d'interface seulement) ;
+        // un refus du serveur ne doit jamais laisser une session complète entre les mains du public
+        if (!(e instanceof TypeError || !navigator.onLine)) {
+          setErreurDemarrage(
+            'La borne n’a pas pu passer en mode libre-service. Rechargez la page puis réessayez, ou choisissez une autre disposition.',
+          );
+          return;
+        }
+      } finally {
+        setDemarrage(false);
+      }
+    }
     naviguer(`/scan/${choisi.id}`);
   };
 
@@ -198,16 +232,34 @@ export default function ScanSetup() {
           />
         </div>
 
+        {erreurDemarrage && (
+          <p role="alert" className="m-0 flex items-start gap-2 text-[15px] text-g-erreur-clair">
+            <Icon nom="alertCircle" className="mt-0.5 text-[18px]" />
+            {erreurDemarrage}
+          </p>
+        )}
         <button
           type="button"
           onClick={demarrer}
-          disabled={!choisi}
+          disabled={!choisi || demarrage}
           className="btn-principal flex h-14 cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 text-[17px] font-semibold active:scale-[.98] disabled:opacity-50"
         >
           <Icon nom="scan" className="text-[20px]" />
           Démarrer l’émargement
         </button>
       </div>
+      {deverrouillage && (
+        <div className="fixed inset-0 z-50">
+          <FeuilleDeverrouillage
+            onDeverrouille={async () => {
+              setDeverrouillage(false);
+              await qc.invalidateQueries({ queryKey: ['moi'] });
+              naviguer(`/scan/${choisi.id}`);
+            }}
+            onFermer={() => setDeverrouillage(false)}
+          />
+        </div>
+      )}
     </ThemeScope>
   );
 }

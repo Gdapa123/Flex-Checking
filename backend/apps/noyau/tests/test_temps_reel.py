@@ -112,3 +112,11 @@ def test_affectation_met_a_jour_le_perimetre(admin, autre_evenement):
     )
     assert any('"moi"' in m for m in recus)
     assert any(f"[{autre_evenement.pk}]" in m for m in recus)
+
+
+def test_sans_relais_temps_reel_ferme_4004(admin, monkeypatch):
+    """Sans Redis (environnement de test Vercel), code explicite : le navigateur affiche « Actualisation auto »
+    au lieu de « Reconnexion… » et n'insiste pas."""
+    monkeypatch.setattr("channels.consumer.get_channel_layer", lambda alias=None: None)
+    fermeture, recus = ecouter(admin)
+    assert fermeture == 4004 and recus == []

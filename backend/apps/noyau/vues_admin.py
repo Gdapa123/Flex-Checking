@@ -115,6 +115,7 @@ def exiger_confirmation(request, nom):
 # ---------------------------------------------------------------- Événements
 class EvenementViewSet(viewsets.ModelViewSet):
     serializer_class = EvenementSerializer
+    autorise_borne = {"list"}  # le poste de scan de la borne charge la liste des cérémonies
 
     def get_permissions(self):
         lecture = ("list", "retrieve", "statistiques", "apercu_emails", "rapport")

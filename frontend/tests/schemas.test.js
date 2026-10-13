@@ -39,4 +39,8 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
     expect(formaterTelephone('0712345678999')).toBe('07 12 34 56 78');
     expect(formaterTelephone('07-12')).toBe('07 12');
   });
+
+  it('refuse les adresses non ASCII, comme le serveur', () => {
+    expect(schemaInscription.safeParse({ ...OK, email: 'marie@mdé.ci' }).success).toBe(false);
+  });
 });

@@ -142,10 +142,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.comptes.authentication.CookieJWTAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["apps.comptes.permissions.CompteUtilisable"],
     "DEFAULT_RENDERER_CLASSES": ["djangorestframework_camel_case.render.CamelCaseJSONRenderer"],
-    "DEFAULT_PARSER_CLASSES": [
-        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
-        "rest_framework.parsers.MultiPartParser",
-    ],
+    # JSON uniquement : aucun envoi de formulaire ou de fichier n'est attendu, et un formulaire multipart posté depuis
+    # un autre site ne doit jamais atteindre les vues (connexion forcée, CSRF).
+    "DEFAULT_PARSER_CLASSES": ["djangorestframework_camel_case.parser.CamelCaseJSONParser"],
     "JSON_UNDERSCOREIZE": {"no_underscore_before_number": True},
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -164,7 +163,12 @@ REST_FRAMEWORK = {
         "anon": env("LIMITE_ANONYME", default="600/min"),
         "user": env("LIMITE_COMPTE", default="1200/min"),
         "connexion": "5/min",  # par IP et par email : des hôtes partageant une IP ne se bloquent pas
-        "connexion_compte": "20/hour",
+        "connexion_ip": env("LIMITE_CONNEXION_IP", default="30/min"),
+        # vérification du mot de passe d'un compte connecté (espace hôte de la borne, changement de mot de passe)
+        "mot_de_passe_minute": "5/min",
+        "mot_de_passe_heure": "30/hour",
+        "renvoi_admin": "5/hour",
+        "recherche_borne": "30/min",
         "inscription": env("LIMITE_INSCRIPTION_IP", default="60/hour"),
         "renvoi_ip": "30/hour",
         "renvoi_email": "3/hour",

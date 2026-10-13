@@ -11,6 +11,7 @@ import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
 import Spinner from '../../components/ui/Spinner';
 import EtatErreur from '../../components/ui/EtatErreur';
+import LienEvitement from '../../components/ui/LienEvitement';
 import { ToastProvider, useToast } from '../../components/ui/Toasts';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import TableauDeBord from './TableauDeBord';
@@ -42,6 +43,7 @@ export default function EspaceEvenement() {
   return (
     <ThemeScope tokens={ev.tokens} className="flex min-h-screen bg-fond">
       <ToastProvider>
+        <LienEvitement />
         <BarreLaterale ev={ev} />
         <div className="flex min-w-0 flex-1 flex-col">
           <Routes>
@@ -161,18 +163,22 @@ function IndicateurTempsReel() {
   const s = Math.max(1, Math.round((Date.now() - derniere) / 1000));
   const enDirect = etat === 'connecte';
   const depuis = s < 60 ? `${s} s` : `${Math.round(s / 60)} min`;
+  const { libelle, aide } = enDirect
+    ? { libelle: 'En direct', aide: 'Les changements s’affichent instantanément.' }
+    : etat === 'indisponible'
+      ? {
+          libelle: 'Actualisation auto',
+          aide: 'Les données sont actualisées automatiquement toutes les quelques secondes.',
+        }
+      : { libelle: 'Reconnexion…', aide: 'Connexion temps réel interrompue : actualisation périodique en attendant.' };
   return (
     <span
       key={location.pathname}
-      title={
-        enDirect
-          ? 'Les changements s’affichent instantanément.'
-          : 'Connexion temps réel interrompue : actualisation périodique.'
-      }
-      className="inline-flex h-9 items-center gap-2 rounded-full border border-blanc-24 bg-noir-20 px-3 text-[14px] font-medium"
+      title={aide}
+      className="inline-flex h-9 items-center gap-2 rounded-full border border-blanc-24 bg-noir-20 px-3 text-[14px] font-medium tabular-nums"
     >
       <span className={`h-2 w-2 rounded-full ${enDirect ? 'animate-blink bg-live' : 'bg-current opacity-50'}`} />
-      {enDirect ? 'En direct' : 'Reconnexion…'} · mis à jour il y a {depuis}
+      {libelle} · mis à jour il y a {depuis}
     </span>
   );
 }
@@ -211,7 +217,7 @@ function Page({ ev, titre, children }) {
   const naviguer = useNavigate();
   const base = `/admin/evenements/${ev.id}`;
   return (
-    <main className="flex min-w-0 flex-1 flex-col" aria-labelledby="titre-page">
+    <main id="contenu" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none" aria-labelledby="titre-page">
       <header className="entete-degrade hachures flex flex-wrap items-end justify-between gap-4 px-4 pb-[76px] pt-6 sm:px-8">
         <div className="relative flex min-w-0 flex-col gap-2">
           <Link
@@ -244,19 +250,6 @@ function Page({ ev, titre, children }) {
             <Icon nom="scan" className="text-[18px]" />
             Ouvrir le scan
           </Link>
-          {/* la barre latérale (et sa déconnexion) est masquée sous 961 px */}
-          <button
-            type="button"
-            aria-label="Se déconnecter"
-            title="Se déconnecter"
-            onClick={async () => {
-              await deconnexion();
-              naviguer('/connexion');
-            }}
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-bouton border border-blanc-24 bg-noir-20 text-[20px] text-inherit hover:bg-noir-16 min-[961px]:hidden"
-          >
-            <Icon nom="logout" />
-          </button>
         </div>
         <nav aria-label="Sections" className="relative flex w-full gap-1 min-[961px]:hidden">
           {[
@@ -275,6 +268,19 @@ function Page({ ev, titre, children }) {
               {l}
             </NavLink>
           ))}
+          {/* la barre latérale (et sa déconnexion) est masquée sous 961 px */}
+          <button
+            type="button"
+            aria-label="Se déconnecter"
+            title="Se déconnecter"
+            onClick={async () => {
+              await deconnexion();
+              naviguer('/connexion');
+            }}
+            className="ml-auto flex h-11 w-11 flex-none cursor-pointer items-center justify-center rounded-bouton border border-blanc-24 bg-noir-20 text-[20px] text-inherit hover:bg-noir-16"
+          >
+            <Icon nom="logout" />
+          </button>
         </nav>
       </header>
       <div className="relative -mt-12 flex min-w-0 flex-col gap-5 px-4 pb-10 sm:px-8 [&>*]:min-w-0">{children}</div>

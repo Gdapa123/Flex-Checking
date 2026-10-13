@@ -109,16 +109,18 @@ export default function Analyses() {
 
 function Kpis({ elements }) {
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))' }}>
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       {elements.map((k) => (
-        <Carte mde key={k.label} className="flex animate-in-up flex-col gap-2 p-5">
+        <Carte mde key={k.label} className="flex min-w-0 animate-in-up flex-col gap-2 p-4 sm:p-5">
           <span className="flex items-center gap-2 text-[15px] font-medium text-mde-texte-2">
             {k.etat !== undefined && (
               <span className={`h-2.5 w-2.5 rounded-full ${k.etat ? 'bg-succes' : 'bg-erreur'}`} aria-hidden="true" />
             )}
             {k.label}
           </span>
-          <span className="text-[36px] font-bold leading-none tracking-[-0.03em] tabular-nums">{k.valeur}</span>
+          <span className="text-[30px] font-bold leading-none tracking-[-0.03em] tabular-nums sm:text-[36px]">
+            {k.valeur}
+          </span>
           {k.sub && <span className="text-[14px] text-mde-texte-2">{k.sub}</span>}
         </Carte>
       ))}
@@ -186,7 +188,7 @@ function Activite() {
         elements={[
           { label: 'Cérémonies', valeur: nombre(t.evenements), sub: `${aVenir.length} à venir` },
           { label: 'Inscrits', valeur: nombre(t.inscrits), sub: 'toutes cérémonies' },
-          { label: 'Présents', valeur: nombre(t.presents), sub: `taux de présence ${t.taux} %` },
+          { label: 'Présents', valeur: nombre(t.presents), sub: `taux de présence ${t.taux} % (cérémonies terminées)` },
           {
             label: 'Emails envoyés',
             valeur: nombre(t.emailsEnvoyes),
@@ -212,7 +214,8 @@ function Activite() {
                   itemStyle={{ color: 'var(--mde-texte)' }}
                   labelFormatter={jourMois}
                   cursor={{ fill: 'var(--mde-survol)' }}
-                  formatter={(v) => [`${v} inscriptions`, '']}
+                  formatter={(v) => [`${v} inscription${v > 1 ? 's' : ''}`, '']}
+                  separator=""
                 />
                 <Bar dataKey="nb" fill={BORDEAUX} radius={[3, 3, 0, 0]} maxBarSize={14} isAnimationActive={false} />
               </BarChart>
@@ -376,6 +379,7 @@ function Activite() {
                     itemStyle={{ color: 'var(--mde-texte)' }}
                     cursor={{ fill: 'var(--mde-survol)' }}
                     formatter={(v) => [`${v} invités`, '']}
+                    separator=""
                   />
                   <Bar dataKey="nb" fill={BORDEAUX} radius={[0, 5, 5, 0]} barSize={16} isAnimationActive={false}>
                     <LabelList

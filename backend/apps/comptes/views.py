@@ -10,13 +10,29 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from apps.noyau.journal import journaliser
 
-from .authentication import emettre_jetons, jeton_revoque, nouvelle_version_session
+from .authentication import (
+    emettre_jetons,
+    est_borne,
+    jeton_revoque,
+    nouvelle_version_session,
+    revoquer_acces,
+    verifier_csrf,
+)
 from .models import Admin
-from .throttles import ConnexionCompteThrottle, ConnexionThrottle
+from .throttles import (
+    ECHECS_CONNEXION_PAR_COMPTE,
+    FENETRE_ECHECS_CONNEXION_S,
+    CacheDeSecours,
+    ConnexionIpThrottle,
+    ConnexionThrottle,
+    MotDePasseCompteHeureThrottle,
+    MotDePasseCompteThrottle,
+    cle_echecs_connexion,
+)
 
 
 class MoiSerializer(serializers.ModelSerializer):
@@ -28,8 +44,15 @@ class MoiSerializer(serializers.ModelSerializer):
 
 
 class ConnexionSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    mot_de_passe = serializers.CharField(trim_whitespace=False)
+    email = serializers.EmailField(max_length=254)
+    mot_de_passe = serializers.CharField(trim_whitespace=False, max_length=256)
+
+    def validate_email(self, v):
+        # ASCII uniquement : la collation MySQL (utf8mb4_unicode_ci) confondrait « mdé.ci » et « mde.ci »,
+        # et chaque variante accentuée obtiendrait ses propres compteurs de tentatives (force brute illimitée).
+        if not v.isascii():
+            raise serializers.ValidationError("Adresse email invalide.")
+        return v.lower()
 
 
 def _poser_cookies(response, refresh):
@@ -69,23 +92,48 @@ class CsrfView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+def _trop_de_tentatives():
+    return Response(
+        {"code": "TROP_DE_TENTATIVES", "detail": "Trop de tentatives. Réessayez dans quelques minutes."},
+        status=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+def _ancien_refresh(request):
+    """Jeton de rafraîchissement du cookie, mis en liste noire (changement de niveau de session)."""
+    raw = request.COOKIES.get(settings.JWT_COOKIE_REFRESH)
+    if raw:
+        try:
+            RefreshToken(raw).blacklist()
+        except TokenError:
+            pass
+
+
 class ConnexionView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [ConnexionThrottle, ConnexionCompteThrottle]
+    throttle_classes = [ConnexionThrottle, ConnexionIpThrottle]
 
     @extend_schema(request=ConnexionSerializer, responses={200: MoiSerializer})
     def post(self, request):
+        # Vue sans authentification DRF : le contrôle CSRF est fait ici (connexion forcée sur le compte d'un tiers
+        # depuis un autre site). Le frontend envoie toujours l'en-tête X-CSRFToken.
+        verifier_csrf(request)
         ser = ConnexionSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        admin = authenticate(
-            request, username=ser.validated_data["email"].lower(), password=ser.validated_data["mot_de_passe"]
-        )
+        email = ser.validated_data["email"]
+        # Chaque tentative est comptée AVANT la vérification du mot de passe (incrément atomique : des essais envoyés
+        # en parallèle ne passent pas tous le contrôle) ; une connexion réussie remet la série d'échecs à zéro.
+        limites, cle = CacheDeSecours(), cle_echecs_connexion(email)
+        if limites.incrementer(cle, FENETRE_ECHECS_CONNEXION_S) > ECHECS_CONNEXION_PAR_COMPTE:
+            return _trop_de_tentatives()
+        admin = authenticate(request, username=email, password=ser.validated_data["mot_de_passe"])
         if admin is None or not admin.actif:
             return Response(
                 {"code": "IDENTIFIANTS_INVALIDES", "detail": "Email ou mot de passe incorrect."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+        limites.supprimer(cle)
         admin.derniere_connexion = timezone.now()
         admin.save(update_fields=["derniere_connexion"])
         journaliser(admin, "CONNEXION", admin)
@@ -110,7 +158,7 @@ class RafraichirView(APIView):
             if not admin.actif or jeton_revoque(ancien, admin):
                 raise TokenError("inactif ou mot de passe changé")
             ancien.blacklist()
-            nouveau = emettre_jetons(admin)
+            nouveau = emettre_jetons(admin, borne=est_borne(ancien))
         except (TokenError, Admin.DoesNotExist):
             response = Response({"code": "SESSION_EXPIREE"}, status=status.HTTP_401_UNAUTHORIZED)
             _effacer_cookies(response)
@@ -126,6 +174,7 @@ class DeconnexionView(APIView):
 
     @extend_schema(request=None, responses={204: None})
     def post(self, request):
+        verifier_csrf(request)  # pas de déconnexion forcée depuis un autre site
         raw = request.COOKIES.get(settings.JWT_COOKIE_REFRESH)
         if raw:
             try:
@@ -134,6 +183,13 @@ class DeconnexionView(APIView):
                 jeton.blacklist()
                 if admin:
                     journaliser(admin, "DECONNEXION", admin)
+            except TokenError:
+                pass
+        # le jeton d'accès de cette session cesse aussi de fonctionner (jeton volé encore valide sinon 15 min)
+        acces = request.COOKIES.get(settings.JWT_COOKIE_ACCESS)
+        if acces:
+            try:
+                revoquer_acces(AccessToken(acces))
             except TokenError:
                 pass
         response = Response(status=status.HTTP_204_NO_CONTENT)
@@ -146,7 +202,8 @@ class MoiView(APIView):
 
     @extend_schema(responses={200: MoiSerializer})
     def get(self, request):
-        return Response(MoiSerializer(request.user).data)
+        # `borne` : session restreinte d'une borne libre-service (le frontend n'affiche alors que le scan)
+        return Response({**MoiSerializer(request.user).data, "borne": est_borne(request.auth)})
 
 
 class ChangerMotDePasseSerializer(serializers.Serializer):
@@ -156,9 +213,12 @@ class ChangerMotDePasseSerializer(serializers.Serializer):
 
 class ChangerMotDePasseView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [MotDePasseCompteThrottle, MotDePasseCompteHeureThrottle]
 
     @extend_schema(request=ChangerMotDePasseSerializer, responses={204: None})
     def post(self, request):
+        if est_borne(request.auth):
+            return Response({"code": "RESERVE_HOTE", "detail": "Action réservée à l’hôte."}, status=403)
         ser = ChangerMotDePasseSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         admin = request.user
@@ -183,4 +243,50 @@ class ChangerMotDePasseView(APIView):
                 pass
         response = Response(status=status.HTTP_204_NO_CONTENT)
         _poser_cookies(response, emettre_jetons(admin))
+        return response
+
+
+class VerifierMotDePasseSerializer(serializers.Serializer):
+    mot_de_passe = serializers.CharField(trim_whitespace=False, max_length=256)
+
+
+class VerifierMotDePasseView(APIView):
+    """Confirme l'identité de l'hôte avant d'ouvrir l'espace hôte d'une borne libre-service : une session ouverte sur
+    un appareil laissé au public ne doit pas suffire pour atteindre les réglages ni l'espace admin."""
+
+    throttle_classes = [MotDePasseCompteThrottle, MotDePasseCompteHeureThrottle]
+    autorise_borne = True
+
+    @extend_schema(request=VerifierMotDePasseSerializer, responses={204: None, 400: None})
+    def post(self, request):
+        ser = VerifierMotDePasseSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        if not request.user.check_password(ser.validated_data["mot_de_passe"]):
+            return Response(
+                {"code": "MOT_DE_PASSE_INCORRECT", "detail": "Mot de passe incorrect."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        if est_borne(request.auth):
+            # hôte identifié : la session de la borne redevient complète (réglages, espace admin)
+            _ancien_refresh(request)
+            revoquer_acces(request.auth)
+            _poser_cookies(response, emettre_jetons(request.user))
+        return response
+
+
+class ModeBorneView(APIView):
+    """Passe la session de cet appareil en mode « borne libre-service » : le public qui l'utilise ne peut
+    qu'émarger et chercher son nom, jamais atteindre la liste des invités, les exports ni l'espace admin.
+    Le mot de passe de l'hôte (`auth/verifier-mot-de-passe/`) rend une session complète."""
+
+    autorise_borne = True
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request):
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        if not est_borne(request.auth):
+            _ancien_refresh(request)
+            revoquer_acces(request.auth)
+            _poser_cookies(response, emettre_jetons(request.user, borne=True))
         return response

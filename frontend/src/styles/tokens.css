@@ -94,6 +94,7 @@
   --noir-16: rgba(0, 0, 0, 0.16);
   --noir-20: rgba(0, 0, 0, 0.2);
   --g-voile: rgba(11, 12, 13, 0.7);
+  --g-voile-visee: rgba(0, 0, 0, 0.45);
   --g-detect-doux: rgba(45, 179, 122, 0.12);
   --g-detect-badge: rgba(45, 179, 122, 0.16);
   --g-succes-badge: rgba(24, 121, 78, 0.25);
@@ -124,6 +125,11 @@
   --lien: var(--p);
   --lien-survol: var(--ph);
   --hachure: #ffffff;
+
+  /* Flèche des listes déroulantes (gris texte-2) */
+  --chevron-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f666c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  /* Fond de la page de connexion : halo très léger, sans couleur de programme */
+  --halo-connexion: radial-gradient(60% 50% at 50% 0%, rgba(27, 29, 32, 0.06), transparent 70%);
 }
 
 /* Univers MDE : focus et liens bordeaux */

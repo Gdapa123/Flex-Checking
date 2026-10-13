@@ -186,6 +186,29 @@ def test_statistiques(client_admin, evenement, peuple):
     assert d["comparaison"][0]["enCours"] is True
 
 
+def test_tranche_en_cours_calculee_par_le_serveur(client_admin, evenement):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    ici = timezone.localtime()
+    if ici.hour < 1 or ici.hour >= 22:
+        pytest.skip("cérémonie du jour impossible à placer autour de minuit")
+    evenement.date = ici.date()
+    evenement.date_limite_inscription = ici.date()
+    evenement.heure_accueil = (ici - timedelta(minutes=40)).time()
+    evenement.heure_debut = (ici + timedelta(minutes=20)).time()
+    evenement.save()
+    d = client_admin.get(f"/api/evenements/{evenement.pk}/statistiques/").json()
+    tranche = d["tranches"][d["trancheEnCours"]]
+    h, m = (int(x) for x in tranche["debut"].split("h"))
+    assert h * 60 + m <= ici.hour * 60 + ici.minute < h * 60 + m + 15
+    # autre jour que la cérémonie : pas de tranche en cours
+    evenement.date = evenement.date_limite_inscription = ici.date() + timedelta(days=5)
+    evenement.save()
+    assert client_admin.get(f"/api/evenements/{evenement.pk}/statistiques/").json()["trancheEnCours"] is None
+
+
 def test_export_neutralise_les_formules(client_admin, evenement):
     """Une valeur saisie par un invité ne doit jamais être interprétée comme une formule (CSV/Excel)."""
     import io

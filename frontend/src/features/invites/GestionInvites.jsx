@@ -383,7 +383,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
 
   return (
     <>
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => {
           const on = actifKpi === k.cle;
           return (
@@ -406,7 +406,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                 <span className={`h-2 w-2 rounded-full ${k.point}`} />
                 {k.label}
               </span>
-              <span className="text-[32px] font-bold leading-[1.1] tracking-[-0.025em] tabular-nums">
+              <span className="text-[28px] font-bold leading-[1.1] tracking-[-0.025em] tabular-nums sm:text-[32px]">
                 {data ? nombre(k.valeur) : '–'}
               </span>
             </button>
@@ -428,7 +428,8 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               aria-label="Rechercher un invité"
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
-              placeholder="Nom, email, téléphone, entreprise, code"
+              placeholder="Nom, email, téléphone, code…"
+              title="Recherche par nom, prénom, email, téléphone, entreprise ou code à 4 chiffres"
               className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-texte outline-none"
             />
             {isFetching && !isLoading && <Spinner taille={14} className="text-texte-2" />}
