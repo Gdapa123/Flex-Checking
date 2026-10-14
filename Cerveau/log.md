@@ -175,3 +175,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** pytest (SQLite) 203/204 (seul échec : test de concurrence non exécutable sur SQLite) ; `npm test`
   52/52 ; lint ✅ ; build ✅ ; e2e 3/3 ✅ ; parcours borne en navigateur 18/18 ✅. pytest sur MySQL non exécuté.
 - **Risques ou limites :** non commité, non déployé.
+
+## [2026-10-14] opérations | Commit, push et déploiement de l'environnement de test Vercel
+
+- **Contexte :** demande « commit, push and deploy ».
+- **Modifications :** commit `ffa45e4` poussé sur `origin/main` (avec 3 commits encore non poussés) ; CI GitHub verte
+  sur ce commit (ruff + **pytest sur MySQL**, lint, Vitest, build, Playwright). Frontend `flex-checking` déployé
+  automatiquement par l'intégration Git de Vercel au push (13/10 15:12) ; backend `flex-checking-api` déployé par la
+  CLI le 14/10 (`vercel deploy --prod --scope mde-it`). Aucune migration de base nécessaire.
+- **Validation :** `/api/sante/` ok ; nouvelles routes `auth/borne/` et `auth/verifier-mot-de-passe/` présentes (401
+  sans session) ; connexion sans CSRF refusée (403) ; nouvelles fonctions présentes dans les fichiers du frontend en
+  ligne ; relais `/api` du frontend ok.
+- **Risques ou limites :** entre les deux déploiements (≈ 15 h), le nouveau frontend parlait à l'ancien backend
+  (démarrage d'une borne refusé, `auth/borne/` absent) ; résolu par le déploiement du backend. Production
+  (`docker-compose.prod.yml`) non concernée.
