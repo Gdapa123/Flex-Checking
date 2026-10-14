@@ -371,3 +371,18 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   build ; e2e 3/3 (audit axe : iframes d'aperçu exclues) ; parcours borne 18/18 ; « C’est moi » de bout en bout.
 - **Risques ou limites :** R10 (IP du client sur Vercel, à confirmer), R11 (pas de CAPTCHA), R12 (durcissements
   laissés en l'état, Tailwind 3 en développement). Migration 0009 régénérée (jamais appliquée sur une base durable).
+
+## [2026-10-14] deploy | Sondage, suivi des emails et sécurité en ligne (Vercel)
+- **Contexte :** « fais les » (commit, push, déploiement, `CRON_SECRET`, migrations Neon), après tests et revue.
+- **Modifications :** commit `bd4f807` poussé ; CI verte (pytest MySQL, frontend, Playwright) ; variable
+  `CRON_SECRET` (aléatoire, 48 caractères, type Secret) créée sur `flex-checking-api` sans être affichée ; backend
+  déployé (un premier essai refusé « Not authorized », le second a réussi) ; frontend déployé au push.
+  Migrations Neon `0008` (46 invités inscrits dans le futur supprimés) et `0009` (tables du sondage) appliquées
+  depuis le poste avec `DATABASE_URL_UNPOOLED` (les variables sensibles de Vercel ne sont pas lisibles par
+  `vercel env pull` : clé secrète jetable locale, inutile à la migration). Crons : Vercel fusionnait les deux crons
+  du même chemin → chemins distincts `?passage=8h` et `?passage=12h`.
+- **Validation :** en ligne : `/api/sante/` ok ; sondage à jeton inconnu 404 ; cron sans secret ou avec un faux secret
+  404 ; `auth/rafraichir/` sans CSRF 403 ; annulation sans session 401 ; page `/sondage/…` servie, bundle
+  `SondagePage` présent ; CSP sans `data:` dans `frame-src`, Referrer-Policy `same-origin`.
+- **Risques ou limites :** données de démo du sondage (éditions 2025) non semées sur Neon ; premier envoi réel du
+  sondage au lendemain d'une cérémonie (à observer dans Suivi des emails).

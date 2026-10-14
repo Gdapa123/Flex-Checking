@@ -42,7 +42,7 @@ appareil déjà utilisé (remerciement), lien inconnu (page « lien de sondage n
 | Environnement | Déclencheur |
 |---|---|
 | Production (Docker) | Celery Beat `envoyer-sondages` : `crontab(minute=0, hour="8-20")` — 8 h, puis rattrapage horaire jusqu'à 20 h (présence validée tard, Beat indisponible à 8 h) ; l'email part par le worker Celery (3 relances) |
-| Test Vercel (sans Redis) | crons Vercel `0 8 * * *` et `0 12 * * *` (`backend/vercel.json`) → `GET /api/taches-planifiees/sondages/` avec `Authorization: Bearer <CRON_SECRET>` (≥ 32 caractères, sinon 404) ; liens et emails « en attente » créés d'abord, puis envoyés dans un budget de 200 s ; le cron de 12 h reprend le reste et les présences tardives |
+| Test Vercel (sans Redis) | crons Vercel `0 8 * * *` et `0 12 * * *` (`backend/vercel.json`, chemins distincts `?passage=8h` / `?passage=12h` : Vercel fusionne deux crons d'un même chemin) → `GET /api/taches-planifiees/sondages/` avec `Authorization: Bearer <CRON_SECRET>` (≥ 32 caractères, sinon 404) ; liens et emails « en attente » créés d'abord, puis envoyés dans un budget de 200 s ; le cron de 12 h reprend le reste et les présences tardives |
 
 Une cérémonie dont le lendemain est passé sans déclenchement n'est **pas** rattrapée ensuite (règle « le lendemain »).
 
