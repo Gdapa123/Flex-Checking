@@ -197,3 +197,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   couleur `texte-3`. Titres de l'iframe et `aria-label` inchangés sur le fond.
 - **Validation :** ESLint ok, Vitest 52/52, build ok. Pas de capture d'écran faite.
 - **Risques ou limites :** aucun.
+
+## [2026-10-14] deploy | Libellé des aperçus d'emails
+- **Contexte :** demande « commit, push and deploy ».
+- **Modifications :** commit `2e31006` poussé sur `origin/main` ; frontend `flex-checking` redéployé automatiquement
+  par Vercel au push. Backend non concerné.
+- **Validation :** CI GitHub verte sur `2e31006` ; déploiement Vercel « Ready » ; nouveau texte présent dans
+  `AdminApp-*.js` en ligne.
+- **Risques ou limites :** aucun.
