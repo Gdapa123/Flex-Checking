@@ -253,3 +253,13 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** ESLint ok, Vitest 52/52, build ok ; captures locales 1 440 px et 390 px (PMD avec magazine,
   Public-AMP sans magazine) vérifiées à l'œil.
 - **Risques ou limites :** aucun.
+
+## [2026-10-14] deploy | CI Node.js 24, migration 0008, refonte A7
+- **Contexte :** demande « commit, push and deploy ».
+- **Modifications :** commits `331ed98` (CI), `7db922b` (migration 0008 = suppression), `3718947` (A7) poussés ;
+  frontend redéployé automatiquement au push ; backend `flex-checking-api` redéployé par la CLI (`--scope mde-it`).
+- **Validation :** CI verte sur `3718947` (backend, frontend, Playwright), **aucune annotation** (avertissements
+  Node.js 20 disparus) ; `/api/sante/` ok ; nouveau texte d'A7 présent dans `AdminApp-*.js` en ligne.
+- **Risques ou limites :** migration `0008` **non appliquée** sur Neon : l'accès aux variables de production
+  (`vercel env pull`) a été refusé par le contrôle de sécurité de Claude Code ; à lancer par l'utilisateur. Tant
+  qu'elle ne l'est pas, les invités inscrits dans le futur restent visibles sur l'environnement Vercel.
