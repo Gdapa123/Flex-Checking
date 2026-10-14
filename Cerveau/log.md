@@ -189,3 +189,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Risques ou limites :** entre les deux déploiements (≈ 15 h), le nouveau frontend parlait à l'ancien backend
   (démarrage d'une borne refusé, `auth/borne/` absent) ; résolu par le déploiement du backend. Production
   (`docker-compose.prod.yml`) non concernée.
+
+## [2026-10-14] maj | Lisibilité du libellé des aperçus d'emails (A7)
+- **Contexte :** retour utilisateur : le texte « Email n°1 · à l'inscription · statut « Inscrit » » est peu visible.
+- **Modifications :** `frontend/src/features/admin/ApercuEmails.jsx` : le libellé (11 px, gris `texte-2`, capitales)
+  devient une pastille « Email n°X » couleur programme (texte blanc) suivie du moment d'envoi en 13 px gras,
+  couleur `texte-3`. Titres de l'iframe et `aria-label` inchangés sur le fond.
+- **Validation :** ESLint ok, Vitest 52/52, build ok. Pas de capture d'écran faite.
+- **Risques ou limites :** aucun.
