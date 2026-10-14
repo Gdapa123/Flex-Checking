@@ -2,7 +2,7 @@
 type: operations
 statut: implémenté
 verifie: 2026-10-14
-commit: cd82ad8
+commit: 36389e6
 sources: [README.md, docker-compose.yml, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py]
 ---
 
@@ -41,13 +41,14 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
   PMD (inscriptions ouvertes), Public-AMP, Public-ASD, éditions 2023–2025 d’AMP et PMD.
 - Aucune date d’inscription dans le futur : pour une cérémonie à venir, les inscriptions sont réparties sur les
   30 derniers jours (`test_dates_inscription.py::test_seed_demo_sans_date_future`).
+- Sondage de satisfaction déjà passé sur les éditions 2025 d’AMP et PMD (~45 % de réponses, commentaires).
 
 ## Variables d’environnement (noms seulement)
 `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `APP_PUBLIC_URL`, `NUM_PROXIES`,
 `MYSQL_*`, `DB_HOST`, `DB_PORT`, `DATABASE_URL`, `DB_SSLMODE`, `REDIS_URL`, `REDIS_CACHE_URL`, `EMAIL_*`,
 `DEFAULT_FROM_EMAIL`, `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS`, `JWT_COOKIE_SECURE`, `CELERY_TASK_ALWAYS_EAGER`,
 `LIMITE_ANONYME`, `LIMITE_COMPTE`, `LIMITE_INSCRIPTION_IP`, `WEB_CONCURRENCY`, `DB_CONCURRENCE`, `ATTENTE_MAX`,
-`EXPORT_SEUIL_ASYNCHRONE`, `DEMO_MOT_DE_PASSE_*`. Modèle : `.env.example`.
+`EXPORT_SEUIL_ASYNCHRONE`, `CRON_SECRET` (cron Vercel du sondage), `DEMO_MOT_DE_PASSE_*`. Modèle : `.env.example`.
 
 ## Tester le scan sur un téléphone
 README §6 : certificat mkcert pour l’IP, autorité mkcert installée sur le téléphone, `https://<IP>:8443/scan`,

@@ -3,7 +3,7 @@ from rest_framework.routers import SimpleRouter
 
 from apps.comptes import views as auth
 
-from . import vues_admin, vues_erreurs, vues_invites, vues_public, vues_scan
+from . import vues_admin, vues_erreurs, vues_invites, vues_public, vues_scan, vues_sondage
 
 routeur = SimpleRouter(trailing_slash=True)
 routeur.register("programmes", vues_admin.ProgrammeViewSet, basename="programme")
@@ -23,6 +23,7 @@ urlpatterns = [
     # Analyses (super admin)
     path("analytique/", vues_admin.AnalytiqueView.as_view()),
     path("analytique/technique/", vues_admin.TechniqueView.as_view()),
+    path("analytique/sondages/", vues_sondage.SondagesGlobalView.as_view()),
     path("rapports/global/", vues_admin.RapportGlobalView.as_view()),
     # Erreurs techniques (signalement par le navigateur ; consultation super admin)
     path("erreurs/", vues_erreurs.SignalementView.as_view()),
@@ -34,6 +35,9 @@ urlpatterns = [
     path("public/evenements/<slug:slug>/inscription/", vues_public.InscriptionView.as_view()),
     path("public/evenements/<slug:slug>/renvoi-qr/", vues_public.RenvoiQrView.as_view()),
     path("public/evenements/<slug:slug>/agenda.ics", vues_public.AgendaView.as_view()),
+    path("public/sondages/<str:jeton>/", vues_sondage.SondagePublicView.as_view()),
+    # Tâches planifiées appelées par le cron de la plateforme (sans Celery Beat)
+    path("taches-planifiees/sondages/", vues_sondage.CronSondagesView.as_view()),
     # Scan
     path("evenements/<int:pk>/emargement/", vues_scan.EmargementView.as_view()),
     path("evenements/<int:pk>/emargements/recents/", vues_scan.RecentsView.as_view()),

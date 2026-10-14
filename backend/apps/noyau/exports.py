@@ -8,7 +8,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-from .models import EmailEnvoye, ModeEmargement, StatutEmail
+from .models import EmailEnvoye, ModeEmargement, StatutEmail, libelle_email
 from .serializers import invites_annotes
 
 LIBELLES_EMAIL = {StatutEmail.ENVOYE: "Envoyé", StatutEmail.EN_ATTENTE: "En attente", StatutEmail.ECHEC: "À renvoyer"}
@@ -126,7 +126,7 @@ def lignes_emails(qs_invites):
                 _texte(e.invite.evenement.nom_affiche),
                 _texte(e.invite.nom_complet),
                 _texte(e.invite.email),
-                "Email n°1 · invitation" if e.type == "INVITATION" else "Email n°2 · magazine",
+                libelle_email(e.type),
                 e.get_statut_display(),
                 e.tentatives,
                 _dt(e.envoye_le),

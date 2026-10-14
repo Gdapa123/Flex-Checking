@@ -2,20 +2,20 @@
 type: architecture
 statut: implémenté
 verifie: 2026-10-14
-commit: cd82ad8
+commit: 36389e6
 sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py]
 ---
 
 # Modèle de données
 
 Base MySQL 8 utf8mb4 (Postgres sur l’environnement Vercel), stockage en UTC, fuseau d’affichage `Africa/Abidjan` (UTC+0).
-Migrations : `0001_initial` → `0008_inscriptions_pas_dans_le_futur` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma), `0001_initial` (comptes).
+Migrations : `0001_initial` → `0009_sondage_satisfaction` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma), `0001_initial` (comptes).
 
 ## Entités
 
 ### Programme
 `nom` (unique), `couleur_principale`, `couleur_secondaire` (#RRGGBB, mises en majuscules), `actif`,
-`magazine_actif`, `lien_magazine`, dates. Créés par la data migration `0002` : AMP `#8F1C1F/#F7941D`,
+`magazine_actif`, `lien_magazine`, `sondage_actif` (défaut vrai), dates. Créés par la data migration `0002` : AMP `#8F1C1F/#F7941D`,
 PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740`.
 
 ### Evenement (cérémonie)
@@ -49,7 +49,7 @@ Table de référence `INSCRIT` (ordre 1), `PRESENT` (ordre 2), créée par data 
 `date`, `date_client`, `annule_le`, `annule_par`, `motif_annulation`. Une annulation ne supprime jamais la ligne.
 
 ### EmailEnvoye
-`invite`, `type` (INVITATION | MAGAZINE), `statut` (EN_ATTENTE | ENVOYE | ECHEC), `tentatives`, `envoye_le`,
+`invite`, `type` (INVITATION | MAGAZINE | SONDAGE), `statut` (EN_ATTENTE | ENVOYE | ECHEC), `tentatives`, `envoye_le`,
 `erreur`, `cree_le`. Une ligne par envoi (chaque renvoi crée une ligne). La colonne « Email 1 » affiche le
 statut de la **dernière** ligne INVITATION.
 
@@ -58,8 +58,16 @@ statut de la **dernière** ligne INVITATION.
 (JSON **sans donnée personnelle**), `date`.
 
 ### Parametres (singleton pk=1)
-Objets et corps des emails n°1 et n°2 (texte avec variables), `duree_resultat_scan` (2 | 3 | 5 s, défaut 3),
+Objets et corps des emails n°1, n°2 et n°3 (texte avec variables), `duree_resultat_scan` (2 | 3 | 5 s, défaut 3),
 `son_actif`, `vibration_actif`, `expediteur` (« Flex’Checking · MDE Business School »).
+
+### InvitationSondage
+`invite` (OneToOne, CASCADE), `jeton` (unique, `token_urlsafe(24)`), `cree_le`, `expire_le` (= création + 24 h).
+
+### ReponseSondage
+`invitation` (OneToOne, CASCADE), `evenement` (CASCADE), `note_globale` et `note_accueil` (1-5), `recommandation`
+(0-10), `commentaire` (≤ 1 000), `appareil` et `appareil_local` (empreintes SHA-256), `cree_le`. Contrainte
+**unique (evenement, appareil)** ; index (evenement, appareil_local).
 
 ### ErreurTechnique
 `source` (NAVIGATEUR | SERVEUR | TACHE | EMAIL), `signature` (sha256, unique), `type`, `message`, `lieu`,

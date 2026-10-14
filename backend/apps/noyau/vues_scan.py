@@ -1,5 +1,6 @@
 """Scan : émargement (QR, douchette, code, manuel), annulation, derniers passages."""
 
+from django.core import signing
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
@@ -7,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.comptes.authentication import est_borne
-from apps.comptes.permissions import EstAdmin, evenements_visibles
+from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 from apps.comptes.throttles import CacheDeSecours, LimiteSensible
 
 from . import services
@@ -25,6 +26,29 @@ def _cle_codes_invalides(user, evenement):
     return f"codes-invalides:{user.pk}:{evenement.pk}"
 
 
+# Borne : « C'est moi » n'émarge que l'invité réellement proposé par la recherche réduite (jeton signé, sans état
+# côté serveur), jamais un identifiant quelconque — sinon une boucle sur inviteId=1..N listerait les invités et les
+# marquerait tous présents. Limite dédiée en plus de la recherche (30/min).
+SEL_CHOIX_BORNE = "flex-checking.choix-borne"
+DUREE_CHOIX_BORNE_S = 300
+MANUELS_BORNE_PAR_MINUTE = 12
+
+
+def jeton_choix_borne(user, evenement, invite_id):
+    return signing.dumps([user.pk, evenement.pk, invite_id], salt=SEL_CHOIX_BORNE)
+
+
+def choix_borne_valide(jeton, user, evenement, invite_id):
+    try:
+        return signing.loads(jeton or "", salt=SEL_CHOIX_BORNE, max_age=DUREE_CHOIX_BORNE_S) == [
+            user.pk,
+            evenement.pk,
+            invite_id,
+        ]
+    except signing.BadSignature:
+        return False
+
+
 class EmargementView(APIView):
     permission_classes = [EstAdmin]
     autorise_borne = True
@@ -39,6 +63,20 @@ class EmargementView(APIView):
         ser = EmargementRequeteSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
+        if est_borne(request.auth) and d.get("invite_id"):
+            if not choix_borne_valide(d.get("choix_borne"), request.user, evenement, d["invite_id"]):
+                return Response(
+                    {"code": "CHOIX_BORNE_INVALIDE", "detail": "Recherchez votre nom puis touchez « C’est moi »."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if (
+                CacheDeSecours().incrementer(f"borne-manuel:{request.user.pk}:{evenement.pk}", 60)
+                > MANUELS_BORNE_PAR_MINUTE
+            ):
+                return Response(
+                    {"code": "TROP_DE_TENTATIVES", "detail": "Trop de passages. Patientez une minute."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
         cle = _cle_codes_invalides(request.user, evenement)
         # compteur partagé entre instances (Redis, ou base sans Redis) : le verrouillage ne se contourne pas
         # en tombant sur un autre processus. Chaque essai de code est compté AVANT l'émargement (incrément
@@ -70,7 +108,9 @@ class AnnulationSerializer(serializers.Serializer):
 
 
 class AnnulationView(APIView):
-    permission_classes = [EstAdmin]
+    # annuler un émargement est réservé au super admin (décision du 2026-10-14) : un admin d'accueil ne peut pas
+    # défaire une présence, même la sienne ; l'erreur se signale à la direction des événements
+    permission_classes = [EstSuperAdmin]
 
     @extend_schema(request=AnnulationSerializer, responses={200: None}, summary="Annuler un émargement")
     def post(self, request, pk):
@@ -181,6 +221,7 @@ class RechercheBorneView(APIView):
                 "resultats": [
                     {
                         "id": i.pk,
+                        "choix": jeton_choix_borne(request.user, evenement, i.pk),
                         "nomComplet": i.nom_complet,
                         "entreprise": i.entreprise,
                         "statut": i.statut.code,

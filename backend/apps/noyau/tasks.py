@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from .erreurs import enregistrer_exception
-from .models import EmailEnvoye, SourceErreur, StatutEmail
+from .models import EmailEnvoye, SourceErreur, StatutEmail, TypeEmail
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +28,30 @@ def envoyer_email(self, email_id):
         cache.delete(verrou)
 
 
+def _sondage_perime(invite):
+    from . import statuts
+    from .models import InvitationSondage
+
+    invitation = InvitationSondage.objects.filter(invite=invite).first()
+    if invitation is None or invitation.expire:
+        return "Sondage non envoyé : lien clos (24 h écoulées)."
+    if invite.statut.code != statuts.PRESENT:
+        return "Sondage non envoyé : la présence de l’invité a été annulée."
+    return ""
+
+
 def _envoyer(self, email_id, verrou):
     from .emails import construire_message
 
-    email = EmailEnvoye.objects.select_related("invite__evenement__programme").filter(pk=email_id).first()
+    email = (
+        EmailEnvoye.objects.select_related("invite__evenement__programme", "invite__statut").filter(pk=email_id).first()
+    )
     if email is None or email.statut == StatutEmail.ENVOYE:
+        return
+    if email.type == TypeEmail.SONDAGE and (raison := _sondage_perime(email.invite)):
+        # relance tardive (file indisponible, nouvelle tentative) : jamais de lien déjà clos ni d'invité plus présent
+        email.statut, email.erreur = StatutEmail.ECHEC, raison
+        email.save(update_fields=["statut", "erreur"])
         return
     email.tentatives += 1
     try:
@@ -79,6 +98,14 @@ def relancer_emails_en_attente():
         envoyer_email.delay(email_id)
         relances += 1
     return relances
+
+
+@shared_task
+def envoyer_sondages():
+    """Email n°3 : sondage de satisfaction aux présents des cérémonies de la veille (à partir de 8 h)."""
+    from .sondages import planifier_sondages
+
+    return planifier_sondages()["programmes"]
 
 
 @shared_task

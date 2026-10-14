@@ -17,10 +17,12 @@ from apps.noyau.models import (
     EmailEnvoye,
     Emargement,
     Evenement,
+    InvitationSondage,
     Invite,
     ModeEmargement,
     Parametres,
     Programme,
+    ReponseSondage,
     Source,
     Statut,
     StatutEmail,
@@ -139,8 +141,8 @@ FONCTIONS = [
 MODES = [ModeEmargement.QR_CAMERA] * 5 + [ModeEmargement.DOUCHETTE] * 2 + [ModeEmargement.CODE, ModeEmargement.MANUEL]
 POSTES = {
     ModeEmargement.QR_CAMERA: ("Accueil principal", Appareil.TELEPHONE),
-    ModeEmargement.DOUCHETTE: ("Poste ordinateur", Appareil.ORDINATEUR),
-    ModeEmargement.CODE: ("Borne 1", Appareil.TABLETTE),
+    ModeEmargement.DOUCHETTE: ("Accueil 3", Appareil.ORDINATEUR),
+    ModeEmargement.CODE: ("Accueil 2", Appareil.TABLETTE),
     ModeEmargement.MANUEL: ("Accueil principal", Appareil.TELEPHONE),
 }
 
@@ -248,6 +250,8 @@ class Command(BaseCommand):
                 self.peupler(
                     ev, nb, nbp, admins[:1], accueil=debut_hist, maintenant=debut_hist + timedelta(hours=2), leger=True
                 )
+                if annee == 2025:
+                    self.sonder(ev)
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -255,6 +259,47 @@ class Command(BaseCommand):
                 + ", ".join(a.email for a in admins)
             )
         )
+
+    def sonder(self, ev):
+        """Sondage de satisfaction passé (envoyé le lendemain à 8 h, ~45 % de réponses), idempotent."""
+        if InvitationSondage.objects.filter(invite__evenement=ev).exists():
+            return
+        rng = self.rng
+        envoi = timezone.make_aware(datetime.combine(ev.date + timedelta(days=1), time(8, 0)))
+        presents = list(ev.invites.filter(statut=self.present))
+        InvitationSondage.objects.bulk_create(
+            [InvitationSondage(invite=i, cree_le=envoi, expire_le=envoi + timedelta(hours=24)) for i in presents],
+            batch_size=500,
+        )
+        commentaires = [
+            "Très belle cérémonie, bravo à toute l’équipe.",
+            "Accueil rapide, le QR code a été lu en une seconde.",
+            "Un peu d’attente à l’entrée vers 18 h.",
+            "Moment inoubliable pour notre famille, merci !",
+            "Le son était un peu faible au fond de la salle.",
+            "",
+            "",
+            "",
+        ]
+        reponses, repondus = [], []
+        for k, inv in enumerate(InvitationSondage.objects.filter(invite__evenement=ev).order_by("pk")):
+            if rng.random() > 0.45:
+                continue
+            repondus.append(inv.pk)
+            note = rng.choices([5, 4, 3, 2], weights=[50, 32, 13, 5])[0]
+            reponses.append(
+                ReponseSondage(
+                    evenement=ev,
+                    note_globale=note,
+                    note_accueil=max(1, min(5, note + rng.choice([-1, 0, 0, 1]))),
+                    recommandation=min(10, max(0, note * 2 + rng.choice([-1, 0, 0, 1]))),
+                    commentaire=rng.choice(commentaires),
+                    appareil=f"demo-{ev.pk}-{k}",
+                    cree_le=envoi + timedelta(hours=rng.randint(0, 20)),
+                )
+            )
+        ReponseSondage.objects.bulk_create(reponses, batch_size=500)
+        InvitationSondage.objects.filter(pk__in=repondus).update(repondu=True)
 
     def compte(self, nom, email, mdp, role=Role.ADMIN, genere=False):
         admin = Admin.objects.filter(email=email).first()

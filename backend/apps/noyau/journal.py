@@ -14,6 +14,7 @@ CATEGORIES = {
     "INVITE_MODIFICATION": "Invité",
     "INVITE_SUPPRESSION": "Invité",
     "EMAIL_RENVOI": "Email",
+    "EMAIL_TEST": "Email",
     "EXPORT": "Export",
     "PROGRAMME_CREATION": "Configuration",
     "PROGRAMME_MODIFICATION": "Configuration",

@@ -30,7 +30,16 @@ let rafraichissement = null;
 async function rafraichir() {
   rafraichissement =
     rafraichissement ||
-    fetch('/api/auth/rafraichir/', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+    (async () => {
+      // le serveur vérifie le jeton CSRF sur le rafraîchissement, comme sur toute requête modifiante
+      await assurerCsrf();
+      const jeton = lireCookie('fc_csrftoken');
+      return fetch('/api/auth/rafraichir/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: jeton ? { 'X-CSRFToken': decodeURIComponent(jeton) } : {},
+      });
+    })().finally(() => {
       setTimeout(() => (rafraichissement = null), 0);
     });
   const r = await rafraichissement;

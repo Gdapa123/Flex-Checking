@@ -19,6 +19,14 @@ export function oublierMoi() {
   } catch {
     /* stockage indisponible */
   }
+  try {
+    // historique du poste de scan (noms des derniers émargés) : rien ne reste sur une tablette partagée
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith('fc-scan-historique-') || k.startsWith('fc-scan-dernier-'))
+      .forEach((k) => sessionStorage.removeItem(k));
+  } catch {
+    /* stockage indisponible */
+  }
 }
 
 export function memoriser(moi) {

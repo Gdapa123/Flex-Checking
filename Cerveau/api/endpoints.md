@@ -1,8 +1,8 @@
 ---
 type: api
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/comptes/views.py]
 ---
 
@@ -36,13 +36,16 @@ en JSON uniquement (415 sinon).
 | POST | `public/evenements/<slug>/inscription/` | 201 `{invite:{civilite, civiliteAffichee, prenom, nom, statut}}` (aussi pour un doublon) ; 409 `FERME/DATE_LIMITE/COMPLET` ; 400 validation |
 | POST | `public/evenements/<slug>/renvoi-qr/` | `{email}` → 202 message toujours identique |
 | GET | `public/evenements/<slug>/agenda.ics` | fichier iCalendar |
+| GET | `public/sondages/<jeton>/` | `{etat: OUVERT/EXPIRE/REPONDU, prenom, civilite, expireLe, evenement:{nomAffiche, programme, annee, date, tokens}}` ; pose le cookie `fc_appareil` ; 404 lien inconnu ; 60/h par IP |
+| POST | `public/sondages/<jeton>/` | `{noteGlobale 1-5, noteAccueil 1-5, recommandation 0-10, commentaire?, appareil?}` → 201 ; 410 `SONDAGE_EXPIRE` ; 409 `DEJA_REPONDU` / `APPAREIL_DEJA_UTILISE` ; 400 |
+| GET | `taches-planifiees/sondages/` | cron Vercel, en-tête `Authorization: Bearer <CRON_SECRET>` → `{programmes: n}` ; 404 sinon |
 | POST | `erreurs/` | signalement d’erreur navigateur → 204 |
 
 ## Scan (`vues_scan.py`)
 | Méthode | Route | Droits | Détail |
 |---|---|---|---|
 | POST | `evenements/<id>/emargement/` | A | exactement un de `qrToken`, `code`, `inviteId` + `mode`, `poste`, `appareil`, `dateClient` → `{resultat, invite, presentLe, poste, mode, evenementAutre, magazineEnvoye, emargementId, presents, inscrits}` |
-| POST | `emargements/<id>/annulation/` | A | `{motif}` → `{resultat: ANNULE, inviteId, nomComplet, presents, inscrits}` |
+| POST | `emargements/<id>/annulation/` | S | `{motif}` → `{resultat: ANNULE, inviteId, nomComplet, presents, inscrits}` |
 | GET | `evenements/<id>/emargements/recents/` | A | 30 derniers passages + compteurs |
 | GET | `parametres/scan/` | A (borne) | durée, son, vibration |
 | GET | `evenements/<id>/borne/recherche/` | A (borne) | `q` : mots de 3 caractères ou plus (nom, prénom, entreprise ; les mots plus courts sont ignorés), 30/min par compte → `{total, resultats:[{id, nomComplet, entreprise, statut, presentLe}]}`, 10 max |
@@ -61,7 +64,7 @@ en JSON uniquement (415 sinon).
 | POST | `invites/<id>/renvoi-email/` | A | `{type: INVITATION|MAGAZINE}` → 202 |
 | GET | `invites/<id>/historique/` | A | événements datés |
 | POST | `invites/<id>/presence/` | A | valider (MANUEL) |
-| POST | `invites/<id>/presence/annulation/` | A | annuler la présence |
+| POST | `invites/<id>/presence/annulation/` | S | annuler la présence |
 | GET | `taches/<id>/`, `taches/<id>/fichier/` | propriétaire | état, téléchargement unique |
 
 ## Configuration (`vues_admin.py`)
@@ -73,7 +76,11 @@ en JSON uniquement (415 sinon).
 | GET | `evenements/<id>/qr-inscription.png` | S | QR du lien d’inscription (action hors de la liste « lecture » de `EvenementViewSet.get_permissions`) |
 | GET | `evenements/<id>/statistiques/` | A | tableau de bord (cache 30 s) |
 | GET | `evenements/<id>/rapport/` | A | PDF (30/h) |
-| GET | `evenements/<id>/apercu-emails/` | A | HTML des deux emails avec données fictives |
+| GET | `evenements/<id>/apercu-emails/` | A | HTML des trois emails avec données fictives |
+| GET | `evenements/<id>/sondage/` | A | résultats du sondage : état, envoyés, réponses, taux, moyennes, NPS, répartitions, 20 commentaires anonymes |
+| GET | `evenements/<id>/suivi-emails/` | A | compteurs envoyés / en attente / en échec par email, 50 derniers échecs |
+| POST | `evenements/<id>/suivi-emails/renvoyer-echecs/` | A | `{type}` : replanifie les envois en échec (10/h) |
+| POST | `evenements/<id>/suivi-emails/test/` | A | `{type}` : email de test vers le compte connecté (10/h) |
 | CRUD | `admins/` | S | POST renvoie `motDePasseTemporaire` une fois |
 | POST | `admins/<id>/reinitialiser-mot-de-passe/` | S | nouveau mot de passe temporaire, sessions fermées |
 | GET, PATCH | `parametres/` | S | modèles d’emails, scan |
@@ -82,6 +89,7 @@ en JSON uniquement (415 sinon).
 | GET | `comptes/` | S | liste courte (filtre auteur) |
 | GET | `exports/<invites|presences|emails|journal>/` | S | `format`, `evenement`, `programme` |
 | GET | `analytique/`, `analytique/technique/`, `rapports/global/` | S | analyses, indicateurs, PDF |
+| GET | `analytique/sondages/` | S | satisfaction : cumul et ligne par cérémonie |
 | GET | `erreurs-techniques/` | S | `statut=a_traiter|resolues|toutes`, `source`, `page` (30) |
 | PATCH | `erreurs-techniques/<id>/` | S | `{resolue}` |
 | POST | `erreurs-techniques/actions/` | S | `{action: resoudre_tout|supprimer_resolues}` |

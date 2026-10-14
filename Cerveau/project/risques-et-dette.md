@@ -1,8 +1,8 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, backend/apps/noyau/serializers.py, README.md]
 ---
 
@@ -46,6 +46,41 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 ## R6 — Environnement Vercel : temps de réponse du renvoi du QR (faible, test uniquement)
 - Sans file d'attente, l'email est envoyé pendant la requête quand l'adresse est inscrite : le temps de réponse
   peut révéler l'inscription malgré le message identique. Sans incidence en production (envoi par Celery).
+
+## R7 — Sondage sur Vercel : heure et durée d'exécution (faible, test uniquement)
+- Le cron Vercel du plan Hobby ne s'exécute qu'une fois par jour et peut partir n'importe quand entre 8 h et 8 h 59 ;
+  sans Redis, tous les emails du sondage partent pendant la requête du cron (limite de 300 s : à surveiller
+  au-delà de ~200 présents). Exige la variable `CRON_SECRET` sur le projet `flex-checking-api`.
+- En production, Celery Beat + worker : envoi à 8 h et rattrapages horaires, sans cette limite.
+
+## R8 — Texte de consentement de l'inscription muet sur les emails (conformité, à trancher)
+- Le texte du consentement (`InscriptionPage.jsx`) ne mentionne ni l'email n°2 ni le sondage de satisfaction
+  (email n°3, ajouté le 2026-10-14). Le texte a été validé par l'utilisateur le 2026-10-13 : **non modifié**,
+  à confirmer avec MDE (mention du sondage, droit de ne pas répondre).
+
+## R9 — Unicité « un avis par appareil » contournable (faible)
+- Repose sur un cookie et un identifiant de navigateur (pas d'IP, voir ADR-012) : un appareil nettoyé peut
+  répondre avec le lien d'un autre invité. Chaque lien ne sert qu'une fois.
+
+## R10 — IP du client vue par le backend sur Vercel (à confirmer, test uniquement)
+- Le frontend Vercel relaie `/api` vers un **autre** projet (`flex-checking-api`) : le backend voit peut-être l'IP du
+  relais et non celle du client. Toutes les limites par IP seraient alors partagées entre tous les visiteurs
+  (ex. 60 inscriptions/h au total). À vérifier en journalisant `get_ident()` sur l'environnement de test.
+- Pistes : lire `x-vercel-forwarded-for` / `x-real-ip` si fiables, ou servir l'API depuis le même projet.
+
+## R11 — Pas de CAPTCHA sur les formulaires publics (moyen)
+- Inscription, renvoi du QR et sondage reposent sur des limites par IP (IPv6 regroupées par /64 depuis le
+  2026-10-14). Un attaquant disposant de nombreuses IPv4 peut encore remplir la capacité d'une cérémonie avec de
+  fausses inscriptions. Proposition : Cloudflare Turnstile (service externe, à valider par MDE).
+
+## R12 — Durcissements laissés en l'état (faible)
+- Vérification du mot de passe de l'hôte à la borne : 5/min et 30/h ; un verrou plus long permettrait au public de
+  bloquer l'hôte (déni de service) — compromis conservé.
+- Outillage de développement : Tailwind CSS 3 dépend de `braces`, `micromatch` et `chokidar` signalés par `npm
+  audit` (déni de service sur des motifs de fichiers, à la compilation seulement) ; correction = Tailwind 4 (refonte
+  de la configuration). Aucune vulnérabilité dans les dépendances livrées (`npm audit --omit=dev` : 0).
+- `requirements.txt` sans hachages (`pip-compile --generate-hashes` proposé) ; `pip-audit` : aucune vulnérabilité.
+- HSTS `preload` non activé (engagement définitif du domaine, à décider par MDE).
 
 ## Limitations assumées (documentées, non bugs)
 - Statistiques et analyses calculées en Python sur toutes les lignes d’une cérémonie : adapté à quelques

@@ -38,7 +38,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: { '/api': { target: API, changeOrigin: false, xfwd: true, ws: true } },
-    fs: { allow: ['..'] },
+    // le serveur de développement ne sert que le frontend et les cas de référence partagés (jamais tout le dépôt)
+    fs: { allow: ['.', '../shared'] },
   },
   test: {
     environment: 'jsdom',

@@ -72,7 +72,7 @@ services:
     command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
 
   frontend:
-    image: node:20-alpine
+    image: node:24-alpine
     working_dir: /app
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
     environment:
@@ -81,7 +81,8 @@ services:
       - ./frontend:/app
       - ./shared:/shared:ro
       - frontend-node-modules:/app/node_modules
-    ports: ["5173:5173"]
+    # développement : accessible depuis ce poste seulement (les téléphones passent par le proxy HTTPS)
+    ports: ["127.0.0.1:5173:5173"]
 
   proxy:
     image: caddy:2-alpine

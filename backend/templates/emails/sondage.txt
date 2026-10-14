@@ -1,0 +1,12 @@
+{% autoescape off %}VOTRE AVIS SUR LA {{ nom_affiche|upper }}
+
+{{ corps }}
+
+Donner mon avis : {{ lien_sondage }}
+Ouvert jusqu’au {{ expire_texte }}.
+
+--
+{{ expediteur }}
+MDE Business School · Abidjan, Côte d’Ivoire
+Vous recevez cet email car vous avez assisté à la cérémonie. Le lien est personnel et valable 24 heures.
+{% endautoescape %}

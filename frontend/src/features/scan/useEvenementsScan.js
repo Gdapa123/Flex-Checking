@@ -36,7 +36,17 @@ export function useEvenementsScan() {
     if (!dataUpdatedAt) return;
     try {
       const liste = qc.getQueryData(['evenements']);
-      if (liste) localStorage.setItem(CLE, JSON.stringify({ compte: lireMoiMemorise()?.id, liste }));
+      // copie hors ligne réduite à ce qu'affiche le poste de scan (ni hôtes affectés, ni lien d'inscription)
+      const reduite = liste?.map(({ id, nomAffiche, date, statut, tokens, nbInscrits, nbPresents }) => ({
+        id,
+        nomAffiche,
+        date,
+        statut,
+        tokens,
+        nbInscrits,
+        nbPresents,
+      }));
+      if (reduite) localStorage.setItem(CLE, JSON.stringify({ compte: lireMoiMemorise()?.id, liste: reduite }));
     } catch {
       /* stockage indisponible */
     }

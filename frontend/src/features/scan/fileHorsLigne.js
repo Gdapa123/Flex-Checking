@@ -37,6 +37,24 @@ export async function compter(evenementId) {
   return (await base()).countFromIndex('file', 'evenement', evenementId);
 }
 
+/** Tous événements confondus (avertissement avant déconnexion). */
+export async function compterTout() {
+  try {
+    return await (await base()).count('file');
+  } catch {
+    return 0;
+  }
+}
+
+const CONSERVATION_MS = 7 * 24 * 3600 * 1000;
+
+/** Passages hors ligne de plus de 7 jours (cérémonie passée, compte retiré) : supprimés de l'appareil. */
+export async function purgerAnciens(maintenant = Date.now()) {
+  const db = await base();
+  const items = await db.getAll('file');
+  await Promise.all(items.filter((i) => maintenant - i.cree > CONSERVATION_MS).map((i) => db.delete('file', i.id)));
+}
+
 /**
  * Rejoue la file. `envoyer(payload)` renvoie le résultat serveur ou lève une erreur réseau
  * (TypeError) : dans ce cas on s'arrête et on réessaiera plus tard.

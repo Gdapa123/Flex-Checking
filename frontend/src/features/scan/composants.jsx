@@ -182,8 +182,17 @@ export function ResultatPanneau({ resultat, progression, pause, duree, onBascule
   const s = STYLES_RESULTAT[resultat.type];
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`${resultat.titre}${resultat.nom ? ` · ${resultat.nom}` : ''} · ${pause ? 'reprendre' : 'mettre en pause'}`}
       onClick={onBasculer}
-      className={`flex min-h-[240px] flex-1 animate-in-up cursor-pointer flex-col gap-3 rounded-[12px] p-8 text-blanc [animation-duration:.2s] ${s.fond}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onBasculer();
+        }
+      }}
+      className={`flex flex-none animate-in-up cursor-pointer flex-col gap-2.5 rounded-[12px] p-7 text-blanc [animation-duration:.2s] ${s.fond}`}
     >
       <div className="flex items-center gap-3.5">
         <span className="flex h-14 w-14 animate-pop items-center justify-center rounded-full bg-blanc-18 text-[30px]">
@@ -191,7 +200,9 @@ export function ResultatPanneau({ resultat, progression, pause, duree, onBascule
         </span>
         <span className="text-[26px] font-semibold">{resultat.titre}</span>
       </div>
-      {resultat.nom && <div className="text-[56px] font-bold leading-[1.05] tracking-[-0.03em]">{resultat.nom}</div>}
+      {resultat.nom && (
+        <div className="text-[clamp(34px,3.6vw,52px)] font-bold leading-[1.05] tracking-[-0.03em]">{resultat.nom}</div>
+      )}
       <div className="text-[19px]">{resultat.meta}</div>
       {resultat.note && (
         <span className="inline-flex h-[34px] items-center gap-2 self-start rounded-full bg-blanc-18 px-3 text-[15px] font-medium">
@@ -199,7 +210,7 @@ export function ResultatPanneau({ resultat, progression, pause, duree, onBascule
           {resultat.note}
         </span>
       )}
-      <div className="mt-auto">
+      <div className="mt-auto pt-2">
         <BarreProgression progression={progression} pause={pause} duree={duree} taille={14} />
       </div>
     </div>
@@ -686,14 +697,16 @@ export function FeuilleReglages({
         <Icon nom="switchCam" className="text-[20px]" />
         Changer de cérémonie ou de mode
       </button>
-      <button
-        type="button"
-        onClick={onAnnulation}
-        className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
-      >
-        <Icon nom="undo" className="text-[20px]" />
-        Annuler le dernier émargement
-      </button>
+      {onAnnulation && (
+        <button
+          type="button"
+          onClick={onAnnulation}
+          className="flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-bouton border border-g-bordure bg-transparent text-[16px] font-semibold text-g-texte"
+        >
+          <Icon nom="undo" className="text-[20px]" />
+          Annuler le dernier émargement
+        </button>
+      )}
       {onQuitter && (
         <button
           type="button"

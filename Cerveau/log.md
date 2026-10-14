@@ -263,3 +263,111 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Risques ou limites :** migration `0008` **non appliquée** sur Neon : l'accès aux variables de production
   (`vercel env pull`) a été refusé par le contrôle de sécurité de Claude Code ; à lancer par l'utilisateur. Tant
   qu'elle ne l'est pas, les invités inscrits dans le futur restent visibles sur l'environnement Vercel.
+
+## [2026-10-14] maj | A7 devient « Suivi des emails »
+- **Contexte :** l'utilisateur demande à quoi sert l'écran Emails (aperçu en lecture seule), puis « transforme cette
+  partie en fonctionnalité utile ou supprime la ».
+- **Modifications :** backend : `apps/noyau/suivi_emails.py` (suivi, renvoi groupé des échecs, email de test),
+  routes `suivi-emails/`, `suivi-emails/renvoyer-echecs/`, `suivi-emails/test/` sur `EvenementViewSet` (lecture
+  admin, contrôle d'accès par `get_object`), limites `email_test` et `relance_emails` (10/h), action de journal
+  `EMAIL_TEST`, `emails.message_depuis_rendu` extrait de `construire_message`. Frontend : `SuiviEmails.jsx` remplace
+  `ApercuEmails.jsx` (supprimé), titre « Suivi des emails ». Tests : `test_suivi_emails.py` (9),
+  `suiviEmails.test.jsx` (4). Pages : `features/tableau-de-bord.md`, `features/emails.md`, `api/endpoints.md`,
+  `architecture/components.md`, `specifications/non-functional-requirements.md`, `testing/test-strategy.md`.
+- **Validation :** ruff ok ; pytest SQLite 215/216 (échec connu propre à SQLite) ; `makemigrations --check` sans
+  changement ; ESLint + Prettier ok ; Vitest 56/56 ; build ok ; parcours local dans Chromium (1 440 et 390 px) :
+  compteurs, 3 échecs PMD listés, dialogue de renvoi, email de test envoyé (toast), aperçu déplié, PAMP sans magazine.
+- **Risques ou limites :** l'email de test est envoyé de façon synchrone (quelques secondes si le SMTP est lent) ;
+  sur Vercel, il dépend de la configuration SMTP de l'environnement. Le renvoi groupé repart vers la même adresse :
+  une adresse erronée doit d'abord être corrigée dans la fiche.
+
+## [2026-10-14] maj | Annulation réservée au super admin, configuration du scan revue
+- **Contexte :** « l'admin ne doit pas avoir la possibilité d'annuler un émargement, seul le super admin » ; question
+  sur l'utilité de plusieurs bornes ; « améliore l'interface de scan /ui-styling ».
+- **Modifications :**
+  - Annulation : `AnnulationView` et `AnnulerPresenceView` en `EstSuperAdmin` ; commandes masquées aux admins
+    (`ScanPoste.jsx` outils filtrés, barre du téléphone en 4 colonnes ; `composants.jsx` bouton des réglages ;
+    `BoutonPresence` ne rend rien pour un présent si le compte n'est pas super admin). ADR-011 (acceptée).
+  - Postes : plusieurs postes conservés (files parallèles au pic, entrées distinctes ; « Arrivées par poste »).
+    Suggestions « Borne 1 / Borne 2 / Poste ordinateur » remplacées par « Accueil 2 / Accueil 3 » (confusion avec la
+    disposition « Borne ») ; `seed_demo` aligné.
+  - S1 : quatre étapes numérotées (Cérémonie, Mode de lecture, Écran, Nom du poste), cartes avec icône et aide
+    (`MODES_SCAN.aide`, `APPAREILS.icone/aide`), plus de débordement du sélecteur d'écran à 390 px, note quand la
+    douchette impose l'ordinateur, aide expliquant le nom du poste.
+  - S12 ordinateur : le panneau de résultat ne déborde plus (compte à rebours dans le panneau, taille du nom
+    adaptative, `flex-none`), caméra à hauteur fixe ; panneau focalisable au clavier (`role="button"`).
+  - Pages : `features/scan-emargement.md`, `features/gestion-invites.md`, `api/endpoints.md`,
+    `specifications/functional-requirements.md`, `testing/test-strategy.md`, `index.md`.
+- **Validation :** pytest SQLite 216/217 (échec connu propre à SQLite), dont `test_annulation_reservee_au_super_admin` ;
+  ruff ok ; ESLint + Prettier ok ; Vitest 56/56 ; build ok ; e2e 3/3 sur une base SQLite neuve ; parcours de la
+  borne 18/18 avec le compte super admin ; captures téléphone / borne / ordinateur en admin (sans « Annuler ») et en
+  super admin (avec « Annuler »).
+- **Risques ou limites :** le parcours de la borne avec un compte admin n'a plus de feuille d'annulation à ouvrir
+  (non rejoué en admin).
+
+## [2026-10-14] maj | Sondage de satisfaction (email n°3)
+- **Contexte :** demande : sondage envoyé aux présents le lendemain vers 8 h, lien valable 24 h, au-delà une
+  fenêtre « temps du sondage passé » avec remerciements, analyses pour admins et super admin, une réponse par
+  email et par appareil ; tenir compte des implications et de l'orchestration.
+- **Modifications :**
+  - Données : `Programme.sondage_actif`, `Parametres.objet/corps_email_3`, `TypeEmail.SONDAGE`, modèles
+    `InvitationSondage` et `ReponseSondage` (migration `0009_sondage_satisfaction`).
+  - Métier : `apps/noyau/sondages.py` (planification idempotente à partir de 8 h, état, résultats, NPS, cumul,
+    réponse avec contrôle expiré / déjà répondu / appareil) ; `emails.rendre` généralisé (gabarits
+    `sondage.html/.txt`, variable `{lien_sondage}`) ; suivi A7, renvoi groupé et individuel limités aux liens
+    ouverts ; section « Satisfaction » du rapport PDF ; sujet temps réel `sondage`.
+  - Orchestration : tâche Celery `envoyer_sondages` (Beat `crontab(minute=0, hour="8-20")`) ; cron Vercel
+    `0 8 * * *` → `GET /api/taches-planifiees/sondages/` protégé par `CRON_SECRET` ; limite `sondage` 60/h par IP.
+  - Frontend : page publique `/sondage/:jeton` (`SondagePage.jsx` : étoiles, échelle 0-10, commentaire, fenêtre
+    modale « clos », remerciements), carte A3 `CarteSatisfaction.jsx`, onglet Analyses › Satisfaction, onglet
+    Paramètres « Email n°3 », interrupteur dans Programmes, 3e carte du suivi des emails, icônes étoile, cœur,
+    message, sablier ; `LienInvalide` paramétrable.
+  - Démo : sondage passé sur AMP et PMD 2025. Pages : `features/sondage-satisfaction.md` (nouvelle),
+    `decisions/ADR-012-sondage-satisfaction.md` (nouvelle), `features/emails.md`, `api/endpoints.md`,
+    `architecture/data-model.md`, `operations/deployment.md`, `operations/setup.md`,
+    `specifications/non-functional-requirements.md`, `project/risques-et-dette.md` (R7–R9),
+    `testing/test-strategy.md`, `index.md`.
+- **Validation :** pytest SQLite 232/233 (échec connu propre à SQLite), dont `test_sondage.py` (16) ; ruff ok ;
+  `makemigrations --check` sans changement ; ESLint + Prettier ok ; Vitest 63/63 (dont `sondage.test.jsx`, 6) ;
+  build ok ; e2e 3/3 sur une base neuve (démo semée deux fois : idempotente) ; parcours manuel dans Chromium :
+  envoi réel de 36 sondages sur AMP 2026 (cérémonie de la veille), formulaire, remerciement, fenêtre « clos »
+  (mobile et ordinateur), carte A3, Analyses › Satisfaction, suivi A7, Paramètres onglet 3.
+- **Risques ou limites :** R7 (cron Vercel Hobby : une fois par jour entre 8 h et 8 h 59, envois dans la requête,
+  `CRON_SECRET` à créer), R8 (texte de consentement muet sur les emails, à trancher), R9 (unicité par appareil
+  contournable). Page du sondage non couverte par le test d'accessibilité axe-core (e2e).
+
+## [2026-10-14] securite | Revue de code et audit de sécurité complet (frontend, backend, API, base)
+- **Contexte :** « test et fais un /code-review, corrige toutes les failles de sécurité, revue de tout le frontend,
+  le backend, les API et la base de données ; je veux un système très sécurisé ».
+- **Méthode :** /code-review des changements non commités (10 constats) + deux audits en lecture seule (backend/API/
+  base ; frontend), chaque constat vérifié dans le code avant correction. Aucune faille critique ni élevée trouvée.
+- **Corrigé (backend) :**
+  - connexion : poste connu (cookie signé `fc_poste`, 90 j) dispensé du blocage par compte (plus de verrouillage d'un
+    hôte par un tiers) ; `auth/rafraichir/` avec CSRF et jeton verrouillé (`select_for_update`) ;
+  - borne : « C’est moi » exige le jeton signé `choix` de la recherche (plus d'émargement par `inviteId` arbitraire),
+    12/min ; liste des cérémonies réduite en session borne (`EvenementBorneSerializer`) ;
+  - limites par IP : IPv6 regroupées par /64 (`ident_reseau`, `AnonymeThrottle`) ; renvoi du QR compté par cérémonie
+    (anciens liens compris) ; renvoi groupé de l'invitation 5/h et jamais deux fois en moins d'1 h ;
+  - journaux : traces d'exception masquées (emails, téléphones), jeton du sondage masqué (Uvicorn, Caddy, erreurs) ;
+  - sondage : réponses anonymes en base (plus de lien vers l'invité, `repondu` sans heure, heure arrondie), prénom
+    non renvoyé pour un lien clos, cookie d'appareil 30 j, `CRON_SECRET` ≥ 32 caractères, aucun envoi après clôture
+    ou annulation de présence, envoi par lots (budget 200 s) + second cron à 12 h sur Vercel ;
+  - divers : libellés uniques des 3 emails (`LIBELLES_EMAIL`) dans l'historique, l'export et le journal, renvoi
+    individuel du sondage refusé si désactivé, requêtes du suivi et de la vue d'ensemble regroupées, `max_length`
+    sur les mots de passe et la sélection groupée, `X_FRAME_OPTIONS = DENY`, Referrer-Policy `same-origin`,
+    migration 0008 qui annonce le nombre d'invités supprimés.
+- **Corrigé (frontend) :** borne (disposition figée, restriction retentée toutes les 15 s et au retour du réseau,
+  badge, espace hôte refermé après 90 s) ; historique du scan effacé à la déconnexion, file hors ligne purgée après
+  7 jours, avertissement si des émargements attendent ; jeton du sondage normalisé dans les signalements d'erreurs ;
+  CSP sans `data:` dans `frame-src` ; copie hors ligne des cérémonies réduite ; carte Satisfaction avec état
+  d'erreur et jour seul des commentaires ; échelle 0-10 en deux rangées sur mobile, au clavier ; erreurs reliées
+  aux questions ; aperçu d'email protégé contre les réponses dans le désordre ; temps réel pour le suivi des emails.
+- **Dépendances :** React Router 7.18.4 (redirection ouverte corrigée), Vite 7.3.7, @vitejs/plugin-react 5.2,
+  Vitest 5.0.4, vite-plugin-pwa 2.0, Playwright 1.64, @axe-core/playwright 4.13, PostCSS et ESLint à jour ;
+  `npm audit --omit=dev` : 0 vulnérabilité ; `pip-audit` : 0. Serveur Vite limité à `.` et `../shared`, port 5173
+  publié sur 127.0.0.1 ; image de développement Node 24.
+- **Validation :** pytest SQLite 241/242 (échec connu propre à SQLite) dont les nouveaux tests de sécurité ; ruff ;
+  `makemigrations --check` ; `check --deploy` (reste : HSTS preload, à décider) ; ESLint + Prettier ; Vitest 64/64 ;
+  build ; e2e 3/3 (audit axe : iframes d'aperçu exclues) ; parcours borne 18/18 ; « C’est moi » de bout en bout.
+- **Risques ou limites :** R10 (IP du client sur Vercel, à confirmer), R11 (pas de CAPTCHA), R12 (durcissements
+  laissés en l'état, Tailwind 3 en développement). Migration 0009 régénérée (jamais appliquée sur une base durable).

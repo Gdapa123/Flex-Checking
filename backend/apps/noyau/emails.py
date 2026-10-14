@@ -17,6 +17,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.mail.message import SafeMIMEMultipart
 from django.db import transaction
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
@@ -28,7 +29,19 @@ from .qr import qr_png
 from .theme import deriver_tokens
 
 ASSETS = Path(__file__).resolve().parent / "assets"
-VARIABLES = ["civilite", "prenom", "nom", "programme", "annee", "date", "lieu", "qr_code", "code", "lien_magazine"]
+VARIABLES = [
+    "civilite",
+    "prenom",
+    "nom",
+    "programme",
+    "annee",
+    "date",
+    "lieu",
+    "qr_code",
+    "code",
+    "lien_magazine",
+    "lien_sondage",
+]
 
 
 class EmailAvecImagesInline(EmailMultiAlternatives):
@@ -68,12 +81,27 @@ def _paragraphes_html(texte, valeurs):
 class Source:
     """Données d'un email, issues d'un invité réel ou d'un exemple (aperçu)."""
 
-    def __init__(self, evenement, civilite, prenom, nom, code, qr_token, present_le=None):
+    def __init__(
+        self,
+        evenement,
+        civilite,
+        prenom,
+        nom,
+        code,
+        qr_token,
+        present_le=None,
+        jeton_sondage="",
+        sondage_expire_le=None,
+    ):
         self.evenement, self.civilite, self.prenom, self.nom = evenement, civilite, prenom, nom
         self.code, self.qr_token, self.present_le = code, qr_token, present_le
+        self.jeton_sondage, self.sondage_expire_le = jeton_sondage, sondage_expire_le
 
     @classmethod
-    def depuis_invite(cls, invite):
+    def depuis_invite(cls, invite, avec_sondage=False):
+        from .models import InvitationSondage
+
+        sondage = InvitationSondage.objects.filter(invite=invite).first() if avec_sondage else None
         return cls(
             invite.evenement,
             invite.civilite_affichee,
@@ -82,7 +110,13 @@ class Source:
             invite.code,
             invite.qr_token,
             invite.present_le,
+            jeton_sondage=sondage.jeton if sondage else "",
+            sondage_expire_le=sondage.expire_le if sondage else None,
         )
+
+
+def lien_sondage(jeton):
+    return f"{settings.APP_PUBLIC_URL}/sondage/{jeton}"
 
 
 def _valeurs(source):
@@ -97,6 +131,7 @@ def _valeurs(source):
         "lieu": ev.lieu,
         "code": source.code,
         "lien_magazine": prog.lien_magazine or "",
+        "lien_sondage": lien_sondage(source.jeton_sondage) if source.jeton_sondage else "",
     }
 
 
@@ -110,9 +145,27 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
     t = deriver_tokens(prog.couleur_principale, prog.couleur_secondaire)
     valeurs = _valeurs(source)
     est_invitation = type_email == TypeEmail.INVITATION
-    objet = objet if objet is not None else (p.objet_email_1 if est_invitation else p.objet_email_2)
-    corps = corps if corps is not None else (p.corps_email_1 if est_invitation else p.corps_email_2)
-    marqueur = "{qr_code}" if est_invitation else "{lien_magazine}"
+    # type → (objet, corps, marqueur du bloc central, gabarit, titre du bandeau)
+    modele = {
+        TypeEmail.INVITATION: (p.objet_email_1, p.corps_email_1, "{qr_code}", "invitation", ev.nom_affiche),
+        TypeEmail.MAGAZINE: (
+            p.objet_email_2,
+            p.corps_email_2,
+            "{lien_magazine}",
+            "magazine",
+            f"Bienvenue à la {ev.nom_affiche}",
+        ),
+        TypeEmail.SONDAGE: (
+            p.objet_email_3,
+            p.corps_email_3,
+            "{lien_sondage}",
+            "sondage",
+            f"Votre avis sur la {ev.nom_affiche}",
+        ),
+    }[type_email]
+    objet = objet if objet is not None else modele[0]
+    corps = corps if corps is not None else modele[1]
+    marqueur = modele[2]
     avant, _, apres = corps.partition(marqueur)
     if marqueur not in corps:
         avant, apres = corps, ""
@@ -130,7 +183,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
     lien_public = f"{settings.APP_PUBLIC_URL}/i/{ev.slug_inscription}"
     contexte = {
         "t": t,
-        "titre": ev.nom_affiche if est_invitation else f"Bienvenue à la {ev.nom_affiche}",
+        "titre": modele[4],
         "nom_affiche": ev.nom_affiche,
         "programme": prog.nom,
         "annee": ev.annee,
@@ -147,6 +200,13 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "lien_itineraire": lien_pratique(ev, "itineraire"),
         "lien_public": lien_public,
         "lien_magazine": prog.lien_magazine,
+        "lien_sondage": valeurs["lien_sondage"],
+        "expire_texte": (
+            f"{dates.date_longue(timezone.localtime(source.sondage_expire_le).date())} à "
+            f"{dates.heure_dt(source.sondage_expire_le)}"
+            if source.sondage_expire_le
+            else ""
+        ),
         "code": source.code,
         "badge_present": f"Présent·e · {dates.heure_dt(source.present_le)}" if source.present_le else "Présent·e",
         "expediteur": p.expediteur,
@@ -165,7 +225,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
     }
     if est_invitation:
         contexte["qr_src"] = image("qr", qr_png(source.qr_token))
-    gabarit = "invitation" if est_invitation else "magazine"
+    gabarit = modele[3]
     html = render_to_string(f"emails/{gabarit}.html", contexte)
 
     texte_valeurs = dict(valeurs)
@@ -195,12 +255,17 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
 def construire_message(email_envoye):
     invite = email_envoye.invite
     p = Parametres.charger()
-    rendu = rendre(email_envoye.type, Source.depuis_invite(invite), parametres=p)
+    source = Source.depuis_invite(invite, avec_sondage=email_envoye.type == TypeEmail.SONDAGE)
+    rendu = rendre(email_envoye.type, source, parametres=p)
+    return message_depuis_rendu(rendu, invite.email, p)
+
+
+def message_depuis_rendu(rendu, destinataire, parametres, *, prefixe_objet=""):
     message = EmailAvecImagesInline(
-        subject=rendu["objet"],
+        subject=prefixe_objet + rendu["objet"],
         body=rendu["texte"],
-        from_email=f"{p.expediteur} <{settings.DEFAULT_FROM_EMAIL}>",
-        to=[invite.email],
+        from_email=f"{parametres.expediteur} <{settings.DEFAULT_FROM_EMAIL}>",
+        to=[destinataire],
         images_inline=rendu["images_inline"],
     )
     message.attach_alternative(rendu["html"], "text/html")

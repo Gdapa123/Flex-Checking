@@ -7,8 +7,10 @@ const MAX_PAR_PAGE = 20;
 const deja = new Set();
 let envoyes = 0;
 
-/** Chemin de la page sans paramètres ni ancre (ils peuvent contenir une recherche ou un email). */
-const lieuCourant = () => (typeof window === 'undefined' ? '' : window.location.pathname);
+/** Chemin de la page sans paramètres ni ancre (ils peuvent contenir une recherche ou un email), et sans jeton
+ * personnel (lien du sondage, à usage unique) : `/sondage/<jeton>` devient `/sondage/:jeton`. */
+export const normaliserLieu = (chemin) => chemin.replace(/^\/sondage\/[^/]+/, '/sondage/:jeton');
+const lieuCourant = () => (typeof window === 'undefined' ? '' : normaliserLieu(window.location.pathname));
 
 export function signalerErreur(erreur, complement = '') {
   try {

@@ -1,8 +1,8 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [backend/apps, frontend/src]
 ---
 
@@ -20,6 +20,9 @@ sources: [backend/apps, frontend/src]
 | `filtres.py` | recherche (nom, prénom, email, entreprise, code, téléphone), filtres, tri (`TRIS`), `PaginationInvites` (25/50/100) |
 | `vues_public.py` | événement public, inscription, renvoi du QR, agenda .ics |
 | `vues_scan.py` | émargement, annulation, derniers passages, réglages de scan |
+| `suivi_emails.py` | suivi des emails (A7) : compteurs, échecs, renvoi groupé, email de test |
+| `sondages.py` | sondage de satisfaction : planification (8 h, idempotente), état, résultats, NPS, réponse unique |
+| `vues_sondage.py` | page publique du sondage, déclencheur du cron (`CRON_SECRET`), cumul super admin |
 | `vues_invites.py` | listes, détail/PATCH/DELETE, QR PNG, renvoi, historique, actions groupées, exports, suivi de tâche |
 | `vues_admin.py` | viewsets Programme / Evenement / Admin, paramètres, aperçu email, journal, exports globaux, analyses, rapports |
 | `vues_erreurs.py` | signalement navigateur (public), consultation et résolution (super admin) |
@@ -51,9 +54,9 @@ sources: [backend/apps, frontend/src]
 ## Frontend — `frontend/src/features/`
 | Dossier | Écrans |
 |---|---|
-| `invite/` | `InscriptionPage` (présentation → formulaire → états), `Presentation`, `ConfirmationPage`, `PratiquePage`, `pratique.jsx`, `EtatCarte`, `LienInvalide`, `commun.jsx` |
+| `invite/` | `InscriptionPage` (présentation → formulaire → états), `Presentation`, `ConfirmationPage`, `PratiquePage`, `pratique.jsx`, `EtatCarte`, `LienInvalide`, `commun.jsx`, `SondagePage` (sondage de satisfaction) |
 | `scan/` | `ScanSetup` (S1), `ScanPoste` (S2–S12 selon l’appareil), `composants.jsx`, `useCamera` (ZXing), `fileHorsLigne` (IndexedDB), `reglages`, `retour` (son, vibration), `useWakeLock`, `useEvenementsScan` |
-| `admin/` | `ChoixCeremonie` (A2), `EspaceEvenement` (mise en page), `TableauDeBord` (A3), `ApercuEmails` (A7) |
+| `admin/` | `ChoixCeremonie` (A2), `EspaceEvenement` (mise en page), `TableauDeBord` (A3), `CarteSatisfaction` (A3), `SuiviEmails` (A7) |
 | `invites/` | `GestionInvites` (A4 et SA9), `PanneauInvite` (A5), `PanneauAjout` (A6), `badges` |
 | `super/` | `SuperApp`, `VueGlobale`, `Analyses`, `Programmes`, `Evenements`, `TousInvites`, `Comptes`, `Parametres`, `Journal`, `Erreurs` |
 | `auth/` | `ConnexionAdmin`, `ConnexionSuper`, `FormulaireConnexion`, `ChangerMotDePasse`, `RequireRole`, `useMoi`, `Introuvable` |

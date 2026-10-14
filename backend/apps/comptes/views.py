@@ -1,7 +1,11 @@
+import hashlib
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.core import signing
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -10,6 +14,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from apps.noyau.journal import journaliser
@@ -109,6 +114,41 @@ def _ancien_refresh(request):
             pass
 
 
+# Poste déjà connu : un cookie signé par le serveur (empreintes des comptes qui s'y sont connectés, 90 jours)
+# dispense ce poste du blocage par compte. Un attaquant qui multiplie les échecs sur l'email d'un hôte ne peut
+# donc plus l'empêcher de se connecter depuis sa tablette ou son téléphone habituels ; la limite par IP et par
+# email (ConnexionThrottle) reste appliquée à tous.
+COOKIE_POSTE = "fc_poste"
+SEL_POSTE = "flex-checking.poste-connu"
+DUREE_POSTE_S = 90 * 24 * 3600
+POSTES_MAX = 10
+
+
+def _empreinte_compte(email):
+    return hashlib.sha256(f"poste:{email}".encode()).hexdigest()[:24]
+
+
+def _postes_connus(request):
+    try:
+        valeur = signing.loads(request.COOKIES.get(COOKIE_POSTE, ""), salt=SEL_POSTE, max_age=DUREE_POSTE_S)
+    except signing.BadSignature:
+        return []
+    return [e for e in valeur if isinstance(e, str)][:POSTES_MAX] if isinstance(valeur, list) else []
+
+
+def _memoriser_poste(request, response, email):
+    connus = [e for e in _postes_connus(request) if e != _empreinte_compte(email)]
+    response.set_cookie(
+        COOKIE_POSTE,
+        signing.dumps([_empreinte_compte(email), *connus][:POSTES_MAX], salt=SEL_POSTE),
+        max_age=DUREE_POSTE_S,
+        path="/api/auth/",
+        httponly=True,
+        secure=settings.JWT_COOKIE_SECURE,
+        samesite=settings.JWT_COOKIE_SAMESITE,
+    )
+
+
 class ConnexionView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -125,7 +165,8 @@ class ConnexionView(APIView):
         # Chaque tentative est comptée AVANT la vérification du mot de passe (incrément atomique : des essais envoyés
         # en parallèle ne passent pas tous le contrôle) ; une connexion réussie remet la série d'échecs à zéro.
         limites, cle = CacheDeSecours(), cle_echecs_connexion(email)
-        if limites.incrementer(cle, FENETRE_ECHECS_CONNEXION_S) > ECHECS_CONNEXION_PAR_COMPTE:
+        poste_connu = _empreinte_compte(email) in _postes_connus(request)
+        if not poste_connu and limites.incrementer(cle, FENETRE_ECHECS_CONNEXION_S) > ECHECS_CONNEXION_PAR_COMPTE:
             return _trop_de_tentatives()
         admin = authenticate(request, username=email, password=ser.validated_data["mot_de_passe"])
         if admin is None or not admin.actif:
@@ -139,6 +180,7 @@ class ConnexionView(APIView):
         journaliser(admin, "CONNEXION", admin)
         response = Response(MoiSerializer(admin).data)
         _poser_cookies(response, emettre_jetons(admin))
+        _memoriser_poste(request, response, email)
         get_token(request)
         return response
 
@@ -149,16 +191,23 @@ class RafraichirView(APIView):
 
     @extend_schema(request=None, responses={204: None})
     def post(self, request):
+        # même contrôle CSRF que les autres vues modifiantes (rotation forcée depuis un sous-domaine compromis)
+        verifier_csrf(request)
         raw = request.COOKIES.get(settings.JWT_COOKIE_REFRESH)
         if not raw:
             return Response({"code": "NON_CONNECTE"}, status=status.HTTP_401_UNAUTHORIZED)
         try:
-            ancien = RefreshToken(raw)
-            admin = Admin.objects.get(pk=ancien["user_id"])
-            if not admin.actif or jeton_revoque(ancien, admin):
-                raise TokenError("inactif ou mot de passe changé")
-            ancien.blacklist()
-            nouveau = emettre_jetons(admin, borne=est_borne(ancien))
+            with transaction.atomic():
+                ancien = RefreshToken(raw)
+                # verrou sur le jeton : deux rafraîchissements simultanés n'obtiennent pas chacun une nouvelle session
+                origine = OutstandingToken.objects.select_for_update().filter(jti=ancien["jti"]).first()
+                if origine is None or BlacklistedToken.objects.filter(token=origine).exists():
+                    raise TokenError("jeton déjà utilisé")
+                admin = Admin.objects.get(pk=ancien["user_id"])
+                if not admin.actif or jeton_revoque(ancien, admin):
+                    raise TokenError("inactif ou mot de passe changé")
+                ancien.blacklist()
+                nouveau = emettre_jetons(admin, borne=est_borne(ancien))
         except (TokenError, Admin.DoesNotExist):
             response = Response({"code": "SESSION_EXPIREE"}, status=status.HTTP_401_UNAUTHORIZED)
             _effacer_cookies(response)
@@ -207,8 +256,8 @@ class MoiView(APIView):
 
 
 class ChangerMotDePasseSerializer(serializers.Serializer):
-    actuel = serializers.CharField(trim_whitespace=False)
-    nouveau = serializers.CharField(trim_whitespace=False, min_length=10)
+    actuel = serializers.CharField(trim_whitespace=False, max_length=256)
+    nouveau = serializers.CharField(trim_whitespace=False, min_length=10, max_length=256)
 
 
 class ChangerMotDePasseView(APIView):

@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 from django.core import mail
+from django.utils import timezone
 
 from apps.noyau.models import EmailEnvoye, Emargement, Invite, JournalActivite, StatutEmail
 
@@ -111,12 +114,14 @@ def test_ajout_manuel_exige_entreprise_et_fonction(client_admin, evenement):
     assert r.json()["fonction"] == ["Indiquez votre fonction."]
 
 
-def test_modification_et_historique(client_admin, evenement, peuple):
+def test_modification_et_historique(client_admin, client_sa, evenement, peuple):
     inv = peuple[0]
     r = client_admin.patch(f"/api/invites/{inv.pk}/", {"entreprise": "NSIA Banque"}, format="json")
     assert r.status_code == 200 and r.json()["entreprise"] == "NSIA Banque"
     client_admin.post(f"/api/invites/{inv.pk}/presence/")
-    client_admin.post(f"/api/invites/{inv.pk}/presence/annulation/", {"motif": "Test"}, format="json")
+    r = client_admin.post(f"/api/invites/{inv.pk}/presence/annulation/", {"motif": "Test"}, format="json")
+    assert r.status_code == 403  # annuler une présence est réservé au super admin
+    client_sa.post(f"/api/invites/{inv.pk}/presence/annulation/", {"motif": "Test"}, format="json")
     types = [e["type"] for e in client_admin.get(f"/api/invites/{inv.pk}/historique/").json()]
     assert types[0] == "INSCRIPTION"
     assert {"EMAIL_ENVOYE", "EMARGEMENT", "ANNULATION", "MODIFICATION"} <= set(types)
@@ -133,8 +138,20 @@ def test_actions_groupees_synchrones(client_admin, evenement, peuple):
     r = client_admin.post(url(evenement, "actions-groupees/"), {"action": "VALIDER", "ids": ids}, format="json")
     assert r.status_code == 200 and r.json()["traites"] == 3
     assert Emargement.objects.filter(invite__in=ids, mode="MANUEL").count() == 3
+    # invitations envoyées à l'inscription il y a moins d'une heure : pas de second envoi
+    r = client_admin.post(url(evenement, "actions-groupees/"), {"action": "RENVOYER", "ids": ids[:2]}, format="json")
+    assert r.json() == {"traites": 0, "ignores": 2}
+    EmailEnvoye.objects.filter(invite__in=ids).update(cree_le=timezone.now() - timedelta(hours=2))
     r = client_admin.post(url(evenement, "actions-groupees/"), {"action": "RENVOYER", "ids": ids[:2]}, format="json")
     assert r.json()["traites"] == 2
+
+
+def test_renvois_groupes_limites_par_heure(client_admin, evenement, peuple):
+    ids = [p.pk for p in peuple]
+    for _ in range(5):
+        client_admin.post(url(evenement, "actions-groupees/"), {"action": "RENVOYER", "ids": ids}, format="json")
+    r = client_admin.post(url(evenement, "actions-groupees/"), {"action": "RENVOYER", "ids": ids}, format="json")
+    assert r.status_code == 429
 
 
 def test_actions_groupees_celery_au_dela_de_50(client_admin, evenement):

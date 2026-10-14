@@ -22,7 +22,18 @@ const VARIABLES = [
   '{qr_code}',
   '{code}',
   '{lien_magazine}',
+  '{lien_sondage}',
 ];
+const ONGLETS = [
+  [1, 'Email n°1 · inscription', 'INVITATION'],
+  [2, 'Email n°2 · sur place', 'MAGAZINE'],
+  [3, 'Email n°3 · sondage', 'SONDAGE'],
+];
+const AIDES = {
+  1: '{qr_code} place la carte « QR code et code de secours ». Les infos pratiques et les boutons Agenda et Itinéraire sont toujours ajoutés.',
+  2: '{lien_magazine} place la carte « Lire le magazine ».',
+  3: '{lien_sondage} place la carte « Donner mon avis » avec la date de clôture (24 h après l’envoi, le lendemain de la cérémonie à 8 h).',
+};
 
 /** SA7 · Paramètres : modèles d'emails avec aperçu, durée du scan, son, vibration. */
 export default function Parametres() {
@@ -47,21 +58,25 @@ export default function Parametres() {
   // aperçu HTML réel (rendu serveur), différé de 400 ms
   useEffect(() => {
     if (!d) return undefined;
+    // une réponse lente ne doit jamais remplacer l'aperçu d'une saisie plus récente
+    let perime = false;
     const t = setTimeout(async () => {
       try {
-        setApercu(
-          await api.post('/parametres/apercu-email/', {
-            type: onglet === 1 ? 'INVITATION' : 'MAGAZINE',
-            objet,
-            corps,
-            ...(programme ? { programme: Number(programme) } : {}),
-          }),
-        );
+        const r = await api.post('/parametres/apercu-email/', {
+          type: ONGLETS[onglet - 1][2],
+          objet,
+          corps,
+          ...(programme ? { programme: Number(programme) } : {}),
+        });
+        if (!perime) setApercu(r);
       } catch {
-        setApercu(null);
+        if (!perime) setApercu(null);
       }
     }, 400);
-    return () => clearTimeout(t);
+    return () => {
+      perime = true;
+      clearTimeout(t);
+    };
   }, [objet, corps, onglet, programme, d]);
 
   const inserer = (v) => {
@@ -84,6 +99,8 @@ export default function Parametres() {
         corpsEmail1: d.corpsEmail1,
         objetEmail2: d.objetEmail2,
         corpsEmail2: d.corpsEmail2,
+        objetEmail3: d.objetEmail3,
+        corpsEmail3: d.corpsEmail3,
         dureeResultatScan: d.dureeResultatScan,
         sonActif: d.sonActif,
         vibrationActif: d.vibrationActif,
@@ -116,8 +133,8 @@ export default function Parametres() {
           <h2 id="t-modeles" className="m-0 text-[17px] font-semibold">
             Modèles des emails
           </h2>
-          <div role="tablist" aria-label="Email" className="flex gap-0.5 rounded-moyen bg-mde-survol p-[3px]">
-            {[1, 2].map((n) => (
+          <div role="tablist" aria-label="Email" className="flex flex-wrap gap-0.5 rounded-moyen bg-mde-survol p-[3px]">
+            {ONGLETS.map(([n, libelle]) => (
               <button
                 key={n}
                 type="button"
@@ -126,7 +143,7 @@ export default function Parametres() {
                 onClick={() => setOnglet(n)}
                 className={`min-h-[38px] cursor-pointer rounded-bouton border-0 px-3.5 text-[14px] font-semibold text-mde-texte ${onglet === n ? 'bg-surface shadow-onglet' : 'bg-transparent'}`}
               >
-                Email n°{n} · {n === 1 ? 'inscription' : 'sur place'}
+                {libelle}
               </button>
             ))}
           </div>
@@ -165,11 +182,7 @@ export default function Parametres() {
                   </button>
                 ))}
               </div>
-              <p className="m-0 text-[13px] leading-[1.5] text-mde-texte-2">
-                {onglet === 1
-                  ? '{qr_code} place la carte « QR code et code de secours ». Les infos pratiques et les boutons Agenda et Itinéraire sont toujours ajoutés.'
-                  : '{lien_magazine} place la carte « Lire le magazine ».'}
-              </p>
+              <p className="m-0 text-[13px] leading-[1.5] text-mde-texte-2">{AIDES[onglet]}</p>
             </div>
           </div>
           <div className="flex flex-col gap-2">

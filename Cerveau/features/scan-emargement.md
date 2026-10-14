@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js]
 ---
 
@@ -12,15 +12,21 @@ sources: [backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, front
 **Univers** : graphite, accents du programme. PWA (`start_url: /scan`), écran maintenu allumé (Wake Lock).
 
 ## Configuration (S1, `/scan`)
-Cérémonie (du jour et à venir, `?evenement=` présélectionne), poste (texte libre + suggestions), mode
-(QR caméra, douchette, code 4 chiffres, manuel), disposition (Auto, Téléphone, Borne, Ordinateur).
+Quatre étapes numérotées : **1 Cérémonie** (du jour et à venir, `?evenement=` présélectionne), **2 Mode de lecture**
+(QR caméra, douchette, code 4 chiffres, manuel ; chaque carte a une ligne d’aide), **3 Écran** (Auto, Téléphone,
+Borne, Ordinateur, en cartes avec icône et aide ; remplacé par une note si le mode est la douchette),
+**4 Nom du poste** (texte libre ; suggestions « Accueil principal », « Accueil 2 », « Accueil 3 », « Entrée VIP »).
+**Plusieurs postes en parallèle** sont possibles et utiles (files multiples au pic d’arrivée, entrées distinctes) :
+le nom du poste alimente « Arrivées par poste » du tableau de bord et l’historique de l’invité. Les anciennes
+suggestions « Borne 1 / Borne 2 / Poste ordinateur » ont été retirées le 2026-10-14 : elles se confondaient avec
+le réglage « Écran ».
 Réglages mémorisés sur l’appareil (`localStorage` `fc-scan-reglages`). Détection auto : < 640 px → téléphone ;
 tactile < 1280 px → borne ; sinon ordinateur. Le mode douchette force l’ordinateur.
 
 ## Dispositions (`/scan/<id>`)
 | Disposition | Particularités |
 |---|---|
-| Téléphone (S2) | caméra plein écran, compteur présents / inscrits, barre Code · Rechercher · Annuler · Torche · Caméra, « Dernier » passage |
+| Téléphone (S2) | caméra plein écran, compteur présents / inscrits, barre Code · Rechercher · Annuler (super admin seulement) · Torche · Caméra, « Dernier » passage |
 | Borne (S11) | « Présentez votre QR code », gros boutons « Saisir mon code » et « Rechercher mon nom », « C’est moi ». **Session restreinte côté serveur** ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md)) ; recherche par `GET evenements/<id>/borne/recherche/` : nom, prénom, entreprise, ≥ 3 caractères vérifiés par le serveur, 10 résultats, sans email/téléphone/code ([ADR-008](../decisions/ADR-008-borne-recherche-restreinte.md)). Cadenas « Espace hôte » : mot de passe de l'hôte vérifié par le serveur avant les réglages ; bouton retour bloqué (entrée d'historique répétée) ; dès que l'hôte quitte son espace (réglages, annulation…), la session redevient restreinte. Recherche : chaque mot ≥ 3 caractères, 30 recherches/min par compte. En session borne, démarrer un autre type de poste depuis la configuration exige le mot de passe ; un refus du serveur au passage en mode borne bloque le démarrage (seule une coupure réseau le permet) |
 | Ordinateur (S12) | douchette (champ toujours focalisé, accepte aussi un code à 4 chiffres) ou webcam, panneau de résultat, historique « Derniers passages » (session) |
 
@@ -44,6 +50,8 @@ puis retiré s'il était valide : les codes valides ne bloquent jamais. Le poste
 dans la clé.
 
 ## Annulation
+**Super admin uniquement** ([ADR-011](../decisions/ADR-011-annulation-reservee-super-admin.md)) : les commandes
+d’annulation sont masquées aux admins et le serveur leur répond 403.
 `POST /emargements/<id>/annulation/` (feuille « Annuler le dernier ») : la ligne est conservée avec
 `annule_le`, `annule_par`, motif ; l’invité repasse INSCRIT. L’email n°2 déjà parti n’est pas rappelé.
 

@@ -1,8 +1,8 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [backend/config/settings.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
 ---
 
@@ -27,17 +27,27 @@ sources: [backend/config/settings.py, backend/config/concurrence.py, backend/app
 | Portée | Limite |
 |---|---|
 | anonyme (global, par IP) | 600/min (`LIMITE_ANONYME`) |
+
+Toutes les limites par IP comptent une IPv4 ou un **préfixe IPv6 /64** (`throttles.ident_reseau`).
+
+| Portée | Limite |
+|---|---|
 | compte (global) | 1 200/min (`LIMITE_COMPTE`) |
-| connexion | 5/min par IP + email ; 30/min par IP ; 20 **échecs**/h par compte visé |
+| connexion | 5/min par IP + email ; 30/min par IP ; 20 **échecs**/h par compte visé, sauf poste connu (cookie signé) |
 | vérification / changement du mot de passe (compte connecté) | 5/min et 30/h par compte |
 | renvoi d'email par un admin | 5/h par compte et par invité |
 | recherche de la borne | 30/min par compte ; chaque mot ≥ 3 caractères |
 | inscription | 60/h par IP (`LIMITE_INSCRIPTION_IP`) |
-| renvoi du QR | 3/h par email et lien ; 30/h par IP |
+| renvoi du QR | 3/h par email et **cérémonie** (anciens liens compris) ; 30/h par IP |
 | renvoi automatique (doublon d’inscription) | 3/h par adresse et cérémonie |
 | codes invalides au scan | 30 en 10 min par compte et cérémonie |
 | signalement d’erreur navigateur | 30/min |
 | rapports PDF | 30/h par compte |
+| page publique du sondage | 60/h par IP |
+| email de test (A7) | 10/h par compte |
+| renvoi groupé des échecs (A7) | 10/h par compte |
+| renvoi groupé de l'invitation (liste des invités) | 5/h par compte ; jamais deux invitations en moins d'1 h à un invité |
+| « C’est moi » sur la borne | 12/min par compte et cérémonie, jeton de recherche exigé |
 
 Les limites sensibles (connexion, renvoi, codes, mot de passe) et les limites par IP des points d'accès publics
 (inscription, renvoi, signalement : `LimiteIpPartagee`) passent par `CacheDeSecours` : Redis, et mémoire locale si Redis tombe

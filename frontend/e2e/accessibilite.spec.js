@@ -6,7 +6,12 @@ async function auditer(page, url, attendre) {
   await page.goto(url);
   await attendre();
   await page.waitForTimeout(400);
-  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  // les aperçus d'email (iframe sandbox="", sans script) ne font pas partie de l'interface : axe ne peut ni ne doit
+  // y injecter son script
+  const r = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .exclude('iframe')
+    .analyze();
   return r.violations
     .filter((v) => ['serious', 'critical'].includes(v.impact))
     .map((v) => `${url} · ${v.id} (${v.impact}) : ${v.nodes.length} élément(s) — ${v.nodes[0].target.join(' ')}`);

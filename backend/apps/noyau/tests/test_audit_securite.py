@@ -43,9 +43,22 @@ def test_seuls_les_echecs_comptent_pour_le_compte(admin):
         assert _connexion(c, admin.email, "faux", ip=f"198.51.100.{i}").status_code == 401
     for i in range(3):
         assert _connexion(c, admin.email, MDP, ip=f"192.0.2.{i}").status_code == 200
+    attaquant = APIClient()
     for i in range(20):
-        assert _connexion(c, admin.email, "faux", ip=f"198.51.101.{i}").status_code == 401
-    assert _connexion(c, admin.email, MDP, ip="192.0.2.99").status_code == 429
+        assert _connexion(attaquant, admin.email, "faux", ip=f"198.51.101.{i}").status_code == 401
+    # nouvel appareil : bloqué ; appareil où l'hôte s'est déjà connecté (cookie signé) : jamais bloqué par un tiers
+    assert _connexion(APIClient(), admin.email, MDP, ip="192.0.2.99").status_code == 429
+    assert _connexion(c, admin.email, MDP, ip="192.0.2.98").status_code == 200
+
+
+def test_poste_connu_infalsifiable(admin):
+    from apps.comptes.views import COOKIE_POSTE
+
+    attaquant = APIClient()
+    attaquant.cookies[COOKIE_POSTE] = "faux-cookie"
+    for i in range(21):
+        _connexion(attaquant, admin.email, "faux", ip=f"198.51.102.{i}")
+    assert _connexion(attaquant, admin.email, MDP, ip="198.51.102.99").status_code == 429
 
 
 def test_compteur_en_base_garde_sa_fenetre(settings):
@@ -146,7 +159,7 @@ def test_recherche_de_la_borne_reduite(borne, evenement):
     assert borne.get(base, {"q": ""}).json()["total"] == 0
     r = borne.get(base, {"q": "Traor"}).json()
     assert r["total"] == 1
-    assert set(r["resultats"][0]) == {"id", "nomComplet", "entreprise", "statut", "presentLe"}  # ni email ni code
+    assert set(r["resultats"][0]) == {"id", "choix", "nomComplet", "entreprise", "statut", "presentLe"}  # ni email
     assert borne.get(base, {"q": "awa@sib.ci"}).json()["total"] == 0  # pas de recherche par email
     # chaque mot compte au moins 3 caractères : des lettres isolées ne listent pas les invités
     assert borne.get(base, {"q": "a e i"}).json()["total"] == 0
@@ -178,3 +191,60 @@ def test_renvois_d_email_limites_par_invite(client_admin, evenement):
     inv = nouvel_invite(evenement, email="awa@sib.ci")
     codes = [client_admin.post(f"/api/invites/{inv.pk}/renvoi-email/", {}, format="json").status_code for _ in range(6)]
     assert codes[:5] == [202] * 5 and codes[5] == 429
+
+
+def test_limites_par_ip_regroupent_ipv6_par_prefixe_64():
+    from apps.comptes.throttles import ident_reseau
+
+    assert ident_reseau("203.0.113.7") == "203.0.113.7"
+    assert ident_reseau("::ffff:203.0.113.7") == "203.0.113.7"
+    assert ident_reseau("2001:db8:1:2:aaaa::1") == ident_reseau("2001:db8:1:2:ffff::9") == "2001:db8:1:2::/64"
+    assert ident_reseau("2001:db8:1:3::1") != ident_reseau("2001:db8:1:2::1")
+    assert ident_reseau("inconnu") == "inconnu"
+
+
+def test_borne_emarge_seulement_un_nom_propose_par_la_recherche(borne, evenement):
+    a = nouvel_invite(evenement, email="awa@sib.ci", nom="Traoré", prenom="Awa")
+    b = nouvel_invite(evenement, email="yao@sib.ci", nom="Kouadio", prenom="Yao")
+    url_emargement = f"/api/evenements/{evenement.pk}/emargement/"
+    corps = {"mode": "MANUEL", "appareil": "TABLETTE"}
+    # identifiant seul (boucle inviteId=1..N) : refusé
+    r = borne.post(url_emargement, {**corps, "inviteId": a.pk}, format="json")
+    assert r.status_code == 403 and r.json()["code"] == "CHOIX_BORNE_INVALIDE"
+    choix = borne.get(f"/api/evenements/{evenement.pk}/borne/recherche/", {"q": "Traoré"}).json()["resultats"][0]
+    # jeton d'un autre invité : refusé
+    r = borne.post(url_emargement, {**corps, "inviteId": b.pk, "choixBorne": choix["choix"]}, format="json")
+    assert r.status_code == 403
+    r = borne.post(url_emargement, {**corps, "inviteId": a.pk, "choixBorne": choix["choix"]}, format="json")
+    assert r.status_code == 200 and r.json()["resultat"] == "PRESENT"
+
+
+def test_borne_ne_voit_ni_hotes_ni_lien_d_inscription(borne, evenement):
+    ev = borne.get("/api/evenements/").json()[0]
+    assert set(ev) == {"id", "nomAffiche", "date", "statut", "tokens", "nbInscrits", "nbPresents"}
+
+
+def test_rafraichissement_exige_le_csrf(admin):
+    c = client_connecte(admin)
+    c.credentials()  # plus d'en-tête X-CSRFToken
+    assert c.post("/api/auth/rafraichir/").status_code == 403
+
+
+def test_jetons_et_traces_masques_dans_les_journaux():
+    import logging
+
+    from apps.noyau.logs import MasquerDonneesPersonnelles, MasquerParametresUrl
+
+    try:
+        raise ValueError("Duplicate entry '12-aya@exemple.ci'")
+    except ValueError:
+        import sys
+
+        rec = logging.LogRecord("x", logging.ERROR, "", 0, "erreur /sondage/abcDEF123", (), sys.exc_info())
+    MasquerDonneesPersonnelles().filter(rec)
+    assert "abcDEF123" not in rec.getMessage() and "aya@exemple.ci" not in rec.exc_text
+    acces = logging.LogRecord(
+        "u", logging.INFO, "", 0, '%s - "%s %s"', ("1.2.3.4", "GET", "/api/public/sondages/jeton123/"), None
+    )
+    MasquerParametresUrl().filter(acces)
+    assert "jeton123" not in acces.getMessage()

@@ -1,8 +1,8 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [PLAN.md, backend/apps/noyau/services.py, backend/apps/noyau/tests/]
 ---
 
@@ -22,7 +22,7 @@ le code. Colonne « Preuve » : test automatisé ou fichier qui implémente la r
 | EF-07 | Émargement par QR caméra, douchette, code à 4 chiffres ou recherche manuelle | ✅ | `vues_scan.EmargementView`, `test_emargement.py` |
 | EF-08 | Émargement idempotent : un second passage affiche « Déjà émargé » avec l’heure du premier | ✅ | `test_idempotence_deja_emarge`, `test_concurrence_un_seul_emargement` |
 | EF-09 | QR d’une autre cérémonie signalé comme tel | ✅ | `test_code_invalide_et_autre_evenement` |
-| EF-10 | Annulation d’un émargement (historique conservé) | ✅ | `test_annulation_puis_reemargement_sans_second_magazine` |
+| EF-10 | Annulation d’un émargement (historique conservé), super admin uniquement | ✅ | `test_annulation_puis_reemargement_sans_second_magazine`, `test_annulation_reservee_au_super_admin` |
 | EF-11 | Email n°2 (magazine) au premier passage, une seule fois, si activé pour le programme | ✅ | `test_premier_passage_present_et_magazine`, `test_magazine_inactif` |
 | EF-12 | Scan hors ligne : mise en file, synchronisation, heure réelle conservée | ✅ | `test_scan_hors_ligne_garde_date_client` |
 | EF-13 | Tableau de bord temps réel par cérémonie (indicateurs, arrivées par 15 min, modes, emails, comparaison annuelle) | ✅ | `statistiques.py`, `test_statistiques` |

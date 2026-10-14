@@ -4,10 +4,10 @@
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' wss://{host}; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' wss://{host}; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 		X-Content-Type-Options nosniff
 		X-Frame-Options SAMEORIGIN
-		Referrer-Policy strict-origin-when-cross-origin
+		Referrer-Policy same-origin
 		Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
 		Cross-Origin-Opener-Policy same-origin
 		-Server
@@ -52,15 +52,14 @@
 	}
 
 	# Aucune donnée personnelle dans les logs : la recherche du tableau des invités (?q= nom, email,
-	# téléphone) est masquée, ainsi que le Referer (URL de la page, qui peut contenir cette recherche).
+	# téléphone) et le jeton du sondage sont masqués, ainsi que le Referer (URL de la page).
 	log {
 		output stdout
 		format filter {
 			wrap json
 			fields {
-				request>uri query {
-					replace q [masqué]
-				}
+				# recherche du tableau des invités (?q=) et lien personnel du sondage (/sondage/<jeton>)
+				request>uri regexp "(/sondages?/)[^/?&]+|([?&]q=)[^&]*" "${1}${2}[masqué]"
 				request>headers>Referer delete
 			}
 		}

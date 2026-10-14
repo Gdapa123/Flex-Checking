@@ -26,7 +26,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R6 (R1 résolu) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R12 (R1 résolu) et limitations assumées |
 
 ## Architecture
 | Page | Description |
@@ -40,7 +40,8 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | Page | Description |
 |---|---|
 | [features/inscription.md](features/inscription.md) | Lien public, présentation, formulaire, états, confirmation, infos pratiques |
-| [features/emails.md](features/emails.md) | Emails n°1 et n°2 : déclencheurs, envoi Celery, relances, modèles, gabarits |
+| [features/emails.md](features/emails.md) | Emails n°1, n°2 et n°3 : déclencheurs, envoi Celery, relances, modèles, gabarits |
+| [features/sondage-satisfaction.md](features/sondage-satisfaction.md) | Email n°3 : sondage le lendemain à 8 h, lien 24 h, une réponse par email et par appareil, analyses |
 | [features/scan-emargement.md](features/scan-emargement.md) | Configuration du poste, dispositions, règle d’émargement, annulation, résultat |
 | [features/hors-ligne.md](features/hors-ligne.md) | File IndexedDB, synchronisation, dernier compte connu |
 | [features/tableau-de-bord.md](features/tableau-de-bord.md) | Choix de la cérémonie, tableau de bord temps réel, aperçu des emails, rapport |
@@ -75,6 +76,8 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [decisions/ADR-008-borne-recherche-restreinte.md](decisions/ADR-008-borne-recherche-restreinte.md) | acceptée | Borne : recherche ≥ 3 lettres, emails masqués |
 | [decisions/ADR-009-file-attente-concurrence.md](decisions/ADR-009-file-attente-concurrence.md) | acceptée | File d’attente ASGI pour borner les connexions MySQL |
 | [decisions/ADR-010-mode-borne-serveur.md](decisions/ADR-010-mode-borne-serveur.md) | acceptée | Borne libre-service : session restreinte côté serveur, élévation par le mot de passe de l’hôte |
+| [decisions/ADR-011-annulation-reservee-super-admin.md](decisions/ADR-011-annulation-reservee-super-admin.md) | acceptée | Annuler un émargement ou une présence : super admin uniquement |
+| [decisions/ADR-012-sondage-satisfaction.md](decisions/ADR-012-sondage-satisfaction.md) | acceptée | Sondage : lien personnel 24 h, une réponse par email et par appareil, Beat ou cron |
 
 ## Tests
 | Page | Description |

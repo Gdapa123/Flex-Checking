@@ -1,5 +1,7 @@
 """Gestion des invités d'un événement (admin) et de tous les événements (super admin)."""
 
+from datetime import timedelta
+
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponse
@@ -14,14 +16,14 @@ from rest_framework.views import APIView
 
 from apps.comptes.models import Role
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
-from apps.comptes.throttles import LimiteSensible
+from apps.comptes.throttles import CacheDeSecours, LimiteSensible
 
 from . import emails, exports, services, statuts
 from .exceptions import ErreurMetier
 from .exports import COMPTE_SUPPRIME
 from .filtres import PaginationInvites, compteurs_invites, filtrer_invites, filtrer_par_evenement, trier_invites
 from .journal import journaliser
-from .models import Appareil, Invite, ModeEmargement, Source, TypeEmail
+from .models import Appareil, EmailEnvoye, Invite, ModeEmargement, Source, TypeEmail, libelle_email
 from .qr import qr_png
 from .serializers import (
     AjoutInviteSerializer,
@@ -29,6 +31,7 @@ from .serializers import (
     ModificationInviteSerializer,
     invites_annotes,
 )
+from .sondages import sondage_renvoyable
 from .taches import DOSSIER, DUREE, SEUIL_ASYNCHRONE, creer_tache, lire_tache, tache_action_groupee, tache_export
 
 PARAMS_LISTE = [
@@ -248,6 +251,13 @@ class RenvoiEmailView(APIView):
             prog = invite.evenement.programme
             if invite.statut.code != statuts.PRESENT or not prog.lien_magazine:
                 raise ErreurMetier("MAGAZINE_INDISPONIBLE", "L’email n°2 n’est disponible que pour un invité présent.")
+        if type_email == TypeEmail.SONDAGE and not invite.evenement.programme.sondage_actif:
+            raise ErreurMetier("SONDAGE_INDISPONIBLE", "Le sondage de satisfaction est désactivé pour ce programme.")
+        if type_email == TypeEmail.SONDAGE and not sondage_renvoyable(invite):
+            raise ErreurMetier(
+                "SONDAGE_INDISPONIBLE",
+                "Le sondage ne peut être renvoyé que pendant ses 24 heures d’ouverture, avant toute réponse.",
+            )
         emails.planifier(invite, type_email)
         journaliser(request.user, "EMAIL_RENVOI", invite, evenement=invite.evenement_id, type=type_email)
         return Response({"detail": "Email programmé."}, status=status.HTTP_202_ACCEPTED)
@@ -284,7 +294,7 @@ class HistoriqueView(APIView):
             }
         ]
         for e in invite.emails.all():
-            libelle = "Email n°1 · invitation" if e.type == TypeEmail.INVITATION else "Email n°2 · magazine"
+            libelle = libelle_email(e.type)
             etat = {"ENVOYE": "envoyé", "EN_ATTENTE": "en attente", "ECHEC": "en échec"}[e.statut]
             evts.append(
                 {
@@ -335,11 +345,13 @@ class HistoriqueView(APIView):
 
 
 ACTIONS = ("VALIDER", "RENVOYER", "EXPORTER", "SUPPRIMER")
+DELAI_RENVOI_GROUPE = timedelta(hours=1)
+RENVOIS_GROUPES_PAR_HEURE = 5
 
 
 class ActionGroupeeSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=ACTIONS)
-    ids = serializers.ListField(child=serializers.IntegerField(), required=False, allow_empty=True)
+    ids = serializers.ListField(child=serializers.IntegerField(), required=False, allow_empty=True, max_length=5000)
     tous = serializers.BooleanField(default=False, help_text="Appliquer à la vue filtrée (paramètres d'URL)")
     format = serializers.ChoiceField(choices=["xlsx", "csv"], default="xlsx")
 
@@ -361,12 +373,21 @@ def executer_action_groupee(admin, evenement, action, invite_ids, contexte):
                 n += r["resultat"] == services.PRESENT
         return {"traites": n, "ignores": qs.count() - n}
     if action == "RENVOYER":
+        # même garde-fou que le renvoi individuel : jamais deux invitations en moins d'une heure à une même adresse
+        recents = set(
+            EmailEnvoye.objects.filter(
+                invite__in=qs, type=TypeEmail.INVITATION, cree_le__gt=timezone.now() - DELAI_RENVOI_GROUPE
+            ).values_list("invite_id", flat=True)
+        )
         n = 0
         for invite in qs:
+            if invite.pk in recents:
+                continue
             emails.planifier(invite, TypeEmail.INVITATION)
             n += 1
-        journaliser(admin, "EMAIL_RENVOI", None, evenement=evenement.pk, type=TypeEmail.INVITATION, nb=n)
-        return {"traites": n}
+        if n:
+            journaliser(admin, "EMAIL_RENVOI", None, evenement=evenement.pk, type=TypeEmail.INVITATION, nb=n)
+        return {"traites": n, "ignores": len(recents)}
     raise ValueError(action)
 
 
@@ -397,6 +418,10 @@ class ActionsGroupeesView(APIView):
         ids = list(qs.values_list("pk", flat=True))
         if not ids:
             raise ErreurMetier("SELECTION_VIDE", "Aucun invité sélectionné.", status=400)
+        if d["action"] == "RENVOYER" and (
+            CacheDeSecours().incrementer(f"renvoi-groupe:{request.user.pk}", 3600) > RENVOIS_GROUPES_PAR_HEURE
+        ):
+            raise ErreurMetier("TROP_DE_TENTATIVES", "Trop de renvois groupés. Réessayez dans une heure.", status=429)
         if len(ids) > SEUIL_ASYNCHRONE:
             tache_id = creer_tache(request.user.pk, d["action"])
             tache_action_groupee.delay(tache_id, request.user.pk, evenement.pk, d["action"], ids)
@@ -477,7 +502,7 @@ class ValiderPresenceView(APIView):
 
 
 class AnnulerPresenceView(APIView):
-    permission_classes = [EstAdmin]
+    permission_classes = [EstSuperAdmin]  # réservé au super admin, comme l'annulation depuis le scan
 
     @extend_schema(request=AnnulerPresenceSerializer, responses={200: None})
     def post(self, request, pk):

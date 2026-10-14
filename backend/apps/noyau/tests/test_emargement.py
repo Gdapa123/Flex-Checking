@@ -61,22 +61,31 @@ def test_un_seul_champ_requis(client_admin, evenement):
     assert scan(client_admin, evenement, code="1234", qrToken="x").status_code == 400
 
 
-def test_annulation_puis_reemargement_sans_second_magazine(client_admin, admin, evenement):
+def test_annulation_reservee_au_super_admin(client_admin, evenement):
     inv = nouvel_invite(evenement)
     d = scan(client_admin, evenement, qrToken=inv.qr_token).json()
     r = client_admin.post(f"/api/emargements/{d['emargementId']}/annulation/", {"motif": "Erreur"}, format="json")
+    assert r.status_code == 403
+    inv.refresh_from_db()
+    assert inv.statut.code == "PRESENT"
+
+
+def test_annulation_puis_reemargement_sans_second_magazine(client_admin, client_sa, super_admin, evenement):
+    inv = nouvel_invite(evenement)
+    d = scan(client_admin, evenement, qrToken=inv.qr_token).json()
+    r = client_sa.post(f"/api/emargements/{d['emargementId']}/annulation/", {"motif": "Erreur"}, format="json")
     assert r.status_code == 200 and r.json()["presents"] == 0
     inv.refresh_from_db()
     assert inv.statut.code == "INSCRIT" and inv.present_le is None and inv.mode_emargement is None
     em = Emargement.objects.get(pk=d["emargementId"])
-    assert em.annule_le and em.annule_par == admin and em.motif_annulation == "Erreur"
+    assert em.annule_le and em.annule_par == super_admin and em.motif_annulation == "Erreur"
     mail.outbox.clear()
     d2 = scan(client_admin, evenement, qrToken=inv.qr_token).json()
     assert d2["resultat"] == "PRESENT" and d2["magazineEnvoye"] is False
     assert EmailEnvoye.objects.filter(invite=inv, type=TypeEmail.MAGAZINE).count() == 1
     assert len(mail.outbox) == 0
     # double annulation refusée
-    assert client_admin.post(f"/api/emargements/{d['emargementId']}/annulation/", {}, format="json").status_code == 409
+    assert client_sa.post(f"/api/emargements/{d['emargementId']}/annulation/", {}, format="json").status_code == 409
 
 
 def test_magazine_inactif(client_admin, evenement, programme):

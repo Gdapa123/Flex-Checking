@@ -46,7 +46,7 @@ describe('temps réel', () => {
     expect(qc.invalidateQueries).not.toHaveBeenCalled();
     vi.advanceTimersByTime(300);
     const cles = qc.invalidateQueries.mock.calls.map(([f]) => f.queryKey[0]);
-    expect(cles.sort()).toEqual(['recents', 'statistiques']);
+    expect(cles.sort()).toEqual(['recents', 'statistiques', 'suivi-emails']);
   });
 
   it('se reconnecte après une coupure et recharge tout', () => {

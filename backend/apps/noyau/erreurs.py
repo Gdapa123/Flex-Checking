@@ -15,7 +15,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.utils import timezone
 
-from .logs import EMAIL_RE, TEL_RE
+from .logs import EMAIL_RE, TEL_RE, masquer_jetons
 from .models import ErreurTechnique, SourceErreur
 
 journal = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def enregistrer(source, type_, message, *, lieu="", details="", navigateur=""):
     try:
         type_ = (type_ or "Erreur")[:120]
         message = masquer(message)[:1000] or "(sans message)"
-        lieu = masquer(lieu.split("?")[0].split("#")[0])[:300]
+        lieu = masquer_jetons(masquer(lieu.split("?")[0].split("#")[0]))[:300]
         details = masquer(details)[:8000]
         signature = _signature(source, type_, message, lieu)
         maintenant = timezone.now()

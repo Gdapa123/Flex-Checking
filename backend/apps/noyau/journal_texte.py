@@ -3,7 +3,7 @@ sont jamais stockés dans le journal)."""
 
 from collections import defaultdict
 
-from .models import Evenement, Invite, ModeEmargement, Programme
+from .models import Evenement, Invite, ModeEmargement, Programme, libelle_email
 
 FORMATS = {"xlsx": "Excel", "csv": "CSV"}
 CHAMPS = {
@@ -74,10 +74,14 @@ def decrire(e, cibles):  # noqa: C901 — table de correspondance volontairement
             champs = ", ".join(CHAMPS.get(c, c) for c in d.get("champs", []))
             return f"Fiche modifiée · {nom_inv} ({champs})"
         case "EMAIL_RENVOI":
-            libelle = "Email n°2" if d.get("type") == "MAGAZINE" else "Invitation"
+            libelle = libelle_email(d.get("type") or "INVITATION", court=True)
+            accord = "renvoyée" if (d.get("type") or "INVITATION") == "INVITATION" else "renvoyé"
             if d.get("nb"):
-                return f"{libelle} renvoyée à {d['nb']} invités" + (f" · {nom_ev}" if nom_ev else "")
-            return f"{libelle} renvoyée · {nom_inv}"
+                return f"{libelle} {accord} à {d['nb']} invités" + (f" · {nom_ev}" if nom_ev else "")
+            return f"{libelle} {accord} · {nom_inv}"
+        case "EMAIL_TEST":
+            libelle = libelle_email(d.get("type") or "INVITATION", court=True)
+            return f"{libelle} · email de test envoyé à l’auteur" + (f" · {nom_ev}" if nom_ev else "")
         case "EXPORT":
             quoi = {
                 "invites": "invités",

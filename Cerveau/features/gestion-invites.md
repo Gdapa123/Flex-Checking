@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/features/invites/PanneauAjout.jsx, backend/apps/noyau/vues_invites.py, backend/apps/noyau/filtres.py, backend/apps/noyau/taches.py]
 ---
 
@@ -25,7 +25,7 @@ Un seul composant, `GestionInvites`, sert à l’admin (une cérémonie, univers
 | Action | Où | Droits | Détail |
 |---|---|---|---|
 | Valider la présence | ligne, fiche, sélection | admin | émargement MANUEL, poste « Tableau admin », appareil ORDINATEUR |
-| Annuler la présence | ligne, fiche | admin | dialogue de confirmation |
+| Annuler la présence | ligne, fiche | **super admin** ([ADR-011](../decisions/ADR-011-annulation-reservee-super-admin.md)) | dialogue de confirmation ; bouton masqué aux admins |
 | Renvoyer l’invitation | fiche, sélection (confirmation) | admin | nouvel EmailEnvoye |
 | Renvoyer l’email n°2 | fiche | admin | invité Présent et lien magazine requis |
 | Modifier la fiche | fiche | admin | PATCH, journalisé avec la liste des champs |

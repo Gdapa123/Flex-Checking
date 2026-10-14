@@ -10,7 +10,11 @@ from django.utils import timezone
 
 def supprimer(apps, schema_editor):
     Invite = apps.get_model("noyau", "Invite")
-    Invite.objects.filter(inscrit_le__gt=timezone.now()).delete()
+    futurs = Invite.objects.filter(inscrit_le__gt=timezone.now())
+    n = futurs.count()
+    futurs.delete()
+    if n:
+        print(f"\n  {n} invité(s) inscrit(s) dans le futur supprimé(s).")  # noqa: T201 — trace de la migration
 
 
 class Migration(migrations.Migration):

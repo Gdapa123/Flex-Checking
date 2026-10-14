@@ -2,7 +2,7 @@
 type: testing
 statut: implémenté
 verifie: 2026-10-14
-commit: 1985a9a
+commit: 36389e6
 sources: [backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/conftest.py, frontend/vite.config.js, frontend/playwright.config.js, .github/workflows/ci.yml]
 ---
 
@@ -11,8 +11,8 @@ sources: [backend/pyproject.toml, backend/config/settings_test.py, backend/conft
 ## Niveaux
 | Niveau | Outil | Emplacement | Volume (2026-10-13) |
 |---|---|---|---|
-| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 206 tests exécutés (15 fichiers, dont `test_audit_securite.py` et `test_dates_inscription.py`) |
-| Utilitaires et composants | Vitest + Testing Library (jsdom) | `frontend/tests/` | 12 fichiers, 52 tests |
+| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 241 tests exécutés (17 fichiers, dont `test_audit_securite.py`, `test_dates_inscription.py`, `test_suivi_emails.py` et `test_sondage.py`) |
+| Utilitaires et composants | Vitest + Testing Library (jsdom) | `frontend/tests/` | 14 fichiers, 64 tests |
 | Parcours complet + accessibilité | Playwright + axe-core | `frontend/e2e/` | 3 tests |
 | Lint / format | ruff · ESLint (jsx-a11y, react-hooks) + Prettier | — | — |
 | Charge (manuel) | `infra/charge/charge.mjs`, `ws_charge.py` | `infra/charge/` | voir [deployment](../operations/deployment.md#tests-de-charge) |
@@ -34,13 +34,13 @@ qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertiss
 ## Dernière exécution locale connue
 | Date | Contrôle | Résultat |
 |---|---|---|
-| 2026-10-13 | `npm test` | ✅ 52/52 (après la 2e code-review) |
+| 2026-10-14 | `npm test` | ✅ 64/64 (après l'audit de sécurité) |
 | 2026-10-13 | `npm run lint` | ✅ |
 | 2026-10-13 | `npm run build` | ✅ |
 | 2026-10-13 | `ruff check` + `ruff format --check` | ✅ |
 | 2026-10-13 | `pytest` sur MySQL | ⛔ non exécutable : MySQL injoignable (Docker arrêté) |
-| 2026-10-14 | `pytest` sur SQLite en mémoire (réglages temporaires hors dépôt) | 206/207 ✅ ; seul échec : `test_concurrence_un_seul_emargement`, non exécutable sur SQLite (verrous entre threads) |
-| 2026-10-13 | `npm run e2e` sur SQLite + relais Channels en mémoire (réglages temporaires) | ✅ 3/3 (parcours, temps réel, accessibilité axe-core) |
-| 2026-10-13 | Parcours de la borne dans Chromium (caméra simulée, script hors dépôt) | ✅ 18/18 (verrou, retour, API refusées, recherche réduite, élévation, re-restriction après réglages et annulation, autre disposition depuis une borne) |
+| 2026-10-14 | `pytest` sur SQLite en mémoire (réglages temporaires hors dépôt) | 241/242 ✅ ; seul échec : `test_concurrence_un_seul_emargement`, non exécutable sur SQLite (verrous entre threads) |
+| 2026-10-14 | `npm run e2e` sur SQLite + relais Channels en mémoire (réglages temporaires) | ✅ 3/3 (parcours, temps réel, accessibilité axe-core) |
+| 2026-10-14 | Parcours de la borne dans Chromium, compte super admin (caméra simulée, script hors dépôt) | ✅ 18/18 (verrou, retour, API refusées, recherche réduite, élévation, re-restriction après réglages et annulation, autre disposition depuis une borne) |
 
 Mettre ce tableau à jour à chaque exécution significative.

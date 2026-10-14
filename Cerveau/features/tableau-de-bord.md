@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
-sources: [frontend/src/features/admin/ChoixCeremonie.jsx, frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/admin/TableauDeBord.jsx, frontend/src/features/admin/ApercuEmails.jsx, backend/apps/noyau/statistiques.py, backend/apps/noyau/vues_admin.py]
+verifie: 2026-10-14
+commit: 36389e6
+sources: [frontend/src/features/admin/ChoixCeremonie.jsx, frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/admin/TableauDeBord.jsx, frontend/src/features/admin/SuiviEmails.jsx, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/statistiques.py, backend/apps/noyau/vues_admin.py]
 ---
 
 # Espace admin : cérémonies et tableau de bord
@@ -37,9 +37,18 @@ avec indicateur « En direct », « Reconnexion… » ou « Actualisation auto �
 - Lien d’inscription à copier (sauf cérémonie terminée).
 Rafraîchissement : temps réel, sinon toutes les 5 s ; 15 s en cas d’erreur.
 
-## A7 · Emails (`/apercu-emails/`)
-Aperçu en lecture seule des deux emails rendus par le serveur (iframe `sandbox`), données d’exemple fictives
-(« Mme Aya Kouassi », code 4827, jeton non valide). Email n°2 masqué si le magazine est désactivé.
+## A7 · Suivi des emails (`/admin/evenements/<id>/emails`)
+Page de suivi (remplace l’ancien aperçu en lecture seule, jugé inutile par l’utilisateur le 2026-10-14) :
+`frontend/src/features/admin/SuiviEmails.jsx`, une carte par email (n°1 Invitation, n°2 Magazine).
+- **Compteurs** envoyés / en attente / en échec, d’après le **dernier envoi** de chaque type par invité
+  (`GET /evenements/<id>/suivi-emails/`, rafraîchi toutes les 15 s).
+- **Échecs** : liste (5 visibles, 50 au plus renvoyés par l’API) avec nom → fiche de l’invité, adresse, erreur SMTP,
+  tentatives, date ; bouton « Renvoyer les N emails » avec confirmation ; lien vers la liste des invités filtrée
+  `?email1=ECHEC` (invitation seulement).
+- **M’envoyer un test** : l’email rempli avec l’invitée fictive part à l’adresse du compte connecté, objet préfixé
+  « [Test] » ; aucune ligne `EmailEnvoye` créée.
+- **Aperçu** replié (iframe `sandbox`, données fictives « Mme Aya Kouassi », code 4827), chargé à l’ouverture.
+- Magazine désactivé : carte avec message, sans test ni aperçu.
 
 ## Rapport PDF
 `GET /evenements/<id>/rapport/` (ReportLab, données agrégées, 30/h par compte), journalisé comme export.

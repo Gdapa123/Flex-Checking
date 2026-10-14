@@ -8,10 +8,10 @@ import useTitre from '../../lib/useTitre';
 import ThemeScope from '../../theme/ThemeScope';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
-import Segmente from '../../components/ui/Segmente';
 import Squelette from '../../components/ui/Squelette';
 import { FeuilleDeverrouillage } from './composants';
 import { debloquerAudio } from './retour';
+import { compterTout } from './fileHorsLigne';
 import { APPAREILS, MODES_SCAN, POSTES_SUGGERES, appareilEffectif, ecrireReglages, lireReglages } from './reglages';
 import { useEvenementsScan } from './useEvenementsScan';
 
@@ -30,6 +30,7 @@ export default function ScanSetup() {
     return demande > 0 ? { ...memorises, evenementId: demande } : memorises;
   });
   const choisi = evenements?.find((e) => e.id === r.evenementId) || evenements?.[0];
+  const douchette = r.mode === 'DOUCHETTE';
 
   useEffect(() => {
     if (evenements?.length === 1 && r.evenementId !== evenements[0].id)
@@ -99,6 +100,14 @@ export default function ScanSetup() {
           <button
             type="button"
             onClick={async () => {
+              const n = await compterTout();
+              if (
+                n > 0 &&
+                !window.confirm(
+                  `${n} émargement${n > 1 ? 's' : ''} hors ligne ${n > 1 ? 'attendent' : 'attend'} encore la synchronisation. Ils seront envoyés à la prochaine connexion sur cet appareil. Se déconnecter quand même ?`,
+                )
+              )
+                return;
               await deconnexion().catch(() => {});
               naviguer('/connexion', { replace: true });
             }}
@@ -110,11 +119,13 @@ export default function ScanSetup() {
         </nav>
         <div className="flex flex-col gap-1.5">
           <h1 className="m-0 text-[30px] font-bold tracking-[-0.028em]">Démarrer l’émargement</h1>
-          <p className="m-0 text-[16px] text-g-texte-2">Choisissez la cérémonie, le poste puis le mode de lecture.</p>
+          <p className="m-0 text-[16px] text-g-texte-2">
+            Quatre réglages, mémorisés sur cet appareil pour les prochaines fois.
+          </p>
         </div>
 
-        <div role="radiogroup" aria-label="Cérémonie" className="flex flex-col gap-2">
-          <span className="text-[14px] font-semibold text-g-texte-2">Cérémonie</span>
+        <div role="radiogroup" aria-labelledby="etape-ceremonie" className="flex flex-col gap-2.5">
+          <Etape n={1} id="etape-ceremonie" titre="Cérémonie" />
           {isLoading && [1, 2].map((k) => <Squelette key={k} className="h-16 !rounded-bloc opacity-20" />)}
           {error && (
             <p className="m-0 text-[15px] text-g-erreur-clair">
@@ -154,28 +165,99 @@ export default function ScanSetup() {
           })}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="poste" className="text-[14px] font-semibold text-g-texte-2">
-            Poste
-          </label>
+        <section aria-labelledby="etape-mode" className="flex flex-col gap-2.5">
+          <Etape n={2} id="etape-mode" titre="Mode de lecture" />
+          <div role="radiogroup" aria-labelledby="etape-mode" className="grid grid-cols-2 gap-2">
+            {MODES_SCAN.map((m) => {
+              const on = r.mode === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={m.label}
+                  aria-describedby={`mode-${m.value}`}
+                  onClick={() => setR({ ...r, mode: m.value })}
+                  className={`box-border flex min-h-[96px] cursor-pointer flex-col gap-2 rounded-bouton border-2 bg-g-surface px-4 py-3.5 text-left text-g-texte transition-colors ${on ? 'border-g-texte' : 'border-g-bordure hover:border-texte-2'}`}
+                >
+                  <span className={`text-[22px] ${on ? 'text-s' : 'text-g-texte-2'}`}>
+                    <Icon nom={m.icone} />
+                  </span>
+                  <span className="text-[15px] font-semibold">{m.label}</span>
+                  <span id={`mode-${m.value}`} className="text-[13px] leading-snug text-g-texte-2">
+                    {m.aide}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section aria-labelledby="etape-ecran" className="flex flex-col gap-2.5">
+          <Etape n={3} id="etape-ecran" titre="Écran" />
+          {douchette ? (
+            <p className="m-0 flex items-start gap-2.5 rounded-bouton border border-g-bordure bg-g-surface p-4 text-[15px] text-g-texte-2">
+              <Icon nom="monitor" className="mt-0.5 flex-none text-[20px] text-s" />
+              La douchette se branche sur un ordinateur : l’écran Ordinateur est utilisé.
+            </p>
+          ) : (
+            <div role="radiogroup" aria-labelledby="etape-ecran" className="grid grid-cols-2 gap-2">
+              {APPAREILS.map((a) => {
+                const on = r.appareil === a.value;
+                return (
+                  <button
+                    key={a.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={a.label}
+                    aria-describedby={`ecran-${a.value}`}
+                    onClick={() => setR({ ...r, appareil: a.value })}
+                    className={`box-border flex min-h-[76px] cursor-pointer items-start gap-3 rounded-bouton border-2 bg-g-surface px-3.5 py-3 text-left text-g-texte transition-colors ${on ? 'border-g-texte' : 'border-g-bordure hover:border-texte-2'}`}
+                  >
+                    <Icon
+                      nom={a.icone}
+                      className={`mt-0.5 flex-none text-[20px] ${on ? 'text-s' : 'text-g-texte-2'}`}
+                    />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-[15px] font-semibold">{a.label}</span>
+                      <span id={`ecran-${a.value}`} className="text-[13px] leading-snug text-g-texte-2">
+                        {a.aide}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section aria-labelledby="etape-poste" className="flex flex-col gap-2.5">
+          <Etape n={4} id="etape-poste" titre="Nom du poste" />
           <div
             data-fw="1"
             className="flex h-[52px] items-center gap-2.5 rounded-moyen border border-texte-2 bg-g-fond px-3.5"
           >
-            <Icon nom="monitor" className="text-[20px] text-g-texte-2" />
+            <Icon nom="mapPin" className="text-[20px] text-g-texte-2" />
             <input
               id="poste"
+              aria-labelledby="etape-poste"
               value={r.poste}
               maxLength={60}
               autoComplete="off"
               onChange={(e) => setR({ ...r, poste: e.target.value })}
               placeholder="Accueil principal"
-              aria-describedby="postes-suggeres"
+              aria-describedby="poste-aide"
               className="min-w-0 flex-1 border-0 bg-transparent text-[17px] text-g-texte outline-none placeholder:text-g-texte-2"
             />
           </div>
+          <p id="poste-aide" className="m-0 text-[14px] leading-snug text-g-texte-2">
+            Plusieurs appareils peuvent émarger en même temps : donnez à chacun un nom différent. Il apparaît dans le
+            tableau de bord (arrivées par poste) et l’historique de chaque invité.
+          </p>
           {/* Suggestions intégrées (la liste native du navigateur s'affiche en blanc, hors du thème) */}
-          <div id="postes-suggeres" role="group" aria-label="Postes suggérés" className="flex flex-wrap gap-2">
+          <div role="group" aria-label="Noms suggérés" className="flex flex-wrap gap-2">
             {POSTES_SUGGERES.map((p) => {
               const on = r.poste.trim() === p;
               return (
@@ -191,46 +273,7 @@ export default function ScanSetup() {
               );
             })}
           </div>
-        </div>
-
-        <div role="radiogroup" aria-label="Mode d’émargement" className="flex flex-col gap-2">
-          <span className="text-[14px] font-semibold text-g-texte-2">Mode d’émargement</span>
-          <div className="grid grid-cols-2 gap-2">
-            {MODES_SCAN.map((m) => {
-              const on = r.mode === m.value;
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => setR({ ...r, mode: m.value })}
-                  className={`box-border flex min-h-[88px] cursor-pointer flex-col gap-2.5 rounded-bouton border-2 bg-g-surface px-4 py-3.5 text-left text-g-texte ${on ? 'border-g-texte' : 'border-g-bordure'}`}
-                >
-                  <span className={`text-[22px] ${on ? 'text-s' : 'text-g-texte-2'}`}>
-                    <Icon nom={m.icone} />
-                  </span>
-                  <span className="text-[15px] font-semibold">{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span id="appareil-label" className="text-[14px] font-semibold text-g-texte-2">
-            Disposition de l’écran
-          </span>
-          <Segmente
-            variante="graphite"
-            labelledBy="appareil-label"
-            grille
-            taille="sm"
-            valeur={r.appareil}
-            onChange={(a) => setR({ ...r, appareil: a })}
-            options={APPAREILS}
-          />
-        </div>
+        </section>
 
         {erreurDemarrage && (
           <p role="alert" className="m-0 flex items-start gap-2 text-[15px] text-g-erreur-clair">
@@ -261,5 +304,19 @@ export default function ScanSetup() {
         </div>
       )}
     </ThemeScope>
+  );
+}
+
+function Etape({ n, id, titre }) {
+  return (
+    <h2 id={id} className="m-0 flex items-center gap-2.5 text-[15px] font-semibold text-g-texte">
+      <span
+        aria-hidden="true"
+        className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-g-eleve text-[13px] font-bold text-g-texte-2"
+      >
+        {n}
+      </span>
+      {titre}
+    </h2>
   );
 }

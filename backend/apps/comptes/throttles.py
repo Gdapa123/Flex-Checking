@@ -1,10 +1,11 @@
 import hashlib
+import ipaddress
 import logging
 import time
 
 from django.core.cache import caches
 from django.core.cache.backends.db import DatabaseCache
-from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
 
 journal = logging.getLogger(__name__)
 
@@ -78,7 +79,30 @@ def email_soumis(request):
     return str(donnees_objet(request).get("email", "")).strip().lower()
 
 
-class LimiteSensible(SimpleRateThrottle):
+def ident_reseau(ident):
+    """Adresse IPv6 → son préfixe /64 : un client dispose d'ordinaire d'un /64 entier (des milliards d'adresses) ; le
+    compter adresse par adresse rendrait toute limite par IP sans effet. IPv4 inchangée."""
+    try:
+        adresse = ipaddress.ip_address((ident or "").strip())
+    except ValueError:
+        return ident
+    if adresse.version == 4:
+        return str(adresse)
+    if adresse.ipv4_mapped:  # « ::ffff:1.2.3.4 » : c'est une IPv4
+        return str(adresse.ipv4_mapped)
+    return str(ipaddress.ip_network(f"{adresse}/64", strict=False))
+
+
+class IdentReseauMixin:
+    def get_ident(self, request):
+        return ident_reseau(super().get_ident(request))
+
+
+class AnonymeThrottle(IdentReseauMixin, AnonRateThrottle):
+    """Limite globale des visiteurs anonymes, par IPv4 ou par préfixe IPv6 /64."""
+
+
+class LimiteSensible(IdentReseauMixin, SimpleRateThrottle):
     cache = CacheDeSecours()
 
 

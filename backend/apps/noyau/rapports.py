@@ -501,6 +501,7 @@ def rapport_evenement(evenement, s, auteur):
             ),
         )
     )
+    story += _section_satisfaction(evenement, couleur)
     comparaison = list(reversed(s["comparaison"]))
     if len(comparaison) > 1:
         story.append(
@@ -530,6 +531,55 @@ def rapport_evenement(evenement, s, auteur):
         auteur,
         story,
     )
+
+
+def _section_satisfaction(evenement, couleur):
+    """Sondage de satisfaction (email n°3), dès qu'il a été envoyé."""
+    from .sondages import resultats
+
+    r = resultats(evenement)
+    if not r["envoyes"]:
+        return []
+
+    def note(v, sur):
+        return f"{str(v).replace('.', ',')} / {sur}" if v is not None else "–"
+
+    contenu = [
+        _kpis(
+            [
+                ("Réponses", f"{_n(r['reponses'])} / {_n(r['envoyes'])}"),
+                ("Taux de réponse", f"{r['tauxReponse']} %"),
+                ("Satisfaction", note(r["noteGlobale"], 5)),
+                ("Accueil", note(r["noteAccueil"], 5)),
+                ("NPS", "–" if r["nps"] is None else f"{r['nps']:+d}"),
+            ]
+        )
+    ]
+    if r["reponses"]:
+        contenu += [
+            Spacer(1, 8),
+            Paragraph("Satisfaction générale (nombre de réponses par note)", STYLES["petit"]),
+            barres(
+                [x["nb"] for x in r["repartitionGlobale"]],
+                [f"{x['valeur']}/5" for x in r["repartitionGlobale"]],
+                couleur,
+                hauteur=100,
+                surligne=None,
+            ),
+        ]
+        if r["commentaires"]:
+            contenu += [Spacer(1, 6), Paragraph("Derniers commentaires", STYLES["petit"])]
+            contenu += [Paragraph(f"« {_x(c['texte'])} »", STYLES["cell"]) for c in r["commentaires"][:5]]
+    return [
+        _section(
+            "Satisfaction des participants",
+            *contenu,
+            note=(
+                "Sondage envoyé aux présents le lendemain à 8 h, ouvert 24 heures. NPS : part des notes 9-10 "
+                "moins part des notes 0-6 à « Recommanderiez-vous MDE Business School ? »."
+            ),
+        )
+    ]
 
 
 def rapport_global(a, t, auteur):

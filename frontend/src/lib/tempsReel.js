@@ -11,7 +11,7 @@ import { rafraichirSession } from './api';
 /** Sujet annoncé par le serveur → clés des requêtes React Query à recharger. */
 export const REQUETES_PAR_SUJET = {
   invites: [['invites'], ['invite'], ['historique'], ['scan-recherche']],
-  statistiques: [['statistiques']],
+  statistiques: [['statistiques'], ['suivi-emails']],
   recents: [['recents']],
   evenements: [['evenements'], ['analytique']],
   evenement: [['evenement']],
@@ -20,6 +20,7 @@ export const REQUETES_PAR_SUJET = {
   programmes: [['programmes']],
   parametres: [['parametres'], ['parametres-scan']],
   'apercu-emails': [['apercu-emails']],
+  sondage: [['sondage'], ['sondages-global'], ['suivi-emails']],
   moi: [['moi']],
   erreurs: [['erreurs-techniques'], ['analytique-technique']],
 };

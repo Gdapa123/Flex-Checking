@@ -8,6 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 from .bases import base_depuis_url, caches_sans_redis
 
@@ -156,7 +157,7 @@ REST_FRAMEWORK = {
     # la même adresse (Wi-Fi de la salle, opérateurs mobiles) ; les limites par compte et par email
     # protègent contre la force brute et l'abus d'envoi.
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
+        "apps.comptes.throttles.AnonymeThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
@@ -174,6 +175,9 @@ REST_FRAMEWORK = {
         "renvoi_email": "3/hour",
         "signalement_erreur": "30/min",
         "rapport": "30/hour",
+        "sondage": "60/hour",  # page publique du sondage, par IP
+        "email_test": "10/hour",
+        "relance_emails": "10/hour",
     },
     "EXCEPTION_HANDLER": "apps.noyau.exceptions.gestionnaire_exceptions",
     # « ?format=xlsx|csv » désigne le format d'export, pas un rendu DRF
@@ -218,8 +222,8 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 # --- En-têtes de sécurité ---
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"  # l'API n'est jamais affichée dans un cadre
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
@@ -261,7 +265,13 @@ CELERY_TASK_PUBLISH_RETRY_POLICY = {"max_retries": 1, "interval_start": 0, "inte
 CELERY_BEAT_SCHEDULE = {
     "relancer-emails-en-attente": {"task": "apps.noyau.tasks.relancer_emails_en_attente", "schedule": 300},
     "purger-exports": {"task": "apps.noyau.tasks.purger", "schedule": 3600},
+    # sondage de satisfaction : 8 h le lendemain de la cérémonie, puis rattrapage toutes les heures jusqu'à 20 h
+    # (présence validée tard, Beat indisponible à 8 h) ; idempotent, un seul email par invité
+    "envoyer-sondages": {"task": "apps.noyau.tasks.envoyer_sondages", "schedule": crontab(minute=0, hour="8-20")},
 }
+# Sans worker ni Beat (environnement de test Vercel) : le cron de la plateforme appelle
+# `GET /api/taches-planifiees/sondages/` avec l'en-tête « Authorization: Bearer <CRON_SECRET> ».
+CRON_SECRET = env("CRON_SECRET", default="")
 
 # --- Emails ---
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")

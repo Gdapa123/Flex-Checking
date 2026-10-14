@@ -26,6 +26,7 @@ import Icon from '../../components/ui/Icon';
 import Squelette from '../../components/ui/Squelette';
 import EtatErreur from '../../components/ui/EtatErreur';
 import { useToast } from '../../components/ui/Toasts';
+import CarteSatisfaction from './CarteSatisfaction';
 
 const COULEURS_MODES = ['bg-p', 'barre-segment-mode-1', 'barre-segment-mode-2', 'bg-neutre'];
 // mêmes teintes que les classes ci-dessus, pour les graphiques SVG
@@ -381,6 +382,8 @@ export default function TableauDeBord({ ev }) {
           </span>
         </Carte>
       </div>
+
+      <CarteSatisfaction ev={ev} />
 
       {!terminee && <LienInscription ev={ev} />}
     </>

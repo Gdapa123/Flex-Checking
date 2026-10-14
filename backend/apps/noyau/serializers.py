@@ -58,6 +58,7 @@ class ProgrammeSerializer(serializers.ModelSerializer):
             "actif",
             "magazine_actif",
             "lien_magazine",
+            "sondage_actif",
             "tokens",
             "nb_evenements",
             "cree_le",
@@ -192,6 +193,14 @@ class EvenementSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class EvenementBorneSerializer(EvenementSerializer):
+    """Liste des cérémonies vue par une borne libre-service (public devant l'écran) : ni hôtes affectés (noms et
+    emails), ni lien d'inscription, ni réglages ; seulement ce que le poste de scan affiche."""
+
+    class Meta(EvenementSerializer.Meta):
+        fields = ["id", "nom_affiche", "date", "statut", "tokens", "nb_inscrits", "nb_presents"]
+
+
 # ---------------------------------------------------------------- Invités
 def invites_annotes(qs):
     dernier = EmailEnvoye.objects.filter(invite=OuterRef("pk")).order_by("-cree_le", "-pk")
@@ -316,6 +325,8 @@ class EmargementRequeteSerializer(serializers.Serializer):
         r"^\d{4}$", required=False, allow_blank=True, error_messages={"invalid": "Code à 4 chiffres attendu."}
     )
     invite_id = serializers.IntegerField(required=False, allow_null=True)
+    # borne libre-service : jeton signé rendu par la recherche réduite pour ce nom (5 min)
+    choix_borne = serializers.CharField(required=False, allow_blank=True, max_length=300)
     mode = serializers.ChoiceField(choices=ModeEmargement.choices)
     poste = serializers.CharField(required=False, allow_blank=True, max_length=60, default="")
     appareil = serializers.ChoiceField(choices=Appareil.choices, default=Appareil.TELEPHONE)
@@ -402,6 +413,8 @@ class ParametresSerializer(serializers.ModelSerializer):
             "corps_email_1",
             "objet_email_2",
             "corps_email_2",
+            "objet_email_3",
+            "corps_email_3",
             "duree_resultat_scan",
             "son_actif",
             "vibration_actif",

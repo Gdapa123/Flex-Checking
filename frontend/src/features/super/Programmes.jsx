@@ -24,6 +24,7 @@ const VIDE = {
   couleurSecondaire: '#3CC4B0',
   magazineActif: false,
   lienMagazine: '',
+  sondageActif: true,
   actif: true,
 };
 
@@ -71,6 +72,7 @@ export default function Programmes() {
         couleurSecondaire: d.couleurSecondaire,
         magazineActif: d.magazineActif,
         lienMagazine: d.lienMagazine,
+        sondageActif: d.sondageActif,
       };
       const r = nouveau ? await api.post('/programmes/', corps) : await api.patch(`/programmes/${d.id}/`, corps);
       await invaliderTout();
@@ -353,6 +355,17 @@ export default function Programmes() {
                 univers="mde"
                 label="Envoyer l’email n°2 au passage « Présent »"
                 description="Une seule fois par invité, avec le lien du magazine."
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-mde-bordure pt-4">
+              <span className="text-[15px] font-semibold">Email n°3 · sondage de satisfaction</span>
+              <Interrupteur
+                actif={d.sondageActif ?? true}
+                onChange={(v) => setD({ ...d, sondageActif: v })}
+                univers="mde"
+                label="Envoyer le sondage aux présents le lendemain, vers 8 h"
+                description="Lien personnel valable 24 heures, une réponse par personne et par appareil. Résultats dans le tableau de bord."
               />
             </div>
 

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -20,6 +20,8 @@ class Programme(models.Model):
     actif = models.BooleanField(default=True)
     magazine_actif = models.BooleanField(default=False)
     lien_magazine = models.URLField(blank=True)
+    # email n°3 : sondage de satisfaction envoyé aux présents le lendemain de la cérémonie, vers 8 h
+    sondage_actif = models.BooleanField(default=True)
     cree_le = models.DateTimeField(auto_now_add=True)
     modifie_le = models.DateTimeField(auto_now=True)
 
@@ -226,6 +228,20 @@ class Emargement(models.Model):
 class TypeEmail(models.TextChoices):
     INVITATION = "INVITATION", "Invitation"
     MAGAZINE = "MAGAZINE", "Magazine"
+    SONDAGE = "SONDAGE", "Sondage de satisfaction"
+
+
+# libellés uniques des trois emails (historique, exports, journal) : (long, court)
+LIBELLES_EMAIL = {
+    TypeEmail.INVITATION: ("Email n°1 · invitation", "Invitation"),
+    TypeEmail.MAGAZINE: ("Email n°2 · magazine", "Email n°2 (magazine)"),
+    TypeEmail.SONDAGE: ("Email n°3 · sondage", "Email n°3 (sondage)"),
+}
+
+
+def libelle_email(type_email, court=False):
+    long_, court_ = LIBELLES_EMAIL.get(type_email, (str(type_email), str(type_email)))
+    return court_ if court else long_
 
 
 class StatutEmail(models.TextChoices):
@@ -282,6 +298,14 @@ CORPS_EMAIL_2 = (
     "Retrouvez dès maintenant le magazine du programme {programme}.\n\n"
     "{lien_magazine}"
 )
+CORPS_EMAIL_3 = (
+    "Bonjour {civilite} {prenom} {nom},\n\n"
+    "Merci d’avoir assisté à la Graduation {programme} {annee}. Votre avis nous aide à préparer les prochaines "
+    "éditions : le questionnaire prend moins de deux minutes.\n\n"
+    "{lien_sondage}\n\n"
+    "Le questionnaire reste ouvert 24 heures.\n\n"
+    "Merci,\nMDE Business School"
+)
 
 
 class Parametres(models.Model):
@@ -291,6 +315,8 @@ class Parametres(models.Model):
         max_length=200, default="Bienvenue · Le magazine de la Graduation {programme} {annee}"
     )
     corps_email_2 = models.TextField(default=CORPS_EMAIL_2)
+    objet_email_3 = models.CharField(max_length=200, default="Votre avis sur la Graduation {programme} {annee}")
+    corps_email_3 = models.TextField(default=CORPS_EMAIL_3)
     duree_resultat_scan = models.PositiveSmallIntegerField(choices=[(2, "2 s"), (3, "3 s"), (5, "5 s")], default=3)
     son_actif = models.BooleanField(default=True)
     vibration_actif = models.BooleanField(default=True)
@@ -341,3 +367,53 @@ class ErreurTechnique(models.Model):
         ordering = ["-derniere"]
         verbose_name = "erreur technique"
         verbose_name_plural = "erreurs techniques"
+
+
+# ---------------------------------------------------------------- Sondage de satisfaction (email n°3)
+DUREE_SONDAGE_HEURES = 24
+
+
+def nouveau_jeton_sondage():
+    return secrets.token_urlsafe(24)
+
+
+class InvitationSondage(models.Model):
+    """Lien personnel du sondage, créé à l'envoi de l'email n°3 ; valable 24 h (`expire_le`)."""
+
+    invite = models.OneToOneField(Invite, on_delete=models.CASCADE, related_name="sondage")
+    jeton = models.CharField(max_length=40, unique=True, default=nouveau_jeton_sondage)
+    cree_le = models.DateTimeField(default=timezone.now)
+    expire_le = models.DateTimeField()
+    # une réponse par lien ; la réponse elle-même n'est PAS rattachée à l'invité (anonymat réel en base), et ce
+    # simple indicateur ne porte pas d'heure (aucun rapprochement possible par horodatage)
+    repondu = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Sondage #{self.pk}"
+
+    @property
+    def expire(self):
+        return timezone.now() >= self.expire_le
+
+
+class ReponseSondage(models.Model):
+    """Réponse anonyme : rattachée à la cérémonie seulement (ni invité ni lien). Une par lien (`InvitationSondage.
+    repondu`) et une par appareil pour une cérémonie (`appareil` : empreintes hachées). `cree_le` est arrondi à
+    l'heure."""
+
+    evenement = models.ForeignKey(Evenement, on_delete=models.CASCADE, related_name="reponses_sondage")
+    note_globale = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    note_accueil = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    recommandation = models.PositiveSmallIntegerField(validators=[MaxValueValidator(10)])
+    commentaire = models.TextField(blank=True, max_length=1000)
+    # empreintes (SHA-256) de l'identifiant d'appareil : cookie posé par le serveur et identifiant du navigateur
+    appareil = models.CharField(max_length=64)
+    appareil_local = models.CharField(max_length=64, blank=True)
+    cree_le = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-cree_le"]
+        constraints = [
+            models.UniqueConstraint(fields=["evenement", "appareil"], name="sondage_un_par_appareil"),
+        ]
+        indexes = [models.Index(fields=["evenement", "appareil_local"])]

@@ -938,7 +938,10 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
 }
 
 export function BoutonPresence({ invite, onClick, court = false, grand = false }) {
+  const { data: moi } = useMoi();
   const inscrit = invite.statut === 'INSCRIT';
+  // annuler une présence est réservé au super admin : l'admin ne voit que « Valider »
+  if (!inscrit && moi?.role !== 'SUPER_ADMIN') return null;
   const label = inscrit ? (court ? 'Valider' : 'Valider la présence') : court ? 'Annuler' : 'Annuler la présence';
   return (
     <button

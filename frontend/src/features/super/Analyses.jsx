@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -29,6 +30,7 @@ import Squelette from '../../components/ui/Squelette';
 import { useToast } from '../../components/ui/Toasts';
 import ErreurChargement, { BandeauErreur } from './ErreurChargement';
 import { PageSuper } from './SuperApp';
+import { libelleNps, signeNps } from '../admin/CarteSatisfaction';
 
 const BORDEAUX = 'var(--mde-bordeaux)';
 const BORDEAUX_CLAIR = 'color-mix(in srgb, var(--mde-bordeaux) 30%, #fff)';
@@ -77,6 +79,7 @@ export default function Analyses() {
         >
           {[
             ['activite', 'Activité', 'chart'],
+            ['satisfaction', 'Satisfaction', 'star'],
             ['technique', 'Technique', 'activity'],
           ].map(([v, l, i]) => (
             <button
@@ -102,7 +105,7 @@ export default function Analyses() {
           Rapport PDF (activité et technique)
         </button>
       </div>
-      {f.onglet === 'technique' ? <Technique /> : <Activite />}
+      {f.onglet === 'technique' ? <Technique /> : f.onglet === 'satisfaction' ? <Satisfaction /> : <Activite />}
     </PageSuper>
   );
 }
@@ -149,6 +152,126 @@ function Chargement() {
         <Squelette key={k} className="h-[140px] !rounded-carte" />
       ))}
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ satisfaction
+
+const ETATS_SONDAGE = {
+  A_VENIR: ['À venir', 'bg-mde-survol text-mde-texte'],
+  EN_COURS: ['En cours', 'bg-succes-doux text-succes'],
+  TERMINE: ['Clos', 'bg-subtil text-texte-3'],
+  DESACTIVE: ['Désactivé', 'bg-subtil text-texte-3'],
+};
+const virgule = (v) => (v === null || v === undefined ? '–' : Number(v).toFixed(1).replace('.', ','));
+
+function Satisfaction() {
+  const secours = useSecours(30_000);
+  const {
+    data: g,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['sondages-global'],
+    queryFn: () => api.get('/analytique/sondages/'),
+    refetchInterval: secours,
+  });
+  if (error && !g) return <ErreurChargement erreur={error} onReessayer={() => refetch()} />;
+  if (!g) return <Chargement />;
+  return (
+    <>
+      <Kpis
+        elements={[
+          { label: 'Réponses', valeur: nombre(g.reponses), sub: `sur ${nombre(g.envoyes)} sondages envoyés` },
+          { label: 'Taux de réponse', valeur: `${g.tauxReponse} %`, sub: 'toutes cérémonies' },
+          {
+            label: 'Satisfaction',
+            valeur: `${virgule(g.noteGlobale)} / 5`,
+            sub: `accueil ${virgule(g.noteAccueil)} / 5`,
+          },
+          { label: 'NPS', valeur: signeNps(g.nps), sub: g.nps === null ? 'aucune réponse' : libelleNps(g.nps) },
+        ]}
+      />
+      <Bloc
+        id="t-satisfaction-ceremonies"
+        titre="Satisfaction par cérémonie"
+        sous="Sondage envoyé aux présents le lendemain à 8 h, ouvert 24 h"
+      >
+        {g.ceremonies.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] border-collapse text-[15px]">
+              <thead>
+                <tr className="text-left text-[13px] text-mde-texte-2">
+                  <th scope="col" className="pb-2.5 font-normal">
+                    Cérémonie
+                  </th>
+                  <th scope="col" className="pb-2.5 font-normal">
+                    Sondage
+                  </th>
+                  <th scope="col" className="pb-2.5 text-right font-normal">
+                    Réponses
+                  </th>
+                  <th scope="col" className="pb-2.5 pl-5 font-normal">
+                    Satisfaction
+                  </th>
+                  <th scope="col" className="pb-2.5 text-right font-normal">
+                    Accueil
+                  </th>
+                  <th scope="col" className="pb-2.5 text-right font-normal">
+                    NPS
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.ceremonies.map((c) => {
+                  const [etat, cls] = ETATS_SONDAGE[c.etat] || ETATS_SONDAGE.TERMINE;
+                  return (
+                    <tr key={c.evenementId} className="border-t border-mde-bordure-ligne">
+                      <td className="py-3 pr-3">
+                        <Link
+                          to={`/admin/evenements/${c.evenementId}`}
+                          className="font-semibold text-mde-texte underline-offset-2 hover:underline"
+                        >
+                          {c.nomAffiche}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-3">
+                        <span
+                          className={`inline-flex h-6 items-center rounded-full px-2.5 text-[12.5px] font-semibold ${cls}`}
+                        >
+                          {etat}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right tabular-nums">
+                        {nombre(c.reponses)} / {nombre(c.envoyes)}
+                        <span className="block text-[13px] text-mde-texte-2">{c.tauxReponse} %</span>
+                      </td>
+                      <td className="py-3 pl-5">
+                        <span className="flex items-center gap-2.5">
+                          <span className="h-1.5 w-24 overflow-hidden rounded-[3px] bg-mde-bordure-ligne">
+                            <span
+                              className="block h-full bg-mde-bordeaux"
+                              style={{ width: `${((c.noteGlobale || 0) / 5) * 100}%` }}
+                            />
+                          </span>
+                          <span className="font-semibold tabular-nums">{virgule(c.noteGlobale)}</span>
+                        </span>
+                      </td>
+                      <td className="py-3 text-right tabular-nums">{virgule(c.noteAccueil)}</td>
+                      <td className="py-3 text-right font-semibold tabular-nums">{signeNps(c.nps)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="m-0 text-[15px] text-mde-texte-2">
+            Aucun sondage envoyé pour le moment : le premier partira le lendemain d’une cérémonie, à 8 h.
+          </p>
+        )}
+      </Bloc>
+    </>
   );
 }
 

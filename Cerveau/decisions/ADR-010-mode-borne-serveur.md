@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, backend/apps/noyau/vues_scan.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/auth/RequireRole.jsx]
 ---
 
@@ -32,3 +32,11 @@ réglages la restreint de nouveau ; le frontend renvoie toute route hors `/scan`
 - ➕ même avec l'adresse, le public n'atteint ni les données des invités ni l'espace admin.
 - ➖ hors ligne, le passage en mode borne n'a pas lieu (le verrou d'interface reste actif) ; le public peut toujours
   émarger un autre invité via « C’est moi » (inhérent au libre-service).
+- Durcissements du 2026-10-14 (audit) :
+  - « C’est moi » : l'émargement par `inviteId` en session borne exige le **jeton signé `choix`** rendu par la
+    recherche réduite pour ce nom (5 min, lié au compte, à la cérémonie et à l'invité) ; sinon 403
+    `CHOIX_BORNE_INVALIDE`. Plus de boucle `inviteId=1..N`. Limite dédiée : 12 émargements manuels/min.
+  - Liste des cérémonies en session borne : `EvenementBorneSerializer` (ni hôtes ni lien d'inscription).
+  - Frontend : disposition figée au démarrage (et imposée par `moi.borne`) ; restriction retentée toutes les 15 s et
+    au retour du réseau, badge « Session non restreinte » au-delà de 5 s ; espace hôte refermé après 90 s sans
+    interaction.

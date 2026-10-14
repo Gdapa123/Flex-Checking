@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [backend/apps/comptes/, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/]
 ---
 
@@ -27,6 +27,12 @@ sources: [backend/apps/comptes/, backend/config/settings.py, frontend/src/lib/ap
   **20 échecs/h par compte visé** (`cle_echecs_connexion`) : chaque essai est compté avant la vérification du mot de
   passe (incrément atomique, pas de contournement par requêtes parallèles) et une connexion réussie remet la série à
   zéro ; le verrouillage n'intervient qu'après 20 échecs d'affilée.
+- **Poste connu** (2026-10-14) : après une connexion réussie, cookie signé `fc_poste` (httpOnly, 90 jours, path
+  `/api/auth/`, empreintes des comptes, 10 au plus). Un poste connu n'est **pas** soumis au blocage par compte : un
+  tiers qui accumule des échecs sur l'email d'un hôte ne peut plus le bloquer le jour J. Cookie infalsifiable
+  (`signing`), limite par IP + email inchangée.
+- **Rafraîchissement** (`auth/rafraichir/`) : CSRF exigé (le frontend envoie `X-CSRFToken`) ; jeton verrouillé
+  (`select_for_update` sur `OutstandingToken`) : deux rafraîchissements simultanés n'ouvrent pas deux sessions.
 - Champ mot de passe avec bouton « Afficher / Masquer » (`Champ`, aussi dans le changement de mot de passe).
 - Deux écrans : `/connexion` (admin, redirection selon le rôle) et `/super/connexion` (univers MDE).
 - Retour après connexion vers `state.depuis`, filtré par `cheminInterne` (pas de redirection ouverte).

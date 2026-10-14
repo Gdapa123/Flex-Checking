@@ -25,10 +25,12 @@ from .models import (
     Emargement,
     ErreurTechnique,
     Evenement,
+    InvitationSondage,
     Invite,
     JournalActivite,
     Parametres,
     Programme,
+    ReponseSondage,
     SourceErreur,
 )
 
@@ -124,6 +126,13 @@ def _emargement(sender, instance, **kwargs):
 def _email(sender, instance, **kwargs):
     invalider(cle_statistiques(instance.invite.evenement_id))
     notifier_evenement(instance.invite.evenement_id, ("invites", "statistiques"))
+
+
+@receiver(post_save, sender=InvitationSondage)  # suppression : déjà notifiée par celle de l'invité
+@receiver([post_save, post_delete], sender=ReponseSondage)
+def _sondage(sender, instance, **kwargs):
+    evenement_id = instance.evenement_id if sender is ReponseSondage else instance.invite.evenement_id
+    notifier_evenement(evenement_id, ("sondage",))
 
 
 @receiver(post_save, sender=JournalActivite)

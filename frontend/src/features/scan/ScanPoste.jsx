@@ -29,6 +29,7 @@ import { appareilEffectif, ecrireReglages, lireReglages } from './reglages';
 import { signaler } from './retour';
 import useCamera from './useCamera';
 import { useEvenementsScan } from './useEvenementsScan';
+import { useMoi } from '../auth/useMoi';
 import useWakeLock from './useWakeLock';
 
 const ANTI_REBOND_MS = 3000;
@@ -142,7 +143,11 @@ function Poste({ evenement }) {
   const secours = useSecours(5000);
   const evenementId = evenement.id;
   const [reglages, setReglages] = useState(lireReglages);
-  const appareil = appareilEffectif(reglages);
+  const { data: moi } = useMoi();
+  // disposition figée au démarrage du poste (une rotation ou un écran partagé ne fait pas quitter la borne), et
+  // toujours « borne » tant que la session est restreinte côté serveur
+  const [appareilDemarrage] = useState(() => appareilEffectif(lireReglages()));
+  const appareil = moi?.borne ? 'TABLETTE' : appareilDemarrage;
   const { data: global } = useQuery({
     queryKey: ['parametres-scan'],
     queryFn: () => api.get('/parametres/scan/'),
@@ -168,6 +173,8 @@ function Poste({ evenement }) {
   // borne : hôte identifié par son mot de passe (session complète) tant qu'une feuille de l'espace hôte est ouverte
   const [hoteIdentifie, setHoteIdentifie] = useState(false);
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
+  // annuler un émargement est réservé au super admin (le serveur refuse les admins)
+  const peutAnnuler = moi?.role === 'SUPER_ADMIN';
   const [toast, setToast] = useState(null);
   const [chiffres, setChiffres] = useState('');
   const [q, setQ] = useState('');
@@ -181,14 +188,55 @@ function Poste({ evenement }) {
 
   // Borne : dès que l'hôte quitte son espace (réglages, annulation… quelle que soit la feuille ou le bouton utilisé),
   // la session redevient restreinte pour le public.
+  const restreindre = useCallback(
+    () =>
+      api.post('/auth/borne/').then(() => {
+        setHoteIdentifie(false);
+        return qc.invalidateQueries({ queryKey: ['moi'] });
+      }),
+    [qc],
+  );
+  // Garde permanente : borne affichée au public (aucune feuille de l'espace hôte ouverte) avec une session complète
+  // — réglages refermés pendant une coupure, borne démarrée hors ligne… — la restriction est retentée au retour du
+  // réseau et toutes les 15 s, jamais abandonnée en silence.
+  const sessionOuverte = appareil === 'TABLETTE' && feuille === null && (hoteIdentifie || (moi && !moi.borne));
   useEffect(() => {
-    if (appareil !== 'TABLETTE' || !hoteIdentifie || feuille !== null) return;
-    setHoteIdentifie(false);
-    api
-      .post('/auth/borne/')
-      .then(() => qc.invalidateQueries({ queryKey: ['moi'] }))
-      .catch(() => {});
-  }, [appareil, hoteIdentifie, feuille, qc]);
+    if (!sessionOuverte) return undefined;
+    const essai = () => restreindre().catch(() => {});
+    essai();
+    const minuteur = setInterval(essai, 15_000);
+    window.addEventListener('online', essai);
+    return () => {
+      clearInterval(minuteur);
+      window.removeEventListener('online', essai);
+    };
+  }, [sessionOuverte, restreindre]);
+  // badge pour l'hôte si la restriction n'a pas abouti au bout de quelques secondes
+  const [alerteSession, setAlerteSession] = useState(false);
+  useEffect(() => {
+    if (!sessionOuverte) {
+      setAlerteSession(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setAlerteSession(true), 5000);
+    return () => clearTimeout(t);
+  }, [sessionOuverte]);
+  // Espace hôte de la borne : refermé (donc session restreinte) après 90 s sans interaction
+  useEffect(() => {
+    if (appareil !== 'TABLETTE' || !feuille || feuille === 'deverrouillage') return undefined;
+    let minuteur = setTimeout(() => setFeuille(null), 90_000);
+    const relancer = () => {
+      clearTimeout(minuteur);
+      minuteur = setTimeout(() => setFeuille(null), 90_000);
+    };
+    window.addEventListener('pointerdown', relancer);
+    window.addEventListener('keydown', relancer);
+    return () => {
+      clearTimeout(minuteur);
+      window.removeEventListener('pointerdown', relancer);
+      window.removeEventListener('keydown', relancer);
+    };
+  }, [appareil, feuille]);
 
   // Borne libre-service : le bouton retour (navigateur, geste ou touche système) ne doit pas faire quitter l'accueil
   // des invités vers la configuration du scan puis l'espace admin. Une entrée d'historique identique est empilée :
@@ -231,6 +279,9 @@ function Poste({ evenement }) {
   }, [recents]);
 
   // ------------------------------------------------------------------ hors ligne
+  useEffect(() => {
+    file.purgerAnciens().catch(() => {});
+  }, []);
   const rafraichirAttente = useCallback(
     () =>
       file
@@ -334,7 +385,7 @@ function Poste({ evenement }) {
           afficherToast(
             e?.status === 429
               ? e.data?.detail || 'Trop de tentatives de code. Patientez quelques minutes.'
-              : e?.status === 403
+              : e?.status === 403 && e.data?.code !== 'CHOIX_BORNE_INVALIDE'
                 ? 'Vous n’êtes plus affecté·e à cette cérémonie. Contactez la direction des événements.'
                 : e?.status === 404
                   ? 'Cette cérémonie n’existe plus. Changez de cérémonie depuis les réglages.'
@@ -456,7 +507,8 @@ function Poste({ evenement }) {
   const emargerManuel = (inv) => {
     setVue('camera');
     setQ('');
-    emarger({ inviteId: inv.id }, 'MANUEL');
+    // borne : le serveur n'accepte que le nom proposé par sa recherche réduite (jeton signé `choix`)
+    emarger({ inviteId: inv.id, ...(inv.choix ? { choixBorne: inv.choix } : {}) }, 'MANUEL');
   };
 
   // ------------------------------------------------------------------ annulation du dernier
@@ -485,7 +537,7 @@ function Poste({ evenement }) {
   const outils = {
     code: () => setVue('code'),
     recherche: () => setVue('recherche'),
-    annuler: () => setFeuille('annulation'),
+    annuler: peutAnnuler ? () => setFeuille('annulation') : undefined,
     torche: async () => {
       const ok = await camera.basculerTorche();
       afficherToast(
@@ -576,6 +628,14 @@ function Poste({ evenement }) {
       className="univers-scan fixed inset-0 flex flex-col overflow-hidden bg-g-fond text-g-texte"
     >
       <div className="relative flex min-h-0 flex-1 flex-col">
+        {alerteSession && (
+          <div
+            role="status"
+            className="absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full border border-g-bordure bg-g-avert-badge px-3 py-1.5 text-[13px] font-semibold text-g-avert-clair"
+          >
+            Session non restreinte · reconnexion au serveur…
+          </div>
+        )}
         {contenu}
         <div aria-live="assertive" role="alert" className="contents">
           {pleinEcran && (
@@ -617,7 +677,7 @@ function Poste({ evenement }) {
             onVibration={(v) => majReglages({ vibration: v })}
             onChanger={() => naviguer('/scan')}
             onQuitter={() => naviguer(`/admin/evenements/${evenementId}`)}
-            onAnnulation={() => setFeuille('annulation')}
+            onAnnulation={peutAnnuler ? () => setFeuille('annulation') : undefined}
             onFermer={() => setFeuille(null)}
           />
         )}
@@ -741,7 +801,7 @@ function DispositionTelephone({ evenement, reglages, compteurs, enLigne, enAtten
       )}
       <nav
         aria-label="Outils de secours"
-        className="grid grid-cols-5 border-t border-g-bordure bg-g-surface px-1.5 pb-2.5 pt-1.5"
+        className={`grid ${outils.annuler ? 'grid-cols-5' : 'grid-cols-4'} border-t border-g-bordure bg-g-surface px-1.5 pb-2.5 pt-1.5`}
       >
         {[
           { cle: 'code', label: 'Code', icone: 'hash' },
@@ -749,19 +809,21 @@ function DispositionTelephone({ evenement, reglages, compteurs, enLigne, enAtten
           { cle: 'annuler', label: 'Annuler', icone: 'undo' },
           { cle: 'torche', label: 'Torche', icone: 'flash', presse: camera.torche, dispo: camera.torcheDispo },
           { cle: 'camera', label: 'Caméra', icone: 'switchCam' },
-        ].map((t) => (
-          <button
-            key={t.cle}
-            type="button"
-            onClick={outils[t.cle]}
-            aria-pressed={t.cle === 'torche' ? !!t.presse : undefined}
-            aria-disabled={t.cle === 'torche' && !t.dispo ? true : undefined}
-            className={`flex min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-bouton border-0 text-[12px] font-medium active:bg-g-eleve ${t.presse ? 'bg-s text-g-fond' : 'bg-transparent text-g-texte'} ${t.cle === 'torche' && !t.dispo ? 'opacity-50' : ''}`}
-          >
-            <Icon nom={t.icone} className="text-[22px]" />
-            {t.label}
-          </button>
-        ))}
+        ]
+          .filter((t) => outils[t.cle])
+          .map((t) => (
+            <button
+              key={t.cle}
+              type="button"
+              onClick={outils[t.cle]}
+              aria-pressed={t.cle === 'torche' ? !!t.presse : undefined}
+              aria-disabled={t.cle === 'torche' && !t.dispo ? true : undefined}
+              className={`flex min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-bouton border-0 text-[12px] font-medium active:bg-g-eleve ${t.presse ? 'bg-s text-g-fond' : 'bg-transparent text-g-texte'} ${t.cle === 'torche' && !t.dispo ? 'opacity-50' : ''}`}
+            >
+              <Icon nom={t.icone} className="text-[22px]" />
+              {t.label}
+            </button>
+          ))}
       </nav>
     </div>
   );
@@ -927,11 +989,11 @@ function DispositionOrdinateur(props) {
             </div>
           ) : (
             <div
-              className="relative flex items-center justify-center overflow-hidden rounded-[12px] border border-g-bordure bg-[radial-gradient(ellipse_at_50%_50%,var(--g-eleve)_0%,var(--g-fond)_75%)]"
-              style={{ height: 'min(56dvh, 480px)' }}
+              className="relative flex flex-none items-center justify-center overflow-hidden rounded-[12px] border border-g-bordure bg-[radial-gradient(ellipse_at_50%_50%,var(--g-eleve)_0%,var(--g-fond)_75%)]"
+              style={{ height: 'min(44dvh, 420px)' }}
             >
               <Video camera={camera} facing={reglages.camera} />
-              <CadreVisee phase={phase} taille="min(30vw, 44dvh, 380px)" voile />
+              <CadreVisee phase={phase} taille="min(30vw, 36dvh, 340px)" voile />
               <span className="absolute left-3.5 top-3.5 z-10 inline-flex h-[30px] items-center gap-2 rounded-full border border-g-bordure bg-g-voile px-3 text-[13px]">
                 <PointLecture>Webcam · lecture automatique</PointLecture>
               </span>
@@ -961,17 +1023,19 @@ function DispositionOrdinateur(props) {
               { cle: 'code', label: 'Code à 4 chiffres', icone: 'hash' },
               { cle: 'recherche', label: 'Recherche par nom', icone: 'search' },
               { cle: 'annuler', label: 'Annuler le dernier', icone: 'undo' },
-            ].map((t) => (
-              <button
-                key={t.cle}
-                type="button"
-                onClick={outils[t.cle]}
-                className="flex h-12 cursor-pointer items-center gap-2 rounded-bouton border border-g-bordure bg-g-surface px-4 text-[15px] font-medium text-g-texte hover:bg-g-eleve"
-              >
-                <Icon nom={t.icone} className="text-[18px]" />
-                {t.label}
-              </button>
-            ))}
+            ]
+              .filter((t) => outils[t.cle])
+              .map((t) => (
+                <button
+                  key={t.cle}
+                  type="button"
+                  onClick={outils[t.cle]}
+                  className="flex h-12 cursor-pointer items-center gap-2 rounded-bouton border border-g-bordure bg-g-surface px-4 text-[15px] font-medium text-g-texte hover:bg-g-eleve"
+                >
+                  <Icon nom={t.icone} className="text-[18px]" />
+                  {t.label}
+                </button>
+              ))}
           </div>
         </div>
         <section

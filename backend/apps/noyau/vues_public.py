@@ -44,7 +44,13 @@ class RenvoiEmailThrottle(LimiteSensible):
         email = email_soumis(request)
         if not email:
             return None
-        cle = hashlib.sha256(f"{view.kwargs.get('slug')}:{email}".encode()).hexdigest()
+        # clé par cérémonie, pas par lien : un lien régénéré (anciens liens acceptés) ne multiplie pas la limite
+        slug = view.kwargs.get("slug")
+        try:
+            cible = evenement_public(slug).pk
+        except Http404:
+            cible = f"slug:{slug}"
+        cle = hashlib.sha256(f"{cible}:{email}".encode()).hexdigest()
         return self.cache_format % {"scope": self.scope, "ident": cle}
 
 

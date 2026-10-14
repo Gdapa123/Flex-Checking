@@ -3,7 +3,10 @@ import Logo from '../../components/ui/Logo';
 import useTitre from '../../lib/useTitre';
 
 /** I8 · Lien invalide : repli sur la palette MDE. */
-export default function LienInvalide() {
+export default function LienInvalide({
+  titre = 'Ce lien n’est plus valide',
+  texte = 'Le lien d’inscription utilisé est incorrect ou a expiré. Vérifiez l’adresse reçue ou contactez l’équipe événementielle de MDE Business School.',
+}) {
   useTitre('Lien invalide');
   return (
     <div className="univers-mde min-h-[100dvh] border-t-[6px] border-mde-bordeaux bg-mde-surface text-mde-texte">
@@ -17,11 +20,8 @@ export default function LienInvalide() {
           <div className="flex h-14 w-14 items-center justify-center rounded-[12px] bg-mde-jaune-clair text-[26px] text-mde-texte">
             <Icon nom="link" />
           </div>
-          <h1 className="m-0 text-[24px] font-bold tracking-[-0.02em]">Ce lien n’est plus valide</h1>
-          <p className="m-0 max-w-[400px] text-[16px] leading-[1.55] text-mde-texte-2 [text-wrap:pretty]">
-            Le lien d’inscription utilisé est incorrect ou a expiré. Vérifiez l’adresse reçue ou contactez l’équipe
-            événementielle de MDE Business School.
-          </p>
+          <h1 className="m-0 text-[24px] font-bold tracking-[-0.02em]">{titre}</h1>
+          <p className="m-0 max-w-[400px] text-[16px] leading-[1.55] text-mde-texte-2 [text-wrap:pretty]">{texte}</p>
           <a
             href="https://mde.ci"
             className="mt-2 flex h-[52px] items-center gap-2 rounded-bouton bg-mde-bordeaux px-6 text-[16px] font-semibold text-blanc no-underline transition-colors hover:bg-mde-bordeaux-survol hover:text-blanc"

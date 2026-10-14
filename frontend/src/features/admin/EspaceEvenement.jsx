@@ -16,7 +16,7 @@ import { ToastProvider, useToast } from '../../components/ui/Toasts';
 import { useDeconnexion, useMoi } from '../auth/useMoi';
 import TableauDeBord from './TableauDeBord';
 import GestionInvites from '../invites/GestionInvites';
-import ApercuEmails from './ApercuEmails';
+import SuiviEmails from './SuiviEmails';
 
 /** Mise en page admin : barre latérale, en-tête en dégradé du programme, contenu qui chevauche. */
 export default function EspaceEvenement() {
@@ -66,8 +66,8 @@ export default function EspaceEvenement() {
             <Route
               path="emails"
               element={
-                <Page ev={ev} titre="Emails">
-                  <ApercuEmails ev={ev} />
+                <Page ev={ev} titre="Suivi des emails">
+                  <SuiviEmails ev={ev} />
                 </Page>
               }
             />

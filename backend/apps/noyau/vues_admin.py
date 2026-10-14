@@ -9,17 +9,17 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.text import slugify
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
-from apps.comptes.authentication import nouvelle_version_session
+from apps.comptes.authentication import est_borne, nouvelle_version_session
 from apps.comptes.models import Admin, Role
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 
-from . import caches, exports
+from . import caches, exports, sondages, suivi_emails
 from .analytique import analytique, technique
 from .emails import Source, rendre
 from .exceptions import ErreurMetier
@@ -32,6 +32,7 @@ from .rapports import rapport_evenement, rapport_global
 from .serializers import (
     AdminSerializer,
     ApercuEmailSerializer,
+    EvenementBorneSerializer,
     EvenementSerializer,
     JournalSerializer,
     ParametresSerializer,
@@ -48,6 +49,22 @@ class RapportThrottle(UserRateThrottle):
     """Génération de PDF : coûteuse, limitée par compte."""
 
     scope = "rapport"
+
+
+class EmailTestThrottle(UserRateThrottle):
+    """Email de test vers son propre compte : envoi SMTP synchrone, limité par compte."""
+
+    scope = "email_test"
+
+
+class RelanceThrottle(UserRateThrottle):
+    """Renvoi groupé des emails en échec : limité par compte."""
+
+    scope = "relance_emails"
+
+
+class TypeEmailSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=TypeEmail.choices)
 
 
 def reponse_pdf(contenu, nom):
@@ -118,11 +135,26 @@ class EvenementViewSet(viewsets.ModelViewSet):
     autorise_borne = {"list"}  # le poste de scan de la borne charge la liste des cérémonies
 
     def get_permissions(self):
-        lecture = ("list", "retrieve", "statistiques", "apercu_emails", "rapport")
+        lecture = (
+            "list",
+            "retrieve",
+            "statistiques",
+            "apercu_emails",
+            "rapport",
+            "suivi_emails",
+            "renvoyer_echecs",
+            "email_test",
+            "sondage",
+        )
         return [EstAdmin()] if self.action in lecture else [EstSuperAdmin()]
 
     def get_queryset(self):
         return evenements_annotes(evenements_visibles(self.request.user)).order_by("-date")
+
+    def get_serializer_class(self):
+        if self.action == "list" and est_borne(self.request.auth):
+            return EvenementBorneSerializer
+        return super().get_serializer_class()
 
     def perform_create(self, serializer):
         ev = serializer.save()
@@ -194,7 +226,34 @@ class EvenementViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="apercu-emails")
     def apercu_emails(self, request, pk=None):
         ev = self.get_object()
-        return Response({t: _apercu(t, ev) for t in (TypeEmail.INVITATION, TypeEmail.MAGAZINE)})
+        return Response({t: _apercu(t, ev) for t in TypeEmail.values})
+
+    @extend_schema(responses={200: None}, summary="Résultats du sondage de satisfaction de la cérémonie")
+    @action(detail=True, methods=["get"])
+    def sondage(self, request, pk=None):
+        return Response(sondages.resultats(self.get_object()))
+
+    @extend_schema(responses={200: None}, summary="Suivi des emails : compteurs et échecs à traiter")
+    @action(detail=True, methods=["get"], url_path="suivi-emails")
+    def suivi_emails(self, request, pk=None):
+        return Response(suivi_emails.suivi(self.get_object()))
+
+    @extend_schema(request=TypeEmailSerializer, responses={200: None}, summary="Renvoyer les emails en échec")
+    @action(detail=True, methods=["post"], url_path="suivi-emails/renvoyer-echecs", throttle_classes=[RelanceThrottle])
+    def renvoyer_echecs(self, request, pk=None):
+        ev = self.get_object()
+        ser = TypeEmailSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        return Response({"traites": suivi_emails.renvoyer_echecs(request.user, ev, ser.validated_data["type"])})
+
+    @extend_schema(request=TypeEmailSerializer, responses={200: None}, summary="M'envoyer un email de test")
+    @action(detail=True, methods=["post"], url_path="suivi-emails/test", throttle_classes=[EmailTestThrottle])
+    def email_test(self, request, pk=None):
+        ev = self.get_object()
+        ser = TypeEmailSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        destinataire = suivi_emails.envoyer_test(request.user, ev, ser.validated_data["type"], _source_exemple(ev))
+        return Response({"destinataire": destinataire})
 
 
 def _source_exemple(evenement):
@@ -206,6 +265,8 @@ def _source_exemple(evenement):
         "4827",
         "exemple-de-jeton-non-valide",
         present_le=timezone.now().replace(hour=18, minute=42),
+        jeton_sondage="exemple-de-lien-non-valide",
+        sondage_expire_le=sondages.debut_envoi(evenement) + sondages.DUREE,
     )
 
 

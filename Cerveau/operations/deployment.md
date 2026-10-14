@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 36389e6
 sources: [docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, .vercelignore, infra/charge/README.md, README.md]
 ---
 
@@ -25,7 +25,7 @@ docker compose -f docker-compose.prod.yml exec django python manage.py shell -c 
 | migrate | migrations au démarrage (le service django attend sa réussite) |
 | django | Gunicorn + workers Uvicorn (`WEB_CONCURRENCY`, défaut 4), `DB_CONCURRENCE` 24, utilisateur sans privilèges `flex`, HEALTHCHECK `/api/sante/` ; `--scale django=3` possible |
 | celery | `CELERY_CONCURRENCY` (4), `--max-tasks-per-child 500`, contrôle de santé |
-| celery-beat | relance des emails (5 min), purge (1 h) |
+| celery-beat | relance des emails (5 min), purge (1 h), sondages de satisfaction (8 h puis chaque heure jusqu'à 20 h) |
 | proxy | Caddy : HTTPS automatique sur `DOMAINE` (défaut `emargement.mde.ci` ❓ à confirmer), sert `frontend/dist`, relaie `/api` |
 
 `.env` de production : `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY` ≥ 32 caractères, `DOMAINE`, `APP_PUBLIC_URL` en HTTPS,
@@ -36,6 +36,8 @@ docker compose -f docker-compose.prod.yml exec django python manage.py shell -c 
 - Backend https://flex-checking-api.vercel.app (projet `flex-checking-api`, `backend/Dockerfile.vercel`, `fra1`), base Neon.
 - Préparation de la base depuis un poste : `vercel env pull` (fichier privé), puis `migrate`, `createcachetable`, `seed_demo`.
 - En-têtes de sécurité et cache des assets définis dans `frontend/vercel.json`.
+- Cron du sondage : `backend/vercel.json` (`0 8 * * *` → `/api/taches-planifiees/sondages/`) ; **exige la variable
+  `CRON_SECRET`** sur `flex-checking-api` (Vercel l'envoie en `Authorization: Bearer`). Voir [sondage-satisfaction](../features/sondage-satisfaction.md).
 
 ## Tests de charge
 Procédure et résultats de référence : `infra/charge/README.md` (à lancer sur un environnement de test,
