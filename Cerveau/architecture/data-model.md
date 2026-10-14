@@ -9,7 +9,7 @@ sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/
 # Modèle de données
 
 Base MySQL 8 utf8mb4 (Postgres sur l’environnement Vercel), stockage en UTC, fuseau d’affichage `Africa/Abidjan` (UTC+0).
-Migrations : `0001_initial` → `0008_inscriptions_pas_dans_le_futur` (noyau ; la 0008 ne fait que recaler des données), `0001_initial` (comptes).
+Migrations : `0001_initial` → `0008_inscriptions_pas_dans_le_futur` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma), `0001_initial` (comptes).
 
 ## Entités
 

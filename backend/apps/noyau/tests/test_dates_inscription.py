@@ -44,21 +44,13 @@ def test_seed_demo_sans_date_future(monkeypatch):
     assert not EmailEnvoye.objects.filter(envoye_le__gt=maintenant).exists()
 
 
-def test_migration_recale_les_inscriptions_futures(evenement):
+def test_migration_supprime_les_inscriptions_futures(evenement):
     passe = creer_invite(evenement, donnees("passe@exemple.ci"), source=Source.MANUEL)
     futur = creer_invite(evenement, donnees("futur@exemple.ci"), source=Source.MANUEL)
-    maintenant = timezone.now()
     # anciennes données de démo : écrites sans passer par save()
-    Invite.objects.filter(pk=passe.pk).update(inscrit_le=maintenant + timedelta(days=5))
-    Invite.objects.filter(pk=futur.pk).update(
-        inscrit_le=maintenant + timedelta(days=10), consentement_le=maintenant + timedelta(days=10)
-    )
-    EmailEnvoye.objects.create(invite=futur, type=TypeEmail.INVITATION, cree_le=maintenant + timedelta(days=10))
+    Invite.objects.filter(pk=futur.pk).update(inscrit_le=timezone.now() + timedelta(days=10))
+    EmailEnvoye.objects.create(invite=futur, type=TypeEmail.INVITATION)
     migration = importlib.import_module("apps.noyau.migrations.0008_inscriptions_pas_dans_le_futur")
-    migration.recaler(django_apps, None)
-    passe.refresh_from_db()
-    futur.refresh_from_db()
-    assert futur.inscrit_le <= timezone.now() - timedelta(minutes=59)
-    assert futur.consentement_le == futur.inscrit_le
-    assert futur.inscrit_le - passe.inscrit_le == timedelta(days=5)  # étalement conservé
-    assert not EmailEnvoye.objects.filter(invite__evenement=evenement, cree_le__gt=timezone.now()).exists()
+    migration.supprimer(django_apps, None)
+    assert list(Invite.objects.filter(evenement=evenement)) == [passe]
+    assert not EmailEnvoye.objects.filter(invite_id=futur.pk).exists()
