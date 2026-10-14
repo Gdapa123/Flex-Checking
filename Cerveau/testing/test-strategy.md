@@ -2,7 +2,7 @@
 type: testing
 statut: implémenté
 verifie: 2026-10-14
-commit: cd82ad8
+commit: 1985a9a
 sources: [backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/conftest.py, frontend/vite.config.js, frontend/playwright.config.js, .github/workflows/ci.yml]
 ---
 
@@ -28,6 +28,8 @@ sources: [backend/pyproject.toml, backend/config/settings_test.py, backend/conft
 ## Intégration continue (`.github/workflows/ci.yml`)
 À chaque push sur `main` et chaque pull request : backend (ruff + pytest sur MySQL 8), frontend (lint, Vitest,
 build), puis e2e (MySQL + Redis, mots de passe de démo éphémères masqués, traces Playwright en artefact si échec).
+Python 3.12, Node.js 24 ; actions GitHub en v7 (`checkout`, `setup-python`, `setup-node`, `upload-artifact`),
+qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertissement d’obsolescence).
 
 ## Dernière exécution locale connue
 | Date | Contrôle | Résultat |

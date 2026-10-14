@@ -220,3 +220,36 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   correction ; ruff ok ; `makemigrations --check` sans changement ; migration appliquée à une base de démo locale :
   46 inscriptions futures (40 PMD, 6 Public-AMP) → 0, autres cérémonies inchangées.
 - **Risques ou limites :** garde-fou applicatif uniquement (pas de `CHECK` en base) ; `bulk_create` le contourne.
+
+## [2026-10-14] maj | CI : actions GitHub sur Node.js 24
+- **Contexte :** avertissements de la CI : `actions/checkout@v4`, `setup-node@v4` et `setup-python@v5` sont conçues
+  pour Node.js 20 (obsolète) et forcées sur Node.js 24.
+- **Modifications :** `.github/workflows/ci.yml` : `checkout`, `setup-python`, `setup-node` et `upload-artifact` en
+  v7 (`using: node24` vérifié dans leur `action.yml`) ; Node.js de la CI 20 → 24 (Node 20 en fin de vie, 24 = défaut
+  Vercel). Page : `testing/test-strategy.md`.
+- **Validation :** non exécutée : la CI ne peut être vérifiée qu'après un push.
+- **Risques ou limites :** saut de 3 versions majeures pour les actions (options utilisées : `cache`,
+  `cache-dependency-path`, `name`, `path`, toutes conservées) ; à confirmer par le prochain passage de la CI.
+
+## [2026-10-14] maj | Suppression des invités inscrits dans le futur
+- **Contexte :** demande « supprime les invités qui ont une date d'inscription futur » (au lieu de recaler leurs dates).
+- **Modifications :** migration `0008_inscriptions_pas_dans_le_futur` réécrite avant toute application sur une base
+  durable (le déploiement Vercel ne migre pas) : elle **supprime** les invités dont `inscrit_le` est dans le futur ;
+  emails et émargements partent en cascade ; aucune entrée au journal d'audit. Test adapté
+  (`test_migration_supprime_les_inscriptions_futures`). Page : `architecture/data-model.md`.
+- **Validation :** ruff ok ; pytest SQLite 206/207 (échec connu propre à SQLite) ; copie de la base e2e locale :
+  1 216 → 1 170 invités, 46 inscriptions futures → 0, aucun email orphelin.
+- **Risques ou limites :** suppression définitive. Pas encore appliquée sur Neon (environnement Vercel) : nécessite
+  commit, push, déploiement du backend puis `migrate` avec les variables de production.
+
+## [2026-10-14] maj | Refonte de l'écran Emails (A7)
+- **Contexte :** retour utilisateur avec capture : les libellés noir et gris au-dessus des aperçus sont illisibles sur
+  le vert, et le design de la page ne plaît pas.
+- **Cause :** le contenu des pages de l'espace événement remonte de 48 px sur l'en-tête dégradé (`-mt-12`, prévu pour
+  des cartes) ; sur A7, les libellés n'étaient pas dans une carte et tombaient sur le dégradé.
+- **Modifications :** `ApercuEmails.jsx` réécrit : une carte blanche par email (icône couleur programme, nom
+  « Invitation » / « Magazine », numéro, moment d'envoi, badge du statut, bloc « Objet »), aperçu encadré de 640 px ;
+  grille en deux colonnes à partir de 1 240 px ; magazine désactivé = carte avec message. Page : `features/emails.md`.
+- **Validation :** ESLint ok, Vitest 52/52, build ok ; captures locales 1 440 px et 390 px (PMD avec magazine,
+  Public-AMP sans magazine) vérifiées à l'œil.
+- **Risques ou limites :** aucun.

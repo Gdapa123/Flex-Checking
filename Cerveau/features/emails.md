@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: 1985a9a
 sources: [backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py]
 ---
 
@@ -39,6 +39,9 @@ L’email n°2 **ne repart jamais automatiquement**, même après annulation pui
 - Boutons de l’email → page publique `/i/<lien>/pratique#agenda` ou `#itineraire`.
 - Expéditeur : `« Flex’Checking · MDE Business School » <DEFAULT_FROM_EMAIL>`.
 - Aperçu : HTML réel avec images en data URI (`apercu=True`), utilisé par le super admin et l’écran admin A7.
+- Écran A7 (`frontend/src/features/admin/ApercuEmails.jsx`) : une carte blanche par email (icône couleur programme,
+  nom, moment d’envoi, badge du statut déclencheur, objet), aperçu dans un cadre de 640 px ; deux colonnes à partir
+  de 1 240 px. Magazine désactivé : carte avec un message à la place de l’aperçu.
 
 ## Tests
 `test_emails.py` (échec après 3 relances, échappement, lien en clair, boutons vers infos pratiques),
