@@ -1,6 +1,8 @@
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models, transaction
 from django.utils import timezone
@@ -178,6 +180,15 @@ class Invite(models.Model):
 
     def __str__(self):
         return f"Invité #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        # Une inscription ne peut pas être datée dans le futur (marge d'une minute pour les horloges).
+        limite = timezone.now() + timedelta(minutes=1)
+        for champ in ("inscrit_le", "consentement_le"):
+            valeur = getattr(self, champ)
+            if valeur is not None and valeur > limite:
+                raise ValidationError({champ: "La date d’inscription ne peut pas être dans le futur."})
+        super().save(*args, **kwargs)
 
     @property
     def civilite_affichee(self):

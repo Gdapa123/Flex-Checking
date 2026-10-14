@@ -205,3 +205,18 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** CI GitHub verte sur `2e31006` ; déploiement Vercel « Ready » ; nouveau texte présent dans
   `AdminApp-*.js` en ligne.
 - **Risques ou limites :** aucun.
+
+## [2026-10-14] maj | Pas d'inscription datée dans le futur
+- **Contexte :** retour utilisateur : les données de démonstration contenaient des invités inscrits à une date pas
+  encore arrivée ; l'utilisateur ne veut pas que ce soit possible.
+- **Cause :** `seed_demo` datait l'inscription « date de l'événement − 8 à 40 jours » : pour PMD (J+49) et
+  Public-AMP (J+57), cela donnait des dates futures. Le formulaire et l'ajout manuel datent déjà à l'heure du serveur.
+- **Modifications :** `seed_demo.py` (inscriptions d'une cérémonie à venir réparties sur les 30 derniers jours) ;
+  `Invite.save()` refuse `inscrit_le` / `consentement_le` futurs ; migration `0008_inscriptions_pas_dans_le_futur`
+  (recale, par événement, les inscriptions et emails d'invitation futurs en conservant leur étalement ; sans effet
+  sur des données réelles) ; tests `test_dates_inscription.py` (3). Pages : `architecture/data-model.md`,
+  `operations/setup.md`, `testing/test-strategy.md`.
+- **Validation :** pytest SQLite 206/207 (échec connu propre à SQLite) ; le test du générateur échoue sans la
+  correction ; ruff ok ; `makemigrations --check` sans changement ; migration appliquée à une base de démo locale :
+  46 inscriptions futures (40 PMD, 6 Public-AMP) → 0, autres cérémonies inchangées.
+- **Risques ou limites :** garde-fou applicatif uniquement (pas de `CHECK` en base) ; `bulk_create` le contourne.

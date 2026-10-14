@@ -291,6 +291,7 @@ class Command(BaseCommand):
         if ev.invites.exists():
             return
         rng = self.rng
+        maintenant_reel = timezone.now()
         codes = rng.sample(range(10000), nb)
         invites, vus = [], set()
         for i in range(nb):
@@ -309,6 +310,9 @@ class Command(BaseCommand):
                     ev.date - timedelta(days=rng.randint(8, 40)), time(rng.randint(8, 21), rng.randint(0, 59))
                 )
             )
+            if inscrit_le > maintenant_reel:
+                # événement à venir : l'inscription a eu lieu dans les 30 derniers jours, jamais dans le futur
+                inscrit_le = maintenant_reel - timedelta(minutes=rng.randint(10, 30 * 24 * 60))
             invites.append(
                 Invite(
                     evenement=ev,

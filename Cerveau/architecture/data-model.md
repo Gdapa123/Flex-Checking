@@ -1,15 +1,15 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: cd82ad8
 sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py]
 ---
 
 # Modèle de données
 
 Base MySQL 8 utf8mb4 (Postgres sur l’environnement Vercel), stockage en UTC, fuseau d’affichage `Africa/Abidjan` (UTC+0).
-Migrations : `0001_initial` → `0007_anciens_slugs` (noyau), `0001_initial` (comptes).
+Migrations : `0001_initial` → `0008_inscriptions_pas_dans_le_futur` (noyau ; la 0008 ne fait que recaler des données), `0001_initial` (comptes).
 
 ## Entités
 
@@ -38,6 +38,10 @@ Table de référence `INSCRIT` (ordre 1), `PRESENT` (ordre 2), créée par data 
 `code` (4 chiffres), `qr_token` (unique, `token_urlsafe(24)`), `consentement_donnees`, `consentement_le`,
 `inscrit_le`, `present_le`, `mode_emargement` (QR_CAMERA | DOUCHETTE | CODE | MANUEL).
 - Contraintes : **unique (evenement, email)** et **unique (evenement, code)**.
+- **Pas d’inscription dans le futur** : `Invite.save()` refuse `inscrit_le` ou `consentement_le` postérieurs à
+  maintenant + 1 min (`ValidationError`). Le formulaire et l’ajout manuel les datent à l’heure du serveur. Garde-fou
+  applicatif seulement (MySQL n’accepte pas `NOW()` dans un `CHECK`) ; `bulk_create` le contourne, d’où le test sur
+  `seed_demo`.
 - Index : (evenement, statut), (evenement, present_le), (evenement, nom), (evenement, inscrit_le).
 
 ### Emargement

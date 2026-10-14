@@ -1,8 +1,8 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: cd82ad8
 sources: [backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/conftest.py, frontend/vite.config.js, frontend/playwright.config.js, .github/workflows/ci.yml]
 ---
 
@@ -11,7 +11,7 @@ sources: [backend/pyproject.toml, backend/config/settings_test.py, backend/conft
 ## Niveaux
 | Niveau | Outil | Emplacement | Volume (2026-10-13) |
 |---|---|---|---|
-| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 203 tests exécutés (14 fichiers, dont `test_audit_securite.py`) |
+| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 206 tests exécutés (15 fichiers, dont `test_audit_securite.py` et `test_dates_inscription.py`) |
 | Utilitaires et composants | Vitest + Testing Library (jsdom) | `frontend/tests/` | 12 fichiers, 52 tests |
 | Parcours complet + accessibilité | Playwright + axe-core | `frontend/e2e/` | 3 tests |
 | Lint / format | ruff · ESLint (jsx-a11y, react-hooks) + Prettier | — | — |
@@ -37,7 +37,7 @@ build), puis e2e (MySQL + Redis, mots de passe de démo éphémères masqués, t
 | 2026-10-13 | `npm run build` | ✅ |
 | 2026-10-13 | `ruff check` + `ruff format --check` | ✅ |
 | 2026-10-13 | `pytest` sur MySQL | ⛔ non exécutable : MySQL injoignable (Docker arrêté) |
-| 2026-10-13 | `pytest` sur SQLite en mémoire (réglages temporaires hors dépôt) | 203/204 ✅ ; seul échec : `test_concurrence_un_seul_emargement`, non exécutable sur SQLite (verrous entre threads) |
+| 2026-10-14 | `pytest` sur SQLite en mémoire (réglages temporaires hors dépôt) | 206/207 ✅ ; seul échec : `test_concurrence_un_seul_emargement`, non exécutable sur SQLite (verrous entre threads) |
 | 2026-10-13 | `npm run e2e` sur SQLite + relais Channels en mémoire (réglages temporaires) | ✅ 3/3 (parcours, temps réel, accessibilité axe-core) |
 | 2026-10-13 | Parcours de la borne dans Chromium (caméra simulée, script hors dépôt) | ✅ 18/18 (verrou, retour, API refusées, recherche réduite, élévation, re-restriction après réglages et annulation, autre disposition depuis une borne) |
 

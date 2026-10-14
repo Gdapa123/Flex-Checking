@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-14
+commit: cd82ad8
 sources: [README.md, docker-compose.yml, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py]
 ---
 
@@ -39,6 +39,8 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
   et affichés une fois ; `--reinitialiser-mots-de-passe` pour les réappliquer.
 - Cérémonies : AMP de l’année **le jour même** (accueil 2 h avant, 40 invités dont 24 présents, 2 emails en échec),
   PMD (inscriptions ouvertes), Public-AMP, Public-ASD, éditions 2023–2025 d’AMP et PMD.
+- Aucune date d’inscription dans le futur : pour une cérémonie à venir, les inscriptions sont réparties sur les
+  30 derniers jours (`test_dates_inscription.py::test_seed_demo_sans_date_future`).
 
 ## Variables d’environnement (noms seulement)
 `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `APP_PUBLIC_URL`, `NUM_PROXIES`,
