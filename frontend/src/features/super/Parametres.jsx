@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
+import { dateLongue } from '../../lib/format';
 import { erreursParChamp, schemaDonneesPersonnelles } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
 import Champ from '../../components/ui/Champ';
+import Dialogue from '../../components/ui/Dialogue';
 import Interrupteur from '../../components/ui/Interrupteur';
 import Segmente from '../../components/ui/Segmente';
 import Squelette from '../../components/ui/Squelette';
@@ -37,6 +39,16 @@ const AIDES = {
   3: '{lien_sondage} place la carte « Donner mon avis » avec la date de clôture (24 h après l’envoi, le lendemain de la cérémonie à 8 h).',
 };
 
+/** Date du jour moins `mois` mois (AAAA-MM-JJ), comme `donnees_personnelles.mois_avant` côté serveur. */
+function moisAvant(mois) {
+  const j = new Date();
+  const cible = new Date(j.getFullYear(), j.getMonth() - mois, 1);
+  const dernier = new Date(cible.getFullYear(), cible.getMonth() + 1, 0).getDate();
+  cible.setDate(Math.min(j.getDate(), dernier));
+  const deux = (n) => String(n).padStart(2, '0');
+  return `${cible.getFullYear()}-${deux(cible.getMonth() + 1)}-${deux(cible.getDate())}`;
+}
+
 /** SA7 · Paramètres : modèles d'emails avec aperçu, durée du scan, son, vibration. */
 export default function Parametres() {
   const qc = useQueryClient();
@@ -49,6 +61,7 @@ export default function Parametres() {
   const [programme, setProgramme] = useState('');
   const [apercu, setApercu] = useState(null);
   const [envoi, setEnvoi] = useState(false);
+  const [confirmerDuree, setConfirmerDuree] = useState(false);
   const zone = useRef(null);
 
   useEffect(() => {
@@ -94,13 +107,19 @@ export default function Parametres() {
     });
   };
 
-  const enregistrer = async () => {
+  const enregistrer = async (dureeConfirmee = false) => {
     const donnees = schemaDonneesPersonnelles.safeParse({
       dureeConservationMois: d.dureeConservationMois,
       contactDonnees: d.contactDonnees ?? '',
     });
     setErreursDonnees(donnees.success ? {} : erreursParChamp(donnees));
     if (!donnees.success) return;
+    // durée raccourcie : l'anonymisation de la nuit suivante est irréversible, on fait confirmer
+    if (!dureeConfirmee && donnees.data.dureeConservationMois < (p?.dureeConservationMois ?? 0)) {
+      setConfirmerDuree(true);
+      return;
+    }
+    setConfirmerDuree(false);
     setEnvoi(true);
     try {
       const r = await api.patch('/parametres/', {
@@ -116,6 +135,7 @@ export default function Parametres() {
         ...donnees.data,
       });
       setD(r);
+      qc.setQueryData(['parametres'], r);
       qc.invalidateQueries({ queryKey: ['parametres-scan'] });
       toast('Paramètres enregistrés');
     } catch (e) {
@@ -317,8 +337,30 @@ export default function Parametres() {
         </div>
       </Carte>
 
+      <Dialogue
+        ouvert={confirmerDuree}
+        tonalite="avert"
+        titre="Raccourcir la durée de conservation ?"
+        onFermer={() => setConfirmerDuree(false)}
+        actions={
+          <>
+            <Bouton variante="secondaire" onClick={() => setConfirmerDuree(false)}>
+              Annuler
+            </Bouton>
+            <Bouton variante="mde" onClick={() => enregistrer(true)}>
+              Confirmer
+            </Bouton>
+          </>
+        }
+      >
+        Dès la nuit prochaine, les invités des cérémonies antérieures au{' '}
+        <strong>{dateLongue(moisAvant(Number(d.dureeConservationMois)), false)}</strong> seront anonymisés{' '}
+        <strong>définitivement</strong> (nom, email, téléphone, entreprise effacés). Cette opération ne peut pas être
+        annulée.
+      </Dialogue>
+
       <div className="flex justify-end">
-        <Bouton variante="mde" chargement={envoi} onClick={enregistrer} className="px-[18px]">
+        <Bouton variante="mde" chargement={envoi} onClick={() => enregistrer()} className="px-[18px]">
           Enregistrer les paramètres
         </Bouton>
       </div>

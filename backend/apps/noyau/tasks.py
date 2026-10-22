@@ -55,6 +55,7 @@ def _envoyer(self, email_id, verrou):
         email.save(update_fields=["statut", "erreur"])
         return
     email.tentatives += 1
+    email.derniere_tentative_le = timezone.now()
     try:
         construire_message(email).send(fail_silently=False)
     except Exception as exc:  # noqa: BLE001 — toute erreur SMTP/rendu compte comme un échec
@@ -62,32 +63,35 @@ def _envoyer(self, email_id, verrou):
         # Sans file d'attente (environnement de test Vercel) : une seule tentative, pour ne jamais bloquer la
         # requête de l'utilisateur ; l'email apparaît alors « à renvoyer » pour un renvoi manuel.
         if email.tentatives <= len(DELAIS) and not settings.ENVOI_SANS_FILE:
-            email.save(update_fields=["tentatives", "erreur"])
+            email.save(update_fields=["tentatives", "derniere_tentative_le", "erreur"])
             logger.warning("Email %s : échec de la tentative %s, nouvel essai programmé.", email.pk, email.tentatives)
             cache.delete(verrou)  # la nouvelle tentative doit pouvoir reprendre le verrou
             raise self.retry(exc=exc, countdown=DELAIS[email.tentatives - 1]) from exc
         email.statut = StatutEmail.ECHEC
-        email.save(update_fields=["tentatives", "erreur", "statut"])
+        email.save(update_fields=["tentatives", "derniere_tentative_le", "erreur", "statut"])
         logger.error("Email %s : échec définitif après %s tentatives.", email.pk, email.tentatives)
         enregistrer_exception(SourceErreur.EMAIL, exc, lieu=f"Email « {email.get_type_display()} »")
         return
     email.statut = StatutEmail.ENVOYE
     email.envoye_le = timezone.now()
     email.erreur = ""
-    email.save(update_fields=["tentatives", "statut", "envoye_le", "erreur"])
+    email.save(update_fields=["tentatives", "derniere_tentative_le", "statut", "envoye_le", "erreur"])
 
 
 @shared_task
 def relancer_emails_en_attente():
     """Emails jamais partis (file d'attente indisponible au moment de l'inscription) : relancés.
 
-    Sont repris les emails sans aucune tentative créés depuis plus de 15 minutes, et ceux qui attendent une
-    nouvelle tentative depuis plus d'une heure (bien au-delà des délais de 30 s, 2 min et 8 min) : leur tentative
-    programmée a été perdue (file Redis vidée ou redémarrée).
+    Sont repris les emails sans aucune tentative créés depuis plus de 15 minutes, et ceux dont la DERNIÈRE tentative
+    date de plus d'une heure (bien au-delà des délais de 30 s, 2 min et 8 min) : leur nouvel essai programmé a été
+    perdu (file Redis vidée ou redémarrée). Un email en plein cycle de nouvelles tentatives n'est pas touché.
     """
     maintenant = timezone.now()
+    il_y_a_1h = maintenant - timedelta(hours=1)
     jamais_partis = Q(tentatives=0, cree_le__lt=maintenant - timedelta(minutes=15))
-    tentative_perdue = Q(tentatives__gte=1, cree_le__lt=maintenant - timedelta(hours=1))
+    tentative_perdue = Q(tentatives__gte=1) & (
+        Q(derniere_tentative_le__lt=il_y_a_1h) | Q(derniere_tentative_le__isnull=True, cree_le__lt=il_y_a_1h)
+    )
     ids = list(
         EmailEnvoye.objects.filter(statut=StatutEmail.EN_ATTENTE)
         .filter(jamais_partis | tentative_perdue)

@@ -81,12 +81,14 @@ def renvoyer_echecs(admin, evenement, type_email):
     _verifier_disponible(evenement, type_email)
     ids_echec = _ids_en_echec(_derniers_statuts(evenement)[type_email])
     envois = EmailEnvoye.objects.filter(pk__in=ids_echec).select_related("invite__statut", "invite__evenement")
-    renvoyables, repondus = None, set()
+    renvoyables = None
     if type_email == TypeEmail.SONDAGE:
-        ouverts = InvitationSondage.objects.filter(invite__evenement=evenement, expire_le__gt=timezone.now())
-        renvoyables = set(ouverts.values_list("invite_id", flat=True))
-        # comptés comme traités sans renvoi : le total ne doit pas révéler qui a répondu (réponses anonymes)
-        repondus = set(ouverts.filter(repondu=True).values_list("invite_id", flat=True))
+        # liens encore ouverts, que l'invité ait répondu ou non : le renvoi ne doit pas révéler qui a répondu
+        renvoyables = set(
+            InvitationSondage.objects.filter(invite__evenement=evenement, expire_le__gt=timezone.now()).values_list(
+                "invite_id", flat=True
+            )
+        )
     with transaction.atomic():
         n = 0
         for envoi in envois:
@@ -94,8 +96,7 @@ def renvoyer_echecs(admin, evenement, type_email):
                 continue  # émargement annulé depuis : ni l'email n°2 ni le sondage ne repartent
             if renvoyables is not None and envoi.invite_id not in renvoyables:
                 continue  # lien expiré (24 h) : le renvoi n'aurait plus de sens
-            if envoi.invite_id not in repondus:
-                emails.planifier(envoi.invite, type_email)
+            emails.planifier(envoi.invite, type_email)
             n += 1
         if n:
             journaliser(admin, "EMAIL_RENVOI", None, evenement=evenement.pk, type=type_email, nb=n)

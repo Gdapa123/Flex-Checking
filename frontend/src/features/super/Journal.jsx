@@ -16,10 +16,10 @@ import { useEvenements, useProgrammes } from './donnees';
 const EXPORTS = [
   ['invites', 'Invités', 'Liste complète des inscrits', 'users'],
   ['presences', 'Présences', 'Heure et mode d’émargement', 'userCheck'],
-  ['emails', 'Suivi des emails', 'Emails n°1 et n°2', 'mail'],
+  ['emails', 'Suivi des emails', 'Emails n°1 à n°3', 'mail'],
   ['journal', 'Journal d’activité', 'Selon les filtres ci-dessous', 'activity'],
 ];
-const CATEGORIES = ['Émargement', 'Invité', 'Email', 'Configuration', 'Export', 'Compte'];
+const CATEGORIES = ['Émargement', 'Invité', 'Email', 'Configuration', 'Export', 'Compte', 'Données personnelles'];
 const SELECT = 'h-11 rounded-petit border border-mde-champ bg-surface px-2.5 text-[14px] font-medium text-mde-texte';
 
 /** SA8 · Exports et journal d'activité filtrable (auteur, action, période). */

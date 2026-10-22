@@ -37,8 +37,8 @@ export default function ConfidentialitePage() {
 
           <Section titre="Données collectées">
             Civilité, nom, prénom, adresse email, téléphone, entreprise et fonction, saisis lors de l’inscription ; puis
-            l’heure de votre passage à l’accueil le jour de la cérémonie. Les avis du questionnaire de satisfaction sont
-            enregistrés de façon anonyme, sans lien avec votre identité.
+            l’heure de votre passage à l’accueil le jour de la cérémonie. Les réponses au questionnaire de satisfaction
+            (notes et commentaire libre) sont enregistrées sans lien avec votre identité.
           </Section>
 
           <Section titre="Finalités">
@@ -49,18 +49,19 @@ export default function ConfidentialitePage() {
 
           <Section titre="Base légale">
             Votre consentement, donné en cochant la case du formulaire d’inscription. Vous pouvez le retirer à tout
-            moment en écrivant à l’adresse ci-dessous ; votre inscription est alors supprimée.
+            moment en écrivant à l’adresse ci-dessous ; la direction des événements supprime alors votre inscription.
           </Section>
 
           <Section titre="Destinataires">
             Uniquement les personnes de MDE Business School chargées de la cérémonie (direction des événements et hôtes
-            d’accueil), chacune limitée aux cérémonies qui la concernent. Les emails sont acheminés par le service de
-            messagerie de MDE.
+            d’accueil), chacune limitée aux cérémonies qui la concernent, ainsi que les prestataires techniques qui,
+            pour le compte de MDE, hébergent l’application et acheminent les emails. Ces prestataires peuvent être
+            situés hors de Côte d’Ivoire ; MDE encadre ces transferts conformément à la loi.
           </Section>
 
           <Section titre="Durée de conservation">
             {duree
-              ? `Vos données sont conservées ${duree} mois après la date de la cérémonie. Elles sont ensuite anonymisées automatiquement : seuls des chiffres (nombre d’inscrits et de présents) sont gardés pour les bilans.`
+              ? `Vos données sont conservées ${duree} mois après la date de la cérémonie. Elles sont ensuite anonymisées automatiquement : seuls des chiffres (nombre d’inscrits et de présents) et les avis anonymes sont gardés pour les bilans.`
               : 'Vos données sont conservées pour une durée limitée après la date de la cérémonie, puis anonymisées automatiquement.'}
           </Section>
 

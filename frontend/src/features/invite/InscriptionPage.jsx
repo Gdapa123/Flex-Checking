@@ -308,7 +308,8 @@ function Formulaire({ ev, slug }) {
                 </a>{' '}
                 et les conditions d’utilisation du service
                 <span className="mt-0.5 block font-normal text-texte-2">
-                  Vos données sont traitées de façon confidentielle et sécurisée, conformément au RGPD.
+                  Vos données sont traitées de façon confidentielle et sécurisée, conformément à la loi ivoirienne n°
+                  2013-450 sur la protection des données personnelles.
                 </span>
               </span>
             </label>

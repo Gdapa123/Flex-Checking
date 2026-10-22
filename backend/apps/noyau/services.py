@@ -161,7 +161,7 @@ def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode,
         maintenant = timezone.now()
         passage = _date_passage(date_client, maintenant)
         rejoue = bool(date_client and (maintenant - date_client).total_seconds() > 120)
-        if rejoue and invite.emargements.filter(annule_le__gt=passage).exists():
+        if rejoue and invite.emargements.filter(annule_le__gt=date_client).exists():
             return _resultat(ANNULE_DEPUIS, evenement, invite=invite)
         invite.statut = Statut.par_code(statuts.PRESENT)
         invite.present_le = passage

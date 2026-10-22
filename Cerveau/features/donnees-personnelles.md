@@ -24,10 +24,11 @@ traçabilité. Voir [ADR-013](../decisions/ADR-013-conservation-limitee-anonymis
 
 ## Règles fonctionnelles (serveur)
 - ✅ `donnees_personnelles.evenements_expires` : `Evenement.date` antérieure à aujourd'hui moins
-  `Parametres.duree_conservation_mois` (calcul `mois_avant`), et `anonymise_le` vide.
+  `Parametres.duree_conservation_mois` (calcul `mois_avant`) **et** au moins un invité encore identifiable (email
+  hors `@anonyme.invalid`) : un invité ajouté ou corrigé après une première passe est anonymisé à la suivante.
 - ✅ `anonymiser_evenement` (transaction, verrou sur la cérémonie, idempotent) : nom « Anonyme », prénom, téléphone,
-  entreprise, fonction vidés, email remplacé par `anonyme-<id>@anonyme.invalid` (domaine réservé, unicité
-  conservée), nouveau `qr_token` (l'ancien QR ne désigne plus personne) ; messages d'erreur d'envoi vidés ;
+  entreprise, fonction et date du consentement vidés, email remplacé par `anonyme-<id>@anonyme.invalid` (domaine réservé, unicité
+  conservée), nouveau `qr_token` (l'ancien QR ne désigne plus personne) ; messages d'erreur d'envoi et motifs d'annulation d'émargement vidés ;
   liens personnels du sondage supprimés (les avis, déjà anonymes, restent) ; `Evenement.anonymise_le` daté ;
   journal `DONNEES_ANONYMISATION` (catégorie « Données personnelles », sans auteur) ; caches et temps réel
   invalidés. Conservés : civilité, code, statut, heures et modes d'émargement (bilans chiffrés).
@@ -63,6 +64,8 @@ traçabilité. Voir [ADR-013](../decisions/ADR-013-conservation-limitee-anonymis
   (`frontend/e2e/accessibilite.spec.js`).
 
 ## Limites et décisions liées
+- Raccourcir la durée de conservation demande une confirmation (dialogue indiquant la date à partir de laquelle
+  les invités seront anonymisés, `Parametres.jsx`).
 - Anonymisation **irréversible** ; la suppression d'un invité à sa demande reste manuelle (super admin, fiche invité).
 - Les sauvegardes antérieures contiennent encore les données : leur durée de conservation et leur chiffrement sont
   traités dans [deploiement-infomaniak](../operations/deploiement-infomaniak.md).

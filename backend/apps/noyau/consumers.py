@@ -87,6 +87,7 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.groupes = set()
         self.minuteur = None
+        self.jeton = None
         await self.accept()
         if self.channel_layer is None:
             # Temps réel désactivé (pas de Redis) : fermeture avec un code explicite, pour que le navigateur sache que
@@ -147,6 +148,11 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
             return
         await self._rejoindre(await _groupes(admin))
         await self.send_json({"type": "maj", "sujets": ["moi", "evenements", "evenement"], "evenements": []})
+
+    async def session_fermee(self, message):
+        """Déconnexion d'une session du compte : ne ferme que la connexion ouverte avec ce jeton."""
+        if self.jeton is not None and self.jeton.get("jti") in message["sujets"]:
+            await self.close(code=FERMETURE_SESSION)
 
     async def fermer(self, message):
         await self.close(code=FERMETURE_COMPTE)

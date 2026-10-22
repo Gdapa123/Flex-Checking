@@ -257,6 +257,7 @@ class EmailEnvoye(models.Model):
     type = models.CharField(max_length=12, choices=TypeEmail.choices)
     statut = models.CharField(max_length=12, choices=StatutEmail.choices, default=StatutEmail.EN_ATTENTE)
     tentatives = models.PositiveSmallIntegerField(default=0)
+    derniere_tentative_le = models.DateTimeField(null=True, blank=True)
     envoye_le = models.DateTimeField(null=True, blank=True)
     erreur = models.TextField(blank=True)
     cree_le = models.DateTimeField(default=timezone.now)

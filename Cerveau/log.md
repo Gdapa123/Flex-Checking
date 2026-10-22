@@ -506,3 +506,46 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Risques ou limites :** anonymisation irréversible (durée réglée trop courte = effacement dès la nuit suivante) ;
   sauvegardes antérieures non anonymisées (chiffrement et rotation dans le guide) ; formalités ARTCI à vérifier par
   MDE ; texte du consentement toujours « conformément au RGPD » (R8, non modifié).
+
+## [2026-10-22] architecture | Docker : images allégées, journaux plafonnés, disque libéré
+
+- **Contexte :** « docker est full » : Docker Desktop bloqué (« no space left on device » : disque du Mac à 2,2 Go
+  libres), demande d'optimiser images et conteneurs sans toucher aux fonctionnalités ni à la sécurité.
+- **Modifications :** `backend/Dockerfile` en plusieurs étapes (compilateurs seulement dans l'étape `construction`,
+  image d'exécution avec `libmariadb3` et `/opt/venv`) ; compose : rotation des journaux (`x-journaux`, 3 × 10 Mo),
+  image `dev` unique, journaux binaires MySQL 3 jours (dev et prod). Ménage : conteneurs arrêtés, images inutilisées
+  (anciennes images du backend, `flex-vercel-test`, `postgres:16-alpine`, `node:20-alpine`, `ubuntu`,
+  `hello-world`), 3 volumes anonymes orphelins (anciennes bases Postgres de test), cache de construction ; caches
+  npm et pip du poste vidés. Volumes nommés conservés.
+- **Fichiers concernés :** `backend/Dockerfile`, `docker-compose.yml`, `docker-compose.prod.yml`.
+- **Validation :** image `prod` 558 Mo (≈ 1 Go avant), sans compilateur, utilisateur `flex`, modules natifs chargés,
+  `/api/sante/` et `/api/public/confidentialite/` en 200 contre MySQL + Redis ; image `dev` 617 Mo, **264 tests
+  passés** dans le conteneur ; `docker compose config` valide (dev et prod). `Docker.raw` 8,1 → 5,1 Go ; disque du Mac
+  2,2 → 6,5 Go libres.
+- **Risques ou limites :** le disque du Mac reste presque plein (6,5 Go) : Docker se bloquera de nouveau s'il se
+  remplit ; les images de base (`python:3.12-slim`, `mysql:8.0`) ne sont pas épinglées par empreinte (R22).
+
+## [2026-10-22] sécurité | Revue de code de d91d426 et des optimisations Docker : 13 corrections
+
+- **Contexte :** demande « test, /code-review, corrige les failles, puis commit, push et deploy ».
+- **Modifications :**
+  - Sondage : renvoi individuel et groupé identiques que l'invité ait répondu ou non (réponse, journal, statut,
+    envoi) ; plus aucun moyen de déduire qui a répondu (`sondage_repondu` supprimé).
+  - Données personnelles : invités ajoutés après une anonymisation traités à la passe suivante
+    (`evenements_expires` par invités identifiables) ; `consentement_le` et motifs d'annulation effacés ;
+    confirmation avant de raccourcir la durée ; politique de confidentialité alignée sur le fonctionnement réel
+    (prestataires techniques et transferts, retrait du consentement, avis anonymes conservés) ; consentement :
+    « conformément à la loi ivoirienne n° 2013-450 » au lieu de « RGPD » (R8) ; catégorie « Données personnelles »
+    dans le filtre du journal.
+  - Borne : jeton « C'est moi » jugé à l'heure du passage (5 min, rejeu jusqu'à 12 h) → plus de passage hors ligne
+    perdu ; garde `ANNULE_DEPUIS` comparée à l'heure de l'appareil (rejeu de plus de 12 h compris).
+  - Emails : `Message-ID` incluant l'hôte public et la date de création (base de test ≠ production) ; champ
+    `EmailEnvoye.derniere_tentative_le` (migration `0011`) : la relance ne reprend que les envois dont la dernière
+    tentative date de plus d'1 h.
+  - Sessions : course des onglets limitée à un jeton émis dans la fenêtre de la rotation ; déconnexion → message
+    `session_fermee` qui ne ferme que la connexion temps réel de ce jeton (sans réveiller les autres sessions).
+  - MySQL : journaux binaires 7 jours (et non 3) tant que les sauvegardes ne sont pas automatisées dans le dépôt.
+- **Écarté (décision MDE, R19) :** blocage de la borne après 10 codes faux (déni de service possible) contre
+  devinette des codes : inchangé.
+- **Validation :** pytest MySQL **266 passed** ; ruff OK ; Vitest **68/68** ; ESLint + Prettier OK ; build OK ;
+  Playwright **3/3** ; image prod reconstruite et vérifiée (santé 200).

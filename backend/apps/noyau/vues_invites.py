@@ -31,7 +31,7 @@ from .serializers import (
     ModificationInviteSerializer,
     invites_annotes,
 )
-from .sondages import sondage_renvoyable, sondage_repondu
+from .sondages import sondage_renvoyable
 from .suivi_emails import magazine_disponible
 from .taches import DOSSIER, DUREE, SEUIL_ASYNCHRONE, creer_tache, lire_tache, tache_action_groupee, tache_export
 from .validation import sans_controle
@@ -261,9 +261,6 @@ class RenvoiEmailView(APIView):
                 "SONDAGE_INDISPONIBLE",
                 "Le sondage ne peut être renvoyé que si son envoi a échoué, pendant ses 24 heures d’ouverture.",
             )
-        if type_email == TypeEmail.SONDAGE and sondage_repondu(invite):
-            # même réponse qu'un renvoi effectif : l'admin ne doit pas apprendre qui a répondu
-            return Response(status=status.HTTP_202_ACCEPTED)
         emails.planifier(invite, type_email)
         journaliser(request.user, "EMAIL_RENVOI", invite, evenement=invite.evenement_id, type=type_email)
         return Response({"detail": "Email programmé."}, status=status.HTTP_202_ACCEPTED)

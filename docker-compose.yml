@@ -1,9 +1,18 @@
 name: flex-checking
 
+# journaux des conteneurs plafonnés (3 fichiers de 10 Mo par service) : sans limite, ils remplissent le disque
+x-journaux: &journaux
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 x-backend: &backend
+  logging: *journaux
   build:
     context: ./backend
     target: dev
+  image: flex-checking-backend:dev  # une image partagée par django, celery et celery-beat
   env_file: .env
   environment:
     DB_HOST: mysql
@@ -30,7 +39,8 @@ x-backend: &backend
 services:
   mysql:
     image: mysql:8.0
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00", "--max-connections=300"]
+    logging: *journaux
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00", "--max-connections=300", "--binlog-expire-logs-seconds=604800"]
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -47,12 +57,14 @@ services:
 
   redis:
     image: redis:7-alpine
+    logging: *journaux
     # poste local seulement : Redis n'a pas de mot de passe en développement
     ports: ["127.0.0.1:6380:6379"]
 
   # Boîte mail de test : interface http://localhost:8025, SMTP localhost:1025 (accessibles depuis ce poste seulement)
   mailpit:
     image: axllent/mailpit:v1.21.8
+    logging: *journaux
     ports: ["127.0.0.1:8025:8025", "127.0.0.1:1025:1025"]
     environment:
       MP_MAX_MESSAGES: "2000"
@@ -74,6 +86,7 @@ services:
 
   frontend:
     image: node:24-alpine
+    logging: *journaux
     working_dir: /app
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
     environment:
@@ -87,6 +100,7 @@ services:
 
   proxy:
     image: caddy:2-alpine
+    logging: *journaux
     volumes:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./infra/certs:/certs:ro

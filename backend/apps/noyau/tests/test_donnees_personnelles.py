@@ -113,3 +113,24 @@ def test_cron_sans_file_anonymise_aussi(programme, settings):
     nouvel_invite(_ceremonie_passee(programme, 60))
     r = APIClient().get("/api/taches-planifiees/sondages/", HTTP_AUTHORIZATION=f"Bearer {'s' * 40}")
     assert r.status_code == 200 and r.json()["anonymisation"] == {"evenements": 1, "invites": 1}
+
+
+def test_invite_ajoute_apres_anonymisation_et_motifs_effaces(programme, admin, super_admin):
+    from apps.noyau import services
+    from apps.noyau.models import Emargement
+
+    p = Parametres.charger()
+    p.duree_conservation_mois = 1
+    p.save()
+    ev = _ceremonie_passee(programme, 60)
+    inv = nouvel_invite(ev, email="a@sib.ci")
+    r = services.emarger(ev, admin, invite_id=inv.pk, mode="MANUEL", appareil="TABLETTE")
+    services.annuler_emargement(Emargement.objects.get(pk=r["emargement_id"]), super_admin, "M. Kouassi est parti")
+    assert anonymiser_donnees_expirees() == {"evenements": 1, "invites": 1}
+    assert Emargement.objects.get(pk=r["emargement_id"]).motif_annulation == ""
+    # un invité ajouté ensuite sur la même cérémonie est anonymisé à la passe suivante
+    tardif = nouvel_invite(ev, email="tardif@sib.ci")
+    assert anonymiser_donnees_expirees() == {"evenements": 1, "invites": 1}
+    tardif.refresh_from_db()
+    assert tardif.email.endswith("@anonyme.invalid") and tardif.consentement_le is None
+    assert anonymiser_donnees_expirees() == {"evenements": 0, "invites": 0}

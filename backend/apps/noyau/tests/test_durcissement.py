@@ -4,6 +4,7 @@ concurrence, seed_demo hors développement."""
 
 import threading
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 import pytest
 from django.core import mail
@@ -50,14 +51,14 @@ def test_renvoi_du_sondage_ne_revele_pas_qui_a_repondu(ceremonie_hier, admin):  
         c.post(f"/api/invites/{i.pk}/renvoi-email/", {"type": "SONDAGE"}, format="json").status_code for i in (a, b)
     ]
     assert codes == [409, 409]
-    # envoi en échec : même réponse pour les deux, mais seul celui qui n'a pas répondu reçoit l'email
+    # envoi en échec : traitement identique (réponse, email, statut), que l'invité ait répondu ou non
     EmailEnvoye.objects.filter(type=TypeEmail.SONDAGE).update(statut=StatutEmail.ECHEC)
     mail.outbox.clear()
-    codes = [
-        c.post(f"/api/invites/{i.pk}/renvoi-email/", {"type": "SONDAGE"}, format="json").status_code for i in (a, b)
-    ]
-    assert codes == [202, 202]
-    assert [m.to for m in mail.outbox] == [["b@exemple.ci"]]
+    reponses = [c.post(f"/api/invites/{i.pk}/renvoi-email/", {"type": "SONDAGE"}, format="json") for i in (a, b)]
+    assert [r.status_code for r in reponses] == [202, 202] and reponses[0].content == reponses[1].content
+    assert sorted(m.to[0] for m in mail.outbox) == ["a@exemple.ci", "b@exemple.ci"]
+    for i in (a, b):
+        assert EmailEnvoye.objects.filter(invite=i, type=TypeEmail.SONDAGE).latest("cree_le").statut == "ENVOYE"
 
 
 def test_borne_limite_les_codes_tires_au_hasard(admin, evenement):
@@ -99,15 +100,27 @@ def test_message_id_stable_par_envoi(evenement):
     premier = emails.construire_message(envoi).extra_headers["Message-ID"]
     assert premier == emails.construire_message(envoi).extra_headers["Message-ID"]
     assert str(envoi.pk) in premier
+    # l'hôte public fait partie de l'identifiant : la base de test et la production ne se confondent pas
+    from django.conf import settings
+
+    assert (urlsplit(settings.APP_PUBLIC_URL).hostname or "local") in premier
 
 
 def test_relance_d_une_tentative_perdue(evenement):
     inv = nouvel_invite(evenement)
     envoi = EmailEnvoye.objects.filter(invite=inv).first()
+    deux_heures = timezone.now() - timedelta(hours=2)
+    # en plein cycle de nouvelles tentatives (dernière il y a 1 min) : pas de relance anticipée
     EmailEnvoye.objects.filter(pk=envoi.pk).update(
-        statut=StatutEmail.EN_ATTENTE, tentatives=2, cree_le=timezone.now() - timedelta(hours=2)
+        statut=StatutEmail.EN_ATTENTE,
+        tentatives=1,
+        cree_le=deux_heures,
+        derniere_tentative_le=timezone.now() - timedelta(minutes=1),
     )
-    mail.outbox.clear()
+    relancer_emails_en_attente()
+    assert EmailEnvoye.objects.get(pk=envoi.pk).statut == StatutEmail.EN_ATTENTE
+    # dernière tentative il y a 2 h : son nouvel essai a été perdu, l'email est relancé
+    EmailEnvoye.objects.filter(pk=envoi.pk).update(derniere_tentative_le=deux_heures)
     relancer_emails_en_attente()
     assert EmailEnvoye.objects.get(pk=envoi.pk).statut == StatutEmail.ENVOYE
 
@@ -123,6 +136,12 @@ def test_scan_hors_ligne_rejoue_apres_annulation(evenement, admin, super_admin):
     )
     assert r["resultat"] == services.ANNULE_DEPUIS
     assert Invite.objects.get(pk=inv.pk).statut.code == "INSCRIT"
+    # rejeu d'un scan de plus de 12 h (l'heure retenue serait « maintenant ») : l'annulation l'emporte aussi
+    tres_ancien = timezone.now() - timedelta(hours=13)
+    r = services.emarger(
+        evenement, admin, invite_id=inv.pk, mode="QR_CAMERA", appareil="TELEPHONE", date_client=tres_ancien
+    )
+    assert r["resultat"] == services.ANNULE_DEPUIS
     # un nouveau scan en direct, lui, refait passer l'invité présent
     r = services.emarger(evenement, admin, invite_id=inv.pk, mode="MANUEL", appareil="TABLETTE")
     assert r["resultat"] == services.PRESENT
@@ -169,3 +188,22 @@ def test_seed_demo_refuse_hors_developpement(settings):
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("seed_demo", verbosity=0)
+
+
+def test_c_est_moi_touche_hors_ligne_puis_synchronise(admin, evenement):
+    """Le jeton de « C'est moi » vaut 5 min à l'heure du passage : synchronisé 20 min plus tard, il reste accepté."""
+    import time as horloge
+
+    from django.core import signing
+
+    from apps.noyau.vues_scan import SEL_CHOIX_BORNE, choix_borne_valide, jeton_choix_borne
+
+    inv = nouvel_invite(evenement)
+    maintenant = timezone.now()
+    jeton = jeton_choix_borne(admin, evenement, inv.pk)
+    assert choix_borne_valide(jeton, admin, evenement, inv.pk)
+    assert not choix_borne_valide(jeton, admin, evenement, inv.pk + 1)  # autre invité
+    ancien = signing.dumps([admin.pk, evenement.pk, inv.pk, int(horloge.time()) - 20 * 60], salt=SEL_CHOIX_BORNE)
+    assert not choix_borne_valide(ancien, admin, evenement, inv.pk)  # passage « maintenant » : trop tard
+    assert choix_borne_valide(ancien, admin, evenement, inv.pk, maintenant - timedelta(minutes=18))  # hors ligne
+    assert not choix_borne_valide("[1, 2, 3]", admin, evenement, inv.pk)  # jeton non signé

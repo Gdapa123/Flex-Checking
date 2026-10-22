@@ -28,6 +28,20 @@ docker compose exec django python manage.py seed_demo
 | frontend (Vite, image `node:24-alpine`) | 5173, poste local seulement (les téléphones passent par le proxy HTTPS) |
 | proxy (Caddy) | 443 poste local seulement (`flex-checking.localhost`) ; **8443 ouvert au réseau local** (scan sur téléphone) |
 
+## Images et espace disque (2026-10-22)
+- `backend/Dockerfile` en plusieurs étapes : `construction` (compilateurs, `mysqlclient`) → `base` (Python + `libmariadb3`
+  seulement, environnement `/opt/venv` copié) → `dev` / `prod`. Mesuré le 2026-10-22 : image `prod` **558 Mo**
+  (≈ 1 Go avant), `dev` 617 Mo ; aucun compilateur dans l'image livrée ; utilisateur `flex` ; 264 tests passés dans
+  l'image `dev`, contrôle de santé 200 avec l'image `prod`.
+- Développement : une seule image `flex-checking-backend:dev` pour django, celery et celery-beat.
+- Journaux des conteneurs plafonnés (`x-journaux` : 3 × 10 Mo par service) dans les deux fichiers compose ; journaux
+  binaires MySQL gardés 3 jours (`--binlog-expire-logs-seconds=259200`).
+- Ménage sans perte de données (garde les volumes nommés `mysql-data`, `frontend-node-modules`) :
+  `docker compose down` · `docker image prune` · `docker builder prune -af` · `docker volume prune` (volumes
+  anonymes inutilisés seulement). Ne jamais lancer `docker compose down -v` ni `docker volume rm …mysql-data`.
+- ⚠️ Docker Desktop se bloque si le disque du Mac est plein (« no space left on device » dans
+  `~/Library/Containers/com.docker.docker/Data/log/host/com.docker.backend.log`) : libérer de la place puis relancer.
+
 ## Sans Docker (hors MySQL / Redis)
 Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PATH=/opt/homebrew/opt/mysql-client/lib/pkgconfig`),
 `migrate`, `seed_demo`, `CELERY_TASK_ALWAYS_EAGER=1 JWT_COOKIE_SECURE=0 runserver`. Frontend : `npm install`,

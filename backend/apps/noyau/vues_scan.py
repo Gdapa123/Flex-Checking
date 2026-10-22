@@ -1,5 +1,7 @@
 """Scan : émargement (QR, douchette, code, manuel), annulation, derniers passages."""
 
+import time
+
 from django.core import signing
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
@@ -37,17 +39,25 @@ DUREE_CHOIX_BORNE_S = 300
 MANUELS_BORNE_PAR_MINUTE = 12
 
 
+# passage mis en file hors ligne : rejoué au plus 12 h plus tard (comme `services._date_passage`)
+DELAI_REJEU_CHOIX_S = 12 * 3600
+
+
 def jeton_choix_borne(user, evenement, invite_id):
-    return signing.dumps([user.pk, evenement.pk, invite_id], salt=SEL_CHOIX_BORNE)
+    return signing.dumps([user.pk, evenement.pk, invite_id, int(time.time())], salt=SEL_CHOIX_BORNE)
 
 
-def choix_borne_valide(jeton, user, evenement, invite_id):
+def choix_borne_valide(jeton, user, evenement, invite_id, date_client=None):
+    """Jeton signé valable 5 min après son émission, mesurées à l'heure du passage : un « C'est moi » touché hors
+    ligne puis synchronisé plus tard reste accepté si le passage a eu lieu dans les 5 min (et dans les 12 h)."""
     try:
-        return signing.loads(jeton or "", salt=SEL_CHOIX_BORNE, max_age=DUREE_CHOIX_BORNE_S) == [
-            user.pk,
-            evenement.pk,
-            invite_id,
-        ]
+        valeur = signing.loads(jeton or "", salt=SEL_CHOIX_BORNE, max_age=DELAI_REJEU_CHOIX_S)
+        if not isinstance(valeur, list) or len(valeur) != 4 or valeur[:3] != [user.pk, evenement.pk, invite_id]:
+            return False
+        maintenant = time.time()
+        passage = date_client.timestamp() if date_client else maintenant
+        passage = min(passage, maintenant)  # une heure d'appareil dans le futur ne prolonge pas le jeton
+        return valeur[3] - 60 <= passage <= valeur[3] + DUREE_CHOIX_BORNE_S
     except signing.BadSignature:
         return False
 
@@ -67,7 +77,9 @@ class EmargementView(APIView):
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         if est_borne(request.auth) and d.get("invite_id"):
-            if not choix_borne_valide(d.get("choix_borne"), request.user, evenement, d["invite_id"]):
+            if not choix_borne_valide(
+                d.get("choix_borne"), request.user, evenement, d["invite_id"], d.get("date_client")
+            ):
                 return Response(
                     {"code": "CHOIX_BORNE_INVALIDE", "detail": "Recherchez votre nom puis touchez « C’est moi »."},
                     status=status.HTTP_403_FORBIDDEN,

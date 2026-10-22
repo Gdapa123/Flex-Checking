@@ -11,6 +11,7 @@ import logging
 import re
 from email.mime.image import MIMEImage
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -261,7 +262,11 @@ def construire_message(email_envoye):
     # identifiant stable par envoi : si une relance renvoie le même email après une panne du worker (livraison « au
     # moins une fois »), la messagerie du destinataire le reconnaît comme un doublon
     domaine = settings.DEFAULT_FROM_EMAIL.rsplit("@", 1)[-1].strip("> ") or "localhost"
-    message.extra_headers["Message-ID"] = f"<flex-checking-{email_envoye.pk}@{domaine}>"
+    # hôte et date de création : deux bases (test, production) n'ont jamais le même identifiant pour un même numéro
+    hote = urlsplit(settings.APP_PUBLIC_URL).hostname or "local"
+    message.extra_headers["Message-ID"] = (
+        f"<flex-checking-{email_envoye.pk}.{int(email_envoye.cree_le.timestamp())}.{hote}@{domaine}>"
+    )
     return message
 
 

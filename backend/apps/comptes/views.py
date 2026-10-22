@@ -211,7 +211,12 @@ def _renouvele_par_un_autre_onglet(raw):
         return False
     if timezone.now() - revoque.blacklisted_at >= timedelta(seconds=DELAI_COURSE_RAFRAICHISSEMENT_S):
         return False
-    return OutstandingToken.objects.filter(user_id=origine.user_id, pk__gt=origine.pk).exists()
+    # le jeton émis par la rotation l'est dans la même transaction que la révocation : un jeton plus récent émis
+    # en dehors de cette fenêtre (autre appareil, nouvelle connexion) ne prouve pas une rotation
+    fenetre = (revoque.blacklisted_at - timedelta(seconds=2), revoque.blacklisted_at + timedelta(seconds=5))
+    return OutstandingToken.objects.filter(
+        user_id=origine.user_id, pk__gt=origine.pk, created_at__range=fenetre
+    ).exists()
 
 
 class RafraichirView(APIView):
@@ -273,8 +278,9 @@ class DeconnexionView(APIView):
             try:
                 jeton_acces = AccessToken(acces)
                 revoquer_acces(jeton_acces)
-                # connexions temps réel de cette session : fermées tout de suite (sinon jusqu'à expiration du jeton)
-                notifier([groupe_compte(jeton_acces["user_id"])], type_message="perimetre")
+                # connexions temps réel de cette session (même jeton) : fermées tout de suite, les autres appareils
+                # du compte ne sont pas sollicités (ils comparent seulement l'identifiant du jeton)
+                notifier([groupe_compte(jeton_acces["user_id"])], (jeton_acces["jti"],), type_message="session_fermee")
             except TokenError:
                 pass
         response = Response(status=status.HTTP_204_NO_CONTENT)

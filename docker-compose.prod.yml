@@ -10,7 +10,15 @@
 #   - Celery : workers d'envoi d'emails indépendants du web.
 name: flex-checking-prod
 
+# journaux des conteneurs plafonnés (3 fichiers de 10 Mo par service) : sans limite, ils remplissent le disque
+x-journaux: &journaux
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 x-backend: &backend
+  logging: *journaux
   build:
     context: ./backend
     target: prod
@@ -34,6 +42,7 @@ x-backend: &backend
 services:
   mysql:
     image: mysql:8.0
+    logging: *journaux
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -41,6 +50,9 @@ services:
       - --max-connections=600
       - --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER:-1G}
       - --skip-name-resolve
+      # journaux binaires gardés 7 jours au lieu de 30 : moins de disque, tout en couvrant une semaine de
+      # restauration à la minute près si la sauvegarde nocturne (guide, étape 14) a manqué
+      - --binlog-expire-logs-seconds=604800
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -57,6 +69,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    logging: *journaux
     command:
       - redis-server
       - --maxmemory
@@ -113,6 +126,7 @@ services:
 
   proxy:
     image: caddy:2-alpine
+    logging: *journaux
     environment:
       DOMAINE: ${DOMAINE:-emargement.mde.ci}
     volumes:
