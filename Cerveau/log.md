@@ -549,3 +549,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   devinette des codes : inchangé.
 - **Validation :** pytest MySQL **266 passed** ; ruff OK ; Vitest **68/68** ; ESLint + Prettier OK ; build OK ;
   Playwright **3/3** ; image prod reconstruite et vérifiée (santé 200).
+
+## [2026-10-22] deploy | Sécurité, données personnelles et revue de code en ligne (Vercel)
+
+- **Contexte :** « si tout est bon commit push et deploy ».
+- **Modifications :** commits `d91d426` et `7e0e071` poussés ; migrations Neon `0010` (données personnelles) et
+  `0011` (dernière tentative d'envoi) appliquées avec l'URL non poolée, avant le déploiement (colonnes ajoutées
+  avec valeur par défaut : compatibles avec la version précédente) ; backend `flex-checking-api` déployé
+  (`vercel deploy --prod`, deux déploiements identiques, le plus récent en production) ; frontend déployé au push.
+  Fichier d'environnement Vercel récupéré dans le dossier temporaire de la session puis supprimé.
+- **Validation :** en ligne : `/api/sante/` 200 ; `/api/public/confidentialite/` 200 (`dureeConservationMois` 12,
+  contact vide) ; page `/confidentialite` servie ; cron sans secret 404 ; `/api/evenements/` sans session 401 ;
+  `auth/rafraichir/` sans CSRF 403 ; HSTS, CSP, Referrer-Policy présents.
+- **Risques ou limites :** renseigner le contact « données personnelles » dans Super admin › Paramètres ;
+  formalités ARTCI à vérifier par MDE.
