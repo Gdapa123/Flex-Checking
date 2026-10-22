@@ -17,7 +17,7 @@ from apps.comptes.throttles import CacheDeSecours, LimiteIpPartagee, LimiteSensi
 from . import caches, emails, services
 from .exceptions import ErreurMetier
 from .ics import bornes, description_agenda, ics_evenement
-from .models import Evenement, Invite, TypeEmail
+from .models import Evenement, Invite, Parametres, TypeEmail
 from .serializers import InscriptionSerializer, tokens_programme
 from .validation import valider_email
 
@@ -109,6 +109,18 @@ class EvenementPublicView(APIView):
             "magazineActif": bool(ev.programme.magazine_actif and ev.programme.lien_magazine),
             "etat": services.FERME if ancien else services.etat_inscriptions(ev),
         }
+
+
+class ConfidentialiteView(APIView):
+    """Informations variables de la politique de confidentialité (page publique `/confidentialite`)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={200: None}, summary="Politique de confidentialité : contact et durée de conservation")
+    def get(self, request):
+        p = Parametres.charger()
+        return Response({"contact": p.contact_donnees, "dureeConservationMois": p.duree_conservation_mois})
 
 
 class InscriptionView(APIView):

@@ -15,7 +15,9 @@ from apps.comptes.permissions import EstSuperAdmin
 from apps.comptes.throttles import LimiteIpPartagee
 
 from . import sondages
+from .donnees_personnelles import anonymiser_donnees_expirees
 from .serializers import tokens_programme
+from .validation import sans_controle_multiligne
 
 COOKIE_APPAREIL = "fc_appareil"
 LONGUEUR_MIN_SECRET = 32
@@ -33,6 +35,9 @@ class ReponseSondageSerializer(serializers.Serializer):
     commentaire = serializers.CharField(required=False, allow_blank=True, max_length=1000, trim_whitespace=True)
     # identifiant tiré par le navigateur (localStorage) : second repère si les cookies sont effacés ou bloqués
     appareil = serializers.RegexField(r"^[A-Za-z0-9_-]{16,64}$", required=False, allow_blank=True)
+
+    def validate_commentaire(self, valeur):
+        return sans_controle_multiligne(valeur)
 
 
 def _invitation(jeton):
@@ -121,7 +126,10 @@ class CronSondagesView(APIView):
         # secret absent ou trop court (devinable) : route désactivée
         if len(attendu) < LONGUEUR_MIN_SECRET or not hmac.compare_digest(recu.encode(), f"Bearer {attendu}".encode()):
             raise Http404  # route invisible sans le secret
-        return Response(sondages.planifier_sondages())
+        resultat = sondages.planifier_sondages()
+        # sans Celery Beat, la conservation limitée des données personnelles passe par le même cron quotidien
+        resultat["anonymisation"] = anonymiser_donnees_expirees()
+        return Response(resultat)
 
 
 class SondagesGlobalView(APIView):

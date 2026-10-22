@@ -97,6 +97,14 @@ def test_super_admin_notifie_pour_tous(super_admin, autre_evenement):
     assert any('"statistiques"' in m for m in recus)
 
 
+def test_deconnexion_ferme_le_temps_reel_de_la_session(admin):
+    from .conftest import client_connecte
+
+    c = client_connecte(admin)
+    fermeture, _ = ecouter(jeton=c.cookies["fc_access"].value, action=lambda: c.post("/api/auth/deconnexion/"))
+    assert fermeture == 4001
+
+
 def test_desactivation_en_cours_de_connexion(admin):
     def desactiver():
         admin.actif = False

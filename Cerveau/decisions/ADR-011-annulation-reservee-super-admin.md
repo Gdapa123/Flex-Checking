@@ -1,9 +1,9 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-14
-commit: 36389e6
-sources: [backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invites/GestionInvites.jsx]
+verifie: 2026-10-21
+commit: be899ff
+sources: [backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invites/GestionInvites.jsx, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_invites.py]
 ---
 
 # ADR-011 — Annulation d'un émargement réservée au super admin
@@ -26,4 +26,11 @@ Les deux routes exigent `EstSuperAdmin` (403 pour un admin). L'interface masque 
 - Une erreur d'émargement à l'accueil doit être signalée au super admin (direction des événements), qui l'annule
   depuis la gestion des invités ou le scan.
 - Valider une présence reste ouvert aux admins (scan, ligne, actions groupées).
-- Tests : `test_annulation_reservee_au_super_admin`, `test_modification_et_historique` (403 pour l'admin).
+- Tests : `test_emargement.py::test_annulation_reservee_au_super_admin`,
+  `test_annulation_puis_reemargement_sans_second_magazine` (annulation par le super admin),
+  `test_invites.py::test_modification_et_historique` (403 pour l'admin).
+- Mise en œuvre vérifiée au commit `be899ff` (livrée par `bd4f807`) : `AnnulationView` et `AnnulerPresenceView`
+  en `EstSuperAdmin` ; côté interface, `peutAnnuler = moi.role === 'SUPER_ADMIN'` dans `ScanPoste.jsx` (outil
+  retiré de la barre, grille de 4 outils au lieu de 5 sur téléphone), `FeuilleReglages` n’affiche le bouton que si
+  `onAnnulation` est fourni, `BoutonPresence` ne rend rien pour un invité présent si le compte n’est pas super admin.
+  Aucun test frontend ni e2e ne couvre le masquage (recherche dans `frontend/tests/` et `frontend/e2e/`).

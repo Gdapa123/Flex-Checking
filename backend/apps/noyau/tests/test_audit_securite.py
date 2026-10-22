@@ -61,6 +61,37 @@ def test_poste_connu_infalsifiable(admin):
     assert _connexion(attaquant, admin.email, MDP, ip="198.51.102.99").status_code == 429
 
 
+def test_poste_connu_reste_limite(admin):
+    """Sur un poste où l'hôte s'est déjà connecté (tablette perdue, borne partagée), les essais restent comptés."""
+    c = APIClient()
+    assert _connexion(c, admin.email, MDP).status_code == 200
+    for i in range(20):
+        assert _connexion(c, admin.email, "faux", ip=f"198.51.103.{i}").status_code == 401
+    assert _connexion(c, admin.email, MDP, ip="198.51.103.99").status_code == 429
+    # ailleurs, l'hôte n'est pas bloqué par les échecs de ce poste
+    assert _connexion(APIClient(), admin.email, MDP, ip="192.0.2.50").status_code == 200
+
+
+def test_rafraichissements_simultanes_sans_deconnexion(admin):
+    """Deux onglets rafraîchissent en même temps : le second ne doit pas effacer les cookies du premier."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+
+    c = client_connecte(admin)
+    ancien = c.cookies["fc_refresh"].value
+    assert c.post("/api/auth/rafraichir/").status_code == 204
+    second = client_connecte(admin)
+    second.cookies["fc_refresh"] = ancien
+    r = second.post("/api/auth/rafraichir/")
+    assert r.status_code == 409 and r.json()["code"] == "SESSION_DEJA_RENOUVELEE", r.content
+    assert "fc_access" not in r.cookies and "fc_refresh" not in r.cookies
+    # passé le délai de course, la réutilisation d'un ancien jeton reste refusée (session expirée)
+    BlacklistedToken.objects.update(blacklisted_at=timezone.now() - timedelta(minutes=5))
+    assert second.post("/api/auth/rafraichir/").status_code == 401
+
+
 def test_compteur_en_base_garde_sa_fenetre(settings):
     """Sans Redis (cache en base), un incrément ne doit pas ramener la fenêtre de comptage à 300 s."""
     import datetime

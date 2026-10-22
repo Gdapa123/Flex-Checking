@@ -4,6 +4,7 @@ from datetime import timedelta
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Q
 from django.utils import timezone
 
 from .erreurs import enregistrer_exception
@@ -80,14 +81,17 @@ def _envoyer(self, email_id, verrou):
 def relancer_emails_en_attente():
     """Emails jamais partis (file d'attente indisponible au moment de l'inscription) : relancés.
 
-    Seuls les emails sans aucune tentative et créés depuis plus de 15 minutes sont repris ; ceux
-    qui attendent une nouvelle tentative programmée sont déjà dans la file.
+    Sont repris les emails sans aucune tentative créés depuis plus de 15 minutes, et ceux qui attendent une
+    nouvelle tentative depuis plus d'une heure (bien au-delà des délais de 30 s, 2 min et 8 min) : leur tentative
+    programmée a été perdue (file Redis vidée ou redémarrée).
     """
-    limite = timezone.now() - timedelta(minutes=15)
+    maintenant = timezone.now()
+    jamais_partis = Q(tentatives=0, cree_le__lt=maintenant - timedelta(minutes=15))
+    tentative_perdue = Q(tentatives__gte=1, cree_le__lt=maintenant - timedelta(hours=1))
     ids = list(
-        EmailEnvoye.objects.filter(statut=StatutEmail.EN_ATTENTE, tentatives=0, cree_le__lt=limite).values_list(
-            "pk", flat=True
-        )[:500]
+        EmailEnvoye.objects.filter(statut=StatutEmail.EN_ATTENTE)
+        .filter(jamais_partis | tentative_perdue)
+        .values_list("pk", flat=True)[:500]
     )
     relances = 0
     for email_id in ids:
@@ -106,6 +110,14 @@ def envoyer_sondages():
     from .sondages import planifier_sondages
 
     return planifier_sondages()["programmes"]
+
+
+@shared_task
+def anonymiser_donnees():
+    """Données personnelles des cérémonies dont la durée de conservation est écoulée : anonymisées."""
+    from .donnees_personnelles import anonymiser_donnees_expirees
+
+    return anonymiser_donnees_expirees()
 
 
 @shared_task

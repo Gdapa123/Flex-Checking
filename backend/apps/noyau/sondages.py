@@ -290,6 +290,16 @@ def repondre(invitation, donnees, *, appareil_cookie, appareil_local):
 
 
 def sondage_renvoyable(invite):
-    """Email n°3 : renvoi possible tant que le lien est ouvert et que l'invité n'a pas répondu."""
+    """Email n°3 : renvoi individuel possible si le dernier envoi a échoué, tant que le lien est ouvert.
+
+    La règle ne dépend pas de la réponse de l'invité : un admin ne doit pas pouvoir savoir qui a répondu
+    (réponses anonymes). Si l'invité a déjà répondu, la vue répond pareil sans rien envoyer."""
     invitation = InvitationSondage.objects.filter(invite=invite).first()
-    return bool(invitation and not invitation.expire and not invitation.repondu)
+    if invitation is None or invitation.expire:
+        return False
+    dernier = invite.emails.filter(type=TypeEmail.SONDAGE).order_by("-cree_le", "-pk").first()
+    return bool(dernier and dernier.statut == StatutEmail.ECHEC)
+
+
+def sondage_repondu(invite):
+    return InvitationSondage.objects.filter(invite=invite, repondu=True).exists()

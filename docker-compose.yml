@@ -60,7 +60,8 @@ services:
   django:
     <<: *backend
     command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
-    ports: ["8000:8000"]
+    # poste local seulement : serveur de développement (DEBUG) ; les téléphones passent par le proxy HTTPS
+    ports: ["127.0.0.1:8000:8000"]
 
   celery:
     <<: *backend
@@ -89,7 +90,8 @@ services:
     volumes:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./infra/certs:/certs:ro
-    ports: ["443:443", "8443:8443"]
+    # 443 (flex-checking.localhost) : poste local seulement ; 8443 : réseau local, pour tester le scan sur téléphone
+    ports: ["127.0.0.1:443:443", "8443:8443"]
     depends_on: [django, frontend]
 
 volumes:

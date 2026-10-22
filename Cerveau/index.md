@@ -1,13 +1,14 @@
 ---
 type: index
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-22
+commit: be899ff
 ---
 
 # Flex’Checking — index du wiki
 
 Point d’entrée de la documentation. L’agent lit cette page en premier pour répondre à une question, puis les
-pages pertinentes, puis vérifie dans le code. Toutes les pages ont été vérifiées le 2026-10-13 sur le commit `dc0c75a`.
+pages pertinentes, puis vérifie dans le code. Toutes les pages ont été revérifiées le 2026-10-21 sur le commit `be899ff` ; les pages touchées par l'audit de
+durcissement du 2026-10-22 (modifications non commitées) l'ont été de nouveau ce jour-là.
 
 ## Règles
 | Page | Description |
@@ -26,7 +27,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R12 (R1 résolu) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R24 (R1, R13, R14, R17 résolus ; R7 atténué) et limitations assumées |
 
 ## Architecture
 | Page | Description |
@@ -42,6 +43,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [features/inscription.md](features/inscription.md) | Lien public, présentation, formulaire, états, confirmation, infos pratiques |
 | [features/emails.md](features/emails.md) | Emails n°1, n°2 et n°3 : déclencheurs, envoi Celery, relances, modèles, gabarits |
 | [features/sondage-satisfaction.md](features/sondage-satisfaction.md) | Email n°3 : sondage le lendemain à 8 h, lien 24 h, une réponse par email et par appareil, analyses |
+| [features/donnees-personnelles.md](features/donnees-personnelles.md) | Politique de confidentialité, durée de conservation, anonymisation automatique des invités |
 | [features/scan-emargement.md](features/scan-emargement.md) | Configuration du poste, dispositions, règle d’émargement, annulation, résultat |
 | [features/hors-ligne.md](features/hors-ligne.md) | File IndexedDB, synchronisation, dernier compte connu |
 | [features/tableau-de-bord.md](features/tableau-de-bord.md) | Choix de la cérémonie, tableau de bord temps réel, aperçu des emails, rapport |
@@ -78,6 +80,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [decisions/ADR-010-mode-borne-serveur.md](decisions/ADR-010-mode-borne-serveur.md) | acceptée | Borne libre-service : session restreinte côté serveur, élévation par le mot de passe de l’hôte |
 | [decisions/ADR-011-annulation-reservee-super-admin.md](decisions/ADR-011-annulation-reservee-super-admin.md) | acceptée | Annuler un émargement ou une présence : super admin uniquement |
 | [decisions/ADR-012-sondage-satisfaction.md](decisions/ADR-012-sondage-satisfaction.md) | acceptée | Sondage : lien personnel 24 h, une réponse par email et par appareil, Beat ou cron |
+| [decisions/ADR-013-conservation-limitee-anonymisation.md](decisions/ADR-013-conservation-limitee-anonymisation.md) | acceptée | Données personnelles : anonymisation automatique après une durée réglable |
 
 ## Tests
 | Page | Description |
@@ -90,6 +93,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 |---|---|
 | [operations/setup.md](operations/setup.md) | Docker Compose, développement sans Docker, données de démo, variables |
 | [operations/deployment.md](operations/deployment.md) | Production Docker, environnement Vercel, tests de charge |
+| [operations/deploiement-infomaniak.md](operations/deploiement-infomaniak.md) | Guide pas à pas : VPS Lite Infomaniak, toutes les fonctionnalités au moindre coût |
 
 ## Gabarits
 [feature](templates/feature-template.md) · [décision](templates/decision-template.md) ·

@@ -46,7 +46,11 @@ const VIBRATIONS = { PRESENT: [60], DEJA_EMARGE: [80, 60, 80], ERREUR: [200, 80,
 
 export function signaler(type, { son = true, vibration = true } = {}) {
   const cle =
-    type === 'CODE_INVALIDE' || type === 'AUTRE_EVENEMENT' ? 'ERREUR' : type === 'HORS_LIGNE' ? 'ATTENTE' : type;
+    type === 'CODE_INVALIDE' || type === 'AUTRE_EVENEMENT' || type === 'ANNULE_DEPUIS'
+      ? 'ERREUR'
+      : type === 'HORS_LIGNE'
+        ? 'ATTENTE'
+        : type;
   if (son) {
     try {
       const c = contexte();

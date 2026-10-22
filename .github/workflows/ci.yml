@@ -1,5 +1,9 @@
 name: CI
 
+# droits minimaux du jeton GITHUB_TOKEN : lecture du dépôt seulement
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]

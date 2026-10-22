@@ -36,7 +36,7 @@ def test_seed_demo_sans_date_future(monkeypatch):
     donnees_reference()
     monkeypatch.setenv("DEMO_MOT_DE_PASSE_SUPER_ADMIN", "Demo-Test-2026!")
     monkeypatch.setenv("DEMO_MOT_DE_PASSE_ADMIN", "Demo-Test-2026!")
-    call_command("seed_demo", verbosity=0)
+    call_command("seed_demo", "--force", verbosity=0)
     maintenant = timezone.now()
     assert Invite.objects.exists()
     assert not Invite.objects.filter(inscrit_le__gt=maintenant).exists()

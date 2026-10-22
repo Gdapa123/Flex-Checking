@@ -79,6 +79,12 @@ async function rejouer(evenementId, envoyer) {
       resultats.push({ id: item.id, resultat: r });
     } catch (e) {
       const s = e?.status;
+      // « C'est moi » de borne rejoué après l'expiration de son jeton (5 min) : refus définitif, à retirer
+      // pour ne pas bloquer les passages suivants (les autres 403, CSRF ou droits, restent en file)
+      if (s === 403 && e?.data?.code === 'CHOIX_BORNE_INVALIDE') {
+        await retirer(item.id);
+        continue;
+      }
       // réseau coupé, limitation, session expirée ou CSRF : on garde la file et on réessaiera plus tard
       if (e instanceof TypeError || s === 0 || s === 429 || s === 401 || s === 403) break;
       if (s >= 500) continue; // erreur serveur : conservé, sans bloquer les passages suivants

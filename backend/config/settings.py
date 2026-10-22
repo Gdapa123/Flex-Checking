@@ -146,7 +146,9 @@ REST_FRAMEWORK = {
     # JSON uniquement : aucun envoi de formulaire ou de fichier n'est attendu, et un formulaire multipart posté depuis
     # un autre site ne doit jamais atteindre les vues (connexion forcée, CSRF).
     "DEFAULT_PARSER_CLASSES": ["djangorestframework_camel_case.parser.CamelCaseJSONParser"],
-    "JSON_UNDERSCOREIZE": {"no_underscore_before_number": True},
+    # « objetEmail1 » → « objet_email_1 » (nom des champs des modèles d'email) : avec no_underscore_before_number,
+    # le parseur produisait « objet_email1 », champ inconnu ignoré en silence (modèles jamais enregistrés)
+    "JSON_UNDERSCOREIZE": {"no_underscore_before_number": False},
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Nombre de proxys de confiance devant Django (Caddy) : l'IP du client est la dernière adresse
@@ -268,6 +270,8 @@ CELERY_BEAT_SCHEDULE = {
     # sondage de satisfaction : 8 h le lendemain de la cérémonie, puis rattrapage toutes les heures jusqu'à 20 h
     # (présence validée tard, Beat indisponible à 8 h) ; idempotent, un seul email par invité
     "envoyer-sondages": {"task": "apps.noyau.tasks.envoyer_sondages", "schedule": crontab(minute=0, hour="8-20")},
+    # données personnelles : anonymisation des cérémonies dont la durée de conservation est écoulée
+    "anonymiser-donnees": {"task": "apps.noyau.tasks.anonymiser_donnees", "schedule": crontab(minute=30, hour=3)},
 }
 # Sans worker ni Beat (environnement de test Vercel) : le cron de la plateforme appelle
 # `GET /api/taches-planifiees/sondages/` avec l'en-tête « Authorization: Bearer <CRON_SECRET> ».

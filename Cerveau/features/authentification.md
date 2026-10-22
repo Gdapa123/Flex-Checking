@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-14
-commit: 36389e6
-sources: [backend/apps/comptes/, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/]
+verifie: 2026-10-22
+commit: be899ff
+sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py]
 ---
 
 # Authentification, sessions et droits
@@ -27,26 +27,43 @@ sources: [backend/apps/comptes/, backend/config/settings.py, frontend/src/lib/ap
   **20 échecs/h par compte visé** (`cle_echecs_connexion`) : chaque essai est compté avant la vérification du mot de
   passe (incrément atomique, pas de contournement par requêtes parallèles) et une connexion réussie remet la série à
   zéro ; le verrouillage n'intervient qu'après 20 échecs d'affilée.
-- **Poste connu** (2026-10-14) : après une connexion réussie, cookie signé `fc_poste` (httpOnly, 90 jours, path
-  `/api/auth/`, empreintes des comptes, 10 au plus). Un poste connu n'est **pas** soumis au blocage par compte : un
-  tiers qui accumule des échecs sur l'email d'un hôte ne peut plus le bloquer le jour J. Cookie infalsifiable
-  (`signing`), limite par IP + email inchangée.
+- **IPv6 regroupée par /64** (`throttles.ident_reseau`, 2026-10-14) : toutes les limites par IP (`LimiteSensible` et
+  la limite anonyme globale `AnonymeThrottle`, `LIMITE_ANONYME`) comptent une adresse IPv6 par son préfixe /64 (une
+  IPv4 mappée `::ffff:…` redevient l'IPv4) ; sinon un client changerait d'adresse à chaque essai.
+- Longueurs bornées : email 254, mots de passe 256 caractères (connexion, changement, vérification).
+- **Poste connu** (2026-10-14, durci le 2026-10-22) : après une connexion réussie, cookie signé `fc_poste`
+  (httpOnly, 90 jours, path `/api/auth/`, empreintes des comptes, 10 au plus). Un poste connu a **son propre
+  compteur** d'échecs (`cle_echecs_connexion(email) + ":poste-connu"`, 20/h) : un tiers qui accumule des échecs sur
+  l'email d'un hôte ne peut pas le bloquer le jour J, mais les essais depuis ce poste (tablette perdue, borne
+  partagée) restent limités (auparavant illimités). Une connexion réussie remet les deux compteurs à zéro. Cookie
+  infalsifiable (`signing`), limite par IP + email inchangée.
 - **Rafraîchissement** (`auth/rafraichir/`) : CSRF exigé (le frontend envoie `X-CSRFToken`) ; jeton verrouillé
   (`select_for_update` sur `OutstandingToken`) : deux rafraîchissements simultanés n'ouvrent pas deux sessions.
+  **Onglets simultanés** (2026-10-22) : si le jeton refusé est authentique (signature et expiration vérifiées) et a
+  été révoqué il y a moins de 30 s (`DELAI_COURSE_RAFRAICHISSEMENT_S`) par une rotation (un jeton plus récent existe
+  pour le compte), `RafraichirView` répond 409 `SESSION_DEJA_RENOUVELEE` **sans effacer les cookies**
+  (`_renouvele_par_un_autre_onglet`) ; une déconnexion ou une révocation n'émettant pas de nouveau jeton reste un
+  401 `SESSION_EXPIREE`.
 - Champ mot de passe avec bouton « Afficher / Masquer » (`Champ`, aussi dans le changement de mot de passe).
 - Deux écrans : `/connexion` (admin, redirection selon le rôle) et `/super/connexion` (univers MDE).
 - Retour après connexion vers `state.depuis`, filtré par `cheminInterne` (pas de redirection ouverte).
+- `oublierMoi` (`useMoi.js`, appelé sur 401 et à la déconnexion) efface aussi l'historique du poste de scan en
+  `sessionStorage` (`fc-scan-historique-*`, `fc-scan-dernier-*`) : aucun nom d'invité ne reste sur une tablette partagée.
 
 ## Requêtes
 - `CookieJWTAuthentication` : lit `fc_access`, refuse compte désactivé et jeton révoqué, **vérifie le CSRF** sur
   les requêtes modifiantes ; `lib/api.js` envoie `X-CSRFToken` et appelle `/api/auth/csrf/` si besoin.
-- 401 → `lib/api.js` tente `/auth/rafraichir/` une fois (rotation + liste noire), sinon émet `fc:session-expiree`.
+- 401 → `lib/api.js` tente `/auth/rafraichir/` une fois (rotation + liste noire ; un 409 compte comme un succès,
+  les cookies de l'autre onglet étant en place) ; sinon, **ou si la requête rejouée reçoit encore 401**, émet
+  `fc:session-expiree`.
 - Permission par défaut `CompteUtilisable` : connecté, actif et **sorti du mot de passe temporaire** ; seuls
   `auth/moi/` et `auth/mot-de-passe/` déclarent `IsAuthenticated`.
 
 ## Déconnexion
 Refresh mis en liste noire **et jeton d'accès révoqué** jusqu'à son expiration (`revoquer_acces`, jti en cache des
-limites) : un jeton volé ne sert plus, y compris pour le WebSocket. Les autres appareils du compte restent connectés.
+limites) : un jeton volé ne sert plus, y compris pour le WebSocket. Depuis le 2026-10-22, la vue notifie
+`perimetre` au groupe du compte (`temps_reel.groupe_compte`) : `TempsReelConsumer.perimetre` ferme aussitôt (4001)
+la connexion temps réel dont le jeton d'accès est révoqué. Les autres appareils du compte restent connectés.
 
 ## Session « borne libre-service » ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md))
 `POST auth/borne/` réémet les jetons avec la claim `borne` (conservée au rafraîchissement). `CompteUtilisable` refuse
@@ -56,7 +73,9 @@ changement de mot de passe interdit. `POST auth/verifier-mot-de-passe/` (5/min, 
 complète ; `auth/moi/` renvoie `borne`.
 
 ## Révocation des sessions
-`Admin.version_session` est copiée dans le jeton (`vs`). Changement ou réinitialisation du mot de passe →
+`Admin.version_session` est copiée dans le jeton (`vs`). Changement ou réinitialisation du mot de passe, ou
+**désactivation du compte** (`AdminViewSet.perform_update`, `nouvelle_version_session`, 2026-10-22 : les sessions
+ne revivent pas si le compte est réactivé avant leur expiration) →
 incrément → tous les jetons antérieurs refusés (API, rafraîchissement, WebSocket). Une mise à niveau silencieuse
 du hachage ne la modifie pas ; un jeton sans `vs` vaut 0.
 
@@ -71,5 +90,9 @@ Seul un 401 déconnecte ; une panne réseau ou serveur affiche « Connexion au s
 sur `/scan` garde le dernier compte connu ([hors-ligne](hors-ligne.md)).
 
 ## Tests
-`test_permissions.py`, `test_securite.py`, `frontend/tests/garde.test.jsx`, `connexion.test.js`.
+`backend/apps/noyau/tests/test_permissions.py`, `test_securite.py`, `test_audit_securite.py` (poste connu
+infalsifiable, CSRF du rafraîchissement, borne conservée au rafraîchissement, regroupement IPv6 /64,
+`test_poste_connu_reste_limite`, `test_rafraichissements_simultanes_sans_deconnexion`), `test_durcissement.py`
+(`test_desactivation_ferme_les_sessions`), `test_temps_reel.py` (`test_deconnexion_ferme_le_temps_reel_de_la_session`),
+`frontend/tests/garde.test.jsx`, `connexion.test.js`.
 Décisions : [ADR-002](../decisions/ADR-002-jwt-cookies-httponly.md), [ADR-003](../decisions/ADR-003-comptes-mot-de-passe-temporaire.md).

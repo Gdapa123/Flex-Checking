@@ -8,6 +8,8 @@ from rest_framework import serializers
 EMAIL_RE = re.compile(r"^[^\s@\x00-\x1f\x7f]+@[^\s@\x00-\x1f\x7f]+\.[a-z]{2,}$", re.IGNORECASE)
 HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 CONTROLE_RE = re.compile(r"[\x00-\x1f\x7f]")
+# texte sur plusieurs lignes : sauts de ligne et tabulation admis, autres caractères de contrôle refusés
+CONTROLE_MULTILIGNE_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 ENTIER_RE = re.compile(r"[0-9]{1,9}")
@@ -38,6 +40,14 @@ def sans_controle(valeur):
     """Refuse les caractères de contrôle (saut de ligne, retour chariot, tabulation…) dans une saisie d'une
     ligne : ils casseraient l'objet des emails, les fichiers .ics et les exports."""
     if CONTROLE_RE.search(valeur or ""):
+        raise serializers.ValidationError("Caractères non autorisés.")
+    return valeur
+
+
+def sans_controle_multiligne(valeur):
+    """Texte libre sur plusieurs lignes (commentaire) : refuse NUL, ESC et autres caractères de contrôle, qui
+    casseraient l'affichage, le rapport PDF et les exports."""
+    if CONTROLE_MULTILIGNE_RE.search(valeur or ""):
         raise serializers.ValidationError("Caractères non autorisés.")
     return valeur
 

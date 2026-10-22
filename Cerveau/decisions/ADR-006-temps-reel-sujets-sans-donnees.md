@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-21
+commit: be899ff
 sources: [backend/apps/noyau/temps_reel.py, backend/apps/noyau/consumers.py, frontend/src/lib/tempsReel.js, README.md]
 ---
 
@@ -27,4 +27,9 @@ aucune donnée personnelle dans les messages ; repli automatique sur l’interro
 ## Conséquences
 - ➕ une seule source de vérité des droits (l’API) ; 500 écrans notifiés en 0,09 s.
 - ➖ chaque notification déclenche des requêtes (absorbées par les caches 30 s invalidés).
-- ➖ nécessite un serveur ASGI et Redis ; sans Redis, pas de temps réel ([ADR-007](ADR-007-environnement-test-vercel.md)).
+- ➖ nécessite un serveur ASGI et Redis ; sans Redis, pas de temps réel ([ADR-007](ADR-007-environnement-test-vercel.md)) :
+  depuis `ffa45e4`, le serveur accepte puis ferme la connexion avec le code **4004** et le navigateur passe à l’état
+  « indisponible » (interrogation périodique, nouvel essai silencieux toutes les 5 min).
+- Mise en œuvre au 2026-10-21 : le principe est inchangé ; le sondage de satisfaction (`bd4f807`) a ajouté le sujet
+  `sondage` (signaux sur `InvitationSondage` et `ReponseSondage`), toujours sans donnée personnelle. Détail :
+  [temps-reel](../features/temps-reel.md).

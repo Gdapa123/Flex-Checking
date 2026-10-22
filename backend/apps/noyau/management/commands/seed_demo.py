@@ -6,7 +6,8 @@ import secrets
 import unicodedata
 from datetime import date, datetime, time, timedelta
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
@@ -177,6 +178,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Autorise la commande hors développement (DEBUG=0), par exemple sur l'environnement de test.",
+        )
+        parser.add_argument(
             "--reinitialiser-mots-de-passe",
             action="store_true",
             help="Réapplique les mots de passe (variables DEMO_*) aux comptes de démonstration existants.",
@@ -190,6 +196,11 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        if not settings.DEBUG and not options.get("force"):
+            raise CommandError(
+                "seed_demo crée des comptes et des invités fictifs : réservé au développement (DEBUG=1). "
+                "Sur un environnement de test, ajoutez --force. Jamais en production."
+            )
         self.reinitialiser = options.get("reinitialiser_mots_de_passe", False)
         self.mdp_generes = []
         self.rng = random.Random(2026)

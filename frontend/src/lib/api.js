@@ -43,7 +43,8 @@ async function rafraichir() {
       setTimeout(() => (rafraichissement = null), 0);
     });
   const r = await rafraichissement;
-  return r.ok;
+  // 409 : un autre onglet vient de renouveler la session, ses cookies sont déjà en place
+  return r.ok || r.status === 409;
 }
 
 /** Rafraîchit la session (cookie d'accès) ; utilisé aussi par la connexion temps réel. */
@@ -77,8 +78,8 @@ export async function requete(url, { method = 'GET', body, params, brut = false,
     signal,
   });
   const authUrl = cible.startsWith('/api/auth/');
-  if (reponse.status === 401 && reessai && !authUrl) {
-    if (await rafraichir()) return requete(url, { method, body, params, brut, signal, reessai: false });
+  if (reponse.status === 401 && !authUrl) {
+    if (reessai && (await rafraichir())) return requete(url, { method, body, params, brut, signal, reessai: false });
     window.dispatchEvent(new CustomEvent('fc:session-expiree'));
   }
   if (brut) {

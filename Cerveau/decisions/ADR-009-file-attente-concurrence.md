@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-21
+commit: be899ff
 sources: [backend/config/concurrence.py, backend/config/asgi.py, backend/apps/noyau/consumers.py, docker-compose.prod.yml, infra/charge/README.md]
 ---
 

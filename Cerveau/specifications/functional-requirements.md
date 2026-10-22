@@ -1,9 +1,9 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-10-14
-commit: 36389e6
-sources: [PLAN.md, backend/apps/noyau/services.py, backend/apps/noyau/tests/]
+verifie: 2026-10-21
+commit: be899ff
+sources: [PLAN.md, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/, frontend/src/features/scan/reglages.js, frontend/src/features/scan/ScanPoste.jsx, frontend/tests/]
 ---
 
 # Exigences fonctionnelles
@@ -33,8 +33,10 @@ le code. Colonne « Preuve » : test automatisé ou fichier qui implémente la r
 | EF-18 | Programmes : couleurs dérivées en thème, contrôle de contraste, activation, magazine | ✅ | `test_programme_crud_et_protection`, `test_tokens_reference` |
 | EF-19 | Comptes admins créés par le super admin avec mot de passe temporaire à changer | ✅ | `test_comptes_admins`, `test_mot_de_passe_temporaire_bloque_l_api` |
 | EF-20 | Modèles d’emails éditables avec variables et aperçu réel | ✅ | `test_parametres_et_apercu` |
-| EF-21 | Durée d’affichage du résultat, son, vibration : globaux, modifiables par appareil | ✅ | `Parametres`, `scan/reglages.js` |
+| EF-21 | Durée d’affichage du résultat, son, vibration : globaux, modifiables par appareil | ✅ | `Parametres` (`son_actif`, `vibration_actif`), `frontend/src/features/scan/reglages.js` |
 | EF-22 | Journal d’activité filtrable (auteur, type, période), sans donnée personnelle | ✅ | `test_journal_filtrable` |
 | EF-23 | Suivi des erreurs techniques par le super admin | ✅ | `test_erreurs.py` |
-| EF-24 | Borne libre-service : recherche après 3 lettres, emails masqués | ✅ | `VueRecherche` (`borne`), `ScanPoste.rechercheActive` |
+| EF-24 | Borne libre-service : recherche réduite (3 caractères par mot, 10 résultats au plus, ni email ni téléphone ni code), session restreinte au scan | ✅ | `vues_scan.RechercheBorneView`, `ScanPoste.rechercheActive`, `test_recherche_de_la_borne_reduite`, `test_borne_ne_donne_acces_qu_au_scan`, `test_borne_emarge_seulement_un_nom_propose_par_la_recherche` |
 | EF-25 | Infos pratiques : agenda (Google, Microsoft 365) et itinéraire | ✅ | `test_infos_agenda_publiques`, `frontend/tests/agenda.test.js` |
+| EF-26 | Email n°3 : sondage de satisfaction aux seuls présents, le lendemain à partir de 8 h ; lien personnel de 24 h, une réponse par lien et par appareil, réponses anonymes ; résultats admin / super admin et section du rapport PDF ([sondage-satisfaction](../features/sondage-satisfaction.md)) | ✅ | `sondages.py`, `test_sondage.py` (`test_envoi_le_lendemain_aux_seuls_presents`, `test_reponse_unique_par_lien`, `test_un_seul_avis_par_appareil`, `test_lien_expire`, `test_reponse_anonyme_en_base`, `test_cron_protege_par_le_secret`, `test_rapport_pdf_avec_satisfaction`), `frontend/tests/sondage.test.jsx` |
+| EF-27 | Écran « Suivi des emails » (A7) : compteurs par email, liste des échecs, renvoi groupé des échecs, email de test au compte connecté ([emails](../features/emails.md)) | ✅ | `suivi_emails.py`, `test_suivi_emails.py`, `frontend/tests/suiviEmails.test.jsx` |

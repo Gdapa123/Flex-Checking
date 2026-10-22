@@ -29,6 +29,7 @@ CATEGORIES = {
     "INSCRIPTIONS_OUVERTURE": "Configuration",
     "INSCRIPTIONS_FERMETURE": "Configuration",
     "PARAMETRES": "Configuration",
+    "DONNEES_ANONYMISATION": "Données personnelles",
     "ADMIN_CREATION": "Compte",
     "ADMIN_MODIFICATION": "Compte",
     "ADMIN_ACTIVATION": "Compte",

@@ -33,6 +33,11 @@ test('accessibilité des écrans principaux', async ({ page }) => {
     )),
   );
   problemes.push(
+    ...(await auditer(page, '/confidentialite', () =>
+      page.getByRole('heading', { name: 'Politique de confidentialité' }).waitFor(),
+    )),
+  );
+  problemes.push(
     ...(await auditer(page, '/i/inexistant', () =>
       page.getByRole('heading', { name: 'Ce lien n’est plus valide' }).waitFor(),
     )),

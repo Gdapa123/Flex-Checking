@@ -31,8 +31,10 @@ from .serializers import (
     ModificationInviteSerializer,
     invites_annotes,
 )
-from .sondages import sondage_renvoyable
+from .sondages import sondage_renvoyable, sondage_repondu
+from .suivi_emails import magazine_disponible
 from .taches import DOSSIER, DUREE, SEUIL_ASYNCHRONE, creer_tache, lire_tache, tache_action_groupee, tache_export
+from .validation import sans_controle
 
 PARAMS_LISTE = [
     OpenApiParameter("q", str, description="Nom, prénom, email, téléphone, entreprise ou code"),
@@ -248,16 +250,20 @@ class RenvoiEmailView(APIView):
         ser.is_valid(raise_exception=True)
         type_email = ser.validated_data["type"]
         if type_email == TypeEmail.MAGAZINE:
-            prog = invite.evenement.programme
-            if invite.statut.code != statuts.PRESENT or not prog.lien_magazine:
+            if invite.statut.code != statuts.PRESENT:
                 raise ErreurMetier("MAGAZINE_INDISPONIBLE", "L’email n°2 n’est disponible que pour un invité présent.")
+            if not magazine_disponible(invite.evenement):
+                raise ErreurMetier("MAGAZINE_INDISPONIBLE", "Le magazine est désactivé pour ce programme.")
         if type_email == TypeEmail.SONDAGE and not invite.evenement.programme.sondage_actif:
             raise ErreurMetier("SONDAGE_INDISPONIBLE", "Le sondage de satisfaction est désactivé pour ce programme.")
         if type_email == TypeEmail.SONDAGE and not sondage_renvoyable(invite):
             raise ErreurMetier(
                 "SONDAGE_INDISPONIBLE",
-                "Le sondage ne peut être renvoyé que pendant ses 24 heures d’ouverture, avant toute réponse.",
+                "Le sondage ne peut être renvoyé que si son envoi a échoué, pendant ses 24 heures d’ouverture.",
             )
+        if type_email == TypeEmail.SONDAGE and sondage_repondu(invite):
+            # même réponse qu'un renvoi effectif : l'admin ne doit pas apprendre qui a répondu
+            return Response(status=status.HTTP_202_ACCEPTED)
         emails.planifier(invite, type_email)
         journaliser(request.user, "EMAIL_RENVOI", invite, evenement=invite.evenement_id, type=type_email)
         return Response({"detail": "Email programmé."}, status=status.HTTP_202_ACCEPTED)
@@ -480,6 +486,9 @@ class TacheFichierView(APIView):
 
 class AnnulerPresenceSerializer(serializers.Serializer):
     motif = serializers.CharField(required=False, allow_blank=True, max_length=200, default="")
+
+    def validate_motif(self, v):
+        return sans_controle(v)
 
 
 class ValiderPresenceView(APIView):

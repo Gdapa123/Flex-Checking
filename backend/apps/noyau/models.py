@@ -53,6 +53,8 @@ class Evenement(models.Model):
     heure_debut = models.TimeField()
     heure_accueil = models.TimeField()
     lieu = models.CharField(max_length=200)
+    # invités anonymisés à l'expiration de la durée de conservation (voir `donnees_personnelles`)
+    anonymise_le = models.DateTimeField(null=True, blank=True)
     lien_carte = models.URLField(blank=True)
     capacite = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     date_limite_inscription = models.DateField()
@@ -321,6 +323,12 @@ class Parametres(models.Model):
     son_actif = models.BooleanField(default=True)
     vibration_actif = models.BooleanField(default=True)
     expediteur = models.CharField(max_length=120, default="Flex’Checking · MDE Business School")
+    # Données personnelles (loi ivoirienne n° 2013-450) : durée de conservation après la cérémonie, au-delà de
+    # laquelle les invités sont anonymisés ; contact affiché sur la page publique de confidentialité.
+    # `db_default` : colonnes ajoutées sans coupure (l'ancienne version du code peut encore insérer pendant le
+    # déploiement).
+    duree_conservation_mois = models.PositiveSmallIntegerField(default=12, db_default=12)
+    contact_donnees = models.EmailField(blank=True, default="", db_default="")
     modifie_le = models.DateTimeField(auto_now=True)
 
     class Meta:

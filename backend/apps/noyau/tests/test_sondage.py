@@ -125,7 +125,7 @@ def test_cron_protege_par_le_secret(ceremonie_hier, settings):
     settings.CRON_SECRET = secret
     assert c.get("/api/taches-planifiees/sondages/", HTTP_AUTHORIZATION="Bearer faux").status_code == 404
     r = c.get("/api/taches-planifiees/sondages/", HTTP_AUTHORIZATION=f"Bearer {secret}")
-    assert r.status_code == 200 and set(r.json()) == {"programmes", "envoyes"}
+    assert r.status_code == 200 and set(r.json()) == {"programmes", "envoyes", "anonymisation"}
 
 
 # ---------------------------------------------------------------- page publique
@@ -200,6 +200,7 @@ def test_validation_des_notes_et_appareil(lien):
     assert c.post(url(lien), {**REPONSE, "noteGlobale": 6}, format="json").status_code == 400
     assert c.post(url(lien), {**REPONSE, "recommandation": 11}, format="json").status_code == 400
     assert c.post(url(lien), {**REPONSE, "commentaire": "x" * 1001}, format="json").status_code == 400
+    assert c.post(url(lien), {**REPONSE, "commentaire": "Bravo\x1b[2J\x00"}, format="json").status_code == 400
     assert public().post(url(lien), REPONSE, format="json").status_code == 400  # ni cookie ni identifiant
 
 

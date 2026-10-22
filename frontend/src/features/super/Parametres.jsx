@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
+import { erreursParChamp, schemaDonneesPersonnelles } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
+import Champ from '../../components/ui/Champ';
 import Interrupteur from '../../components/ui/Interrupteur';
 import Segmente from '../../components/ui/Segmente';
 import Squelette from '../../components/ui/Squelette';
@@ -43,6 +45,7 @@ export default function Parametres() {
   const { data: programmes = [] } = useProgrammes();
   const [d, setD] = useState(null);
   const [onglet, setOnglet] = useState(1);
+  const [erreursDonnees, setErreursDonnees] = useState({});
   const [programme, setProgramme] = useState('');
   const [apercu, setApercu] = useState(null);
   const [envoi, setEnvoi] = useState(false);
@@ -92,6 +95,12 @@ export default function Parametres() {
   };
 
   const enregistrer = async () => {
+    const donnees = schemaDonneesPersonnelles.safeParse({
+      dureeConservationMois: d.dureeConservationMois,
+      contactDonnees: d.contactDonnees ?? '',
+    });
+    setErreursDonnees(donnees.success ? {} : erreursParChamp(donnees));
+    if (!donnees.success) return;
     setEnvoi(true);
     try {
       const r = await api.patch('/parametres/', {
@@ -104,6 +113,7 @@ export default function Parametres() {
         dureeResultatScan: d.dureeResultatScan,
         sonActif: d.sonActif,
         vibrationActif: d.vibrationActif,
+        ...donnees.data,
       });
       setD(r);
       qc.invalidateQueries({ queryKey: ['parametres-scan'] });
@@ -266,6 +276,45 @@ export default function Parametres() {
         <p className="m-0 mt-2 text-[14px] text-mde-texte-2">
           Expéditeur des emails : <strong className="font-semibold text-mde-texte">{d.expediteur}</strong>
         </p>
+      </Carte>
+
+      <Carte mde as="section" className="flex flex-col gap-4 p-6" aria-labelledby="t-donnees">
+        <div className="flex max-w-[620px] flex-col gap-1">
+          <h2 id="t-donnees" className="m-0 text-[17px] font-semibold">
+            Données personnelles
+          </h2>
+          <p className="m-0 text-[15px] text-mde-texte-2">
+            Passé ce délai après une cérémonie, les invités sont anonymisés automatiquement chaque nuit (nom, email,
+            téléphone, entreprise effacés ; seuls les chiffres restent). Ces informations figurent sur la{' '}
+            <a href="/confidentialite" target="_blank" rel="noopener" className="font-semibold text-mde-bordeaux">
+              politique de confidentialité
+            </a>
+            .
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Champ
+            univers="mde"
+            label="Durée de conservation (mois)"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={60}
+            value={d.dureeConservationMois ?? ''}
+            onChange={(e) => setD({ ...d, dureeConservationMois: e.target.value })}
+            erreur={erreursDonnees.dureeConservationMois}
+            aide="Entre 1 et 60 mois après la date de la cérémonie."
+          />
+          <Champ
+            univers="mde"
+            label="Contact données personnelles"
+            type="email"
+            value={d.contactDonnees ?? ''}
+            onChange={(e) => setD({ ...d, contactDonnees: e.target.value })}
+            erreur={erreursDonnees.contactDonnees}
+            aide="Adresse à laquelle les invités exercent leurs droits (accès, suppression…)."
+          />
+        </div>
       </Carte>
 
       <div className="flex justify-end">

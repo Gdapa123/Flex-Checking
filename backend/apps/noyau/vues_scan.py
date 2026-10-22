@@ -14,11 +14,14 @@ from apps.comptes.throttles import CacheDeSecours, LimiteSensible
 from . import services
 from .models import Emargement, Parametres
 from .serializers import EmargementRequeteSerializer, EmargementResultatSerializer, ParametresScanSerializer
+from .validation import sans_controle
 
 # Anti force brute sur les codes à 4 chiffres : on compte les codes INVALIDES par compte et par
 # événement (indépendamment du poste, que le client choisit librement). Une borne très active qui
 # saisit des codes valides n'est jamais bloquée ; une tentative de deviner les codes l'est.
 MAX_CODES_INVALIDES = 30
+# borne libre-service : le public tape les codes lui-même → plafond plus bas contre les codes tirés au hasard
+MAX_CODES_INVALIDES_BORNE = 10
 FENETRE_CODES_S = 10 * 60
 
 
@@ -82,7 +85,8 @@ class EmargementView(APIView):
         # en tombant sur un autre processus. Chaque essai de code est compté AVANT l'émargement (incrément
         # atomique : des requêtes parallèles ne passent pas toutes le contrôle), puis retiré s'il était valide.
         limites = CacheDeSecours()
-        if d.get("code") and limites.incrementer(cle, FENETRE_CODES_S) > MAX_CODES_INVALIDES:
+        plafond = MAX_CODES_INVALIDES_BORNE if est_borne(request.auth) else MAX_CODES_INVALIDES
+        if d.get("code") and limites.incrementer(cle, FENETRE_CODES_S) > plafond:
             return Response(
                 {"code": "TROP_DE_TENTATIVES", "detail": "Trop de codes invalides. Patientez quelques minutes."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -105,6 +109,9 @@ class EmargementView(APIView):
 
 class AnnulationSerializer(serializers.Serializer):
     motif = serializers.CharField(required=False, allow_blank=True, max_length=200, default="")
+
+    def validate_motif(self, v):
+        return sans_controle(v)
 
 
 class AnnulationView(APIView):

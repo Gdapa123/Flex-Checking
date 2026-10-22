@@ -297,7 +297,16 @@ function Formulaire({ ev, slug }) {
                 className="mt-0.5 h-5 w-5 flex-none cursor-pointer accent-p sm:h-[22px] sm:w-[22px]"
               />
               <span className="font-medium text-texte">
-                J’accepte la politique de confidentialité et les conditions d’utilisation du service
+                J’accepte la{' '}
+                <a
+                  href="/confidentialite"
+                  target="_blank"
+                  rel="noopener"
+                  className="font-semibold text-p underline underline-offset-2"
+                >
+                  politique de confidentialité
+                </a>{' '}
+                et les conditions d’utilisation du service
                 <span className="mt-0.5 block font-normal text-texte-2">
                   Vos données sont traitées de façon confidentielle et sécurisée, conformément au RGPD.
                 </span>

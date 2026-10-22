@@ -315,6 +315,10 @@ class AdminViewSet(
             )
         actif = admin.actif
         admin = serializer.save()
+        if actif and not admin.actif:
+            # sessions ouvertes fermées : elles ne doivent pas revivre si le compte est réactivé avant leur expiration
+            nouvelle_version_session(admin)
+            admin.save(update_fields=["version_session"])
         if admin.actif != actif:
             journaliser(self.request.user, "ADMIN_ACTIVATION" if admin.actif else "ADMIN_DESACTIVATION", admin)
         else:
@@ -361,7 +365,9 @@ class ParametresView(APIView):
         ser.is_valid(raise_exception=True)
         ser.save()
         modifies = {
-            k: v for k, v in ser.validated_data.items() if k in ("duree_resultat_scan", "son_actif", "vibration_actif")
+            k: v
+            for k, v in ser.validated_data.items()
+            if k in ("duree_resultat_scan", "son_actif", "vibration_actif", "duree_conservation_mois")
         }
         champs = [k for k in ser.validated_data if k.startswith(("objet_", "corps_"))]
         journaliser(request.user, "PARAMETRES", p, **modifies, modeles=champs)

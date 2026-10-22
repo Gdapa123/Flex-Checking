@@ -11,6 +11,7 @@ import useFocusTrap from '../../components/ui/useFocusTrap';
 import useVerrouDefilement from '../../components/ui/useVerrouDefilement';
 import LienInvalide from './LienInvalide';
 import { EnteteInvite } from './commun';
+import { CONTROLE_MULTILIGNE_RE } from '../../lib/schemas';
 
 const CLE_APPAREIL = 'fc-appareil';
 const NOTES = ['Décevante', 'Moyenne', 'Bien', 'Très bien', 'Excellente'];
@@ -108,7 +109,7 @@ function Formulaire({ jeton, donnees, onTermine }) {
         noteGlobale: globale,
         noteAccueil: accueil,
         recommandation: reco,
-        commentaire: commentaire.trim(),
+        commentaire: commentaire.replace(CONTROLE_MULTILIGNE_RE, '').trim(),
         appareil: identifiantAppareil(),
       });
       onTermine('REPONDU');

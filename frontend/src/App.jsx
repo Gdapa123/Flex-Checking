@@ -7,6 +7,7 @@ const Inscription = lazy(() => import('./features/invite/InscriptionPage'));
 const Confirmation = lazy(() => import('./features/invite/ConfirmationPage'));
 const Pratique = lazy(() => import('./features/invite/PratiquePage'));
 const Sondage = lazy(() => import('./features/invite/SondagePage'));
+const Confidentialite = lazy(() => import('./features/invite/ConfidentialitePage'));
 const ConnexionAdmin = lazy(() => import('./features/auth/ConnexionAdmin'));
 const ConnexionSuper = lazy(() => import('./features/auth/ConnexionSuper'));
 const AdminApp = lazy(() => import('./features/admin/AdminApp'));
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/i/:slug/confirmation" element={<Confirmation />} />
         <Route path="/i/:slug/pratique" element={<Pratique />} />
         <Route path="/sondage/:jeton" element={<Sondage />} />
+        <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="/connexion" element={<ConnexionAdmin />} />
         <Route path="/super/connexion" element={<ConnexionSuper />} />
         <Route

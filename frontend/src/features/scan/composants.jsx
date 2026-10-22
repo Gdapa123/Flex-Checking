@@ -105,6 +105,7 @@ export const STYLES_RESULTAT = {
   DEJA_EMARGE: { fond: 'bg-avert', icone: 'alert' },
   CODE_INVALIDE: { fond: 'bg-erreur', icone: 'xCircle' },
   AUTRE_EVENEMENT: { fond: 'bg-erreur', icone: 'xCircle' },
+  ANNULE_DEPUIS: { fond: 'bg-avert', icone: 'undo' },
   HORS_LIGNE: { fond: 'bg-avert', icone: 'wifiOff' },
 };
 
@@ -224,6 +225,7 @@ export const BADGES_HISTORIQUE = {
   CODE_INVALIDE: ['bg-g-erreur-badge text-g-erreur-clair', 'xCircle', 'Invalide'],
   AUTRE_EVENEMENT: ['bg-g-erreur-badge text-g-erreur-clair', 'xCircle', 'Autre événement'],
   ANNULE: ['bg-g-eleve text-g-texte', 'undo', 'Annulé'],
+  ANNULE_DEPUIS: ['bg-g-eleve text-g-texte', 'undo', 'Annulé depuis'],
   HORS_LIGNE: ['bg-g-avert-badge text-g-avert-clair', 'clock', 'En attente de synchronisation'],
 };
 

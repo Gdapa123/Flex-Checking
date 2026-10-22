@@ -76,7 +76,7 @@ class ProgrammeSerializer(serializers.ModelSerializer):
         return valider_couleur(v)
 
     def validate_nom(self, v):
-        v = v.strip()
+        v = sans_controle(v.strip())
         if len(v) < 2:
             raise serializers.ValidationError("Indiquez le nom du programme.")
         return v
@@ -329,6 +329,10 @@ class EmargementRequeteSerializer(serializers.Serializer):
     choix_borne = serializers.CharField(required=False, allow_blank=True, max_length=300)
     mode = serializers.ChoiceField(choices=ModeEmargement.choices)
     poste = serializers.CharField(required=False, allow_blank=True, max_length=60, default="")
+
+    def validate_poste(self, v):
+        return sans_controle(v)
+
     appareil = serializers.ChoiceField(choices=Appareil.choices, default=Appareil.TELEPHONE)
     date_client = serializers.DateTimeField(required=False, allow_null=True)
 
@@ -358,7 +362,9 @@ class InviteResultatSerializer(serializers.ModelSerializer):
 
 
 class EmargementResultatSerializer(serializers.Serializer):
-    resultat = serializers.ChoiceField(choices=["PRESENT", "DEJA_EMARGE", "CODE_INVALIDE", "AUTRE_EVENEMENT"])
+    resultat = serializers.ChoiceField(
+        choices=["PRESENT", "DEJA_EMARGE", "CODE_INVALIDE", "AUTRE_EVENEMENT", "ANNULE_DEPUIS"]
+    )
     invite = InviteResultatSerializer(allow_null=True)
     present_le = serializers.DateTimeField(allow_null=True)
     poste = serializers.CharField(allow_blank=True)
@@ -419,9 +425,22 @@ class ParametresSerializer(serializers.ModelSerializer):
             "son_actif",
             "vibration_actif",
             "expediteur",
+            "duree_conservation_mois",
+            "contact_donnees",
             "modifie_le",
         ]
         read_only_fields = ["expediteur", "modifie_le"]
+        extra_kwargs = {"duree_conservation_mois": {"min_value": 1, "max_value": 60}}
+
+    # un saut de ligne dans l'objet ferait échouer tous les envois (en-tête d'email invalide)
+    def validate_objet_email_1(self, v):
+        return sans_controle(v)
+
+    def validate_objet_email_2(self, v):
+        return sans_controle(v)
+
+    def validate_objet_email_3(self, v):
+        return sans_controle(v)
 
 
 class ParametresScanSerializer(serializers.ModelSerializer):

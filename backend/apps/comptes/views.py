@@ -1,4 +1,5 @@
 import hashlib
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -13,11 +14,13 @@ from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.exceptions import TokenBackendError, TokenError
+from rest_framework_simplejwt.state import token_backend
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from apps.noyau.journal import journaliser
+from apps.noyau.temps_reel import groupe_compte, notifier
 
 from .authentication import (
     emettre_jetons,
@@ -165,8 +168,13 @@ class ConnexionView(APIView):
         # Chaque tentative est comptée AVANT la vérification du mot de passe (incrément atomique : des essais envoyés
         # en parallèle ne passent pas tous le contrôle) ; une connexion réussie remet la série d'échecs à zéro.
         limites, cle = CacheDeSecours(), cle_echecs_connexion(email)
-        poste_connu = _empreinte_compte(email) in _postes_connus(request)
-        if not poste_connu and limites.incrementer(cle, FENETRE_ECHECS_CONNEXION_S) > ECHECS_CONNEXION_PAR_COMPTE:
+        # Un poste où l'hôte s'est déjà connecté a son propre compteur : un tiers ne peut pas le bloquer à distance,
+        # mais les essais depuis ce poste (tablette perdue, borne partagée) restent limités eux aussi.
+        if _empreinte_compte(email) in _postes_connus(request):
+            cle_comptee = cle + ":poste-connu"
+        else:
+            cle_comptee = cle
+        if limites.incrementer(cle_comptee, FENETRE_ECHECS_CONNEXION_S) > ECHECS_CONNEXION_PAR_COMPTE:
             return _trop_de_tentatives()
         admin = authenticate(request, username=email, password=ser.validated_data["mot_de_passe"])
         if admin is None or not admin.actif:
@@ -175,6 +183,7 @@ class ConnexionView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         limites.supprimer(cle)
+        limites.supprimer(cle + ":poste-connu")
         admin.derniere_connexion = timezone.now()
         admin.save(update_fields=["derniere_connexion"])
         journaliser(admin, "CONNEXION", admin)
@@ -183,6 +192,26 @@ class ConnexionView(APIView):
         _memoriser_poste(request, response, email)
         get_token(request)
         return response
+
+
+# rafraîchissements simultanés de plusieurs onglets : le second arrive juste après la rotation du jeton
+DELAI_COURSE_RAFRAICHISSEMENT_S = 30
+
+
+def _renouvele_par_un_autre_onglet(raw):
+    """Jeton authentique (signature et expiration vérifiées) révoqué il y a moins de 30 s par une rotation : un jeton
+    plus récent a été émis pour le compte. Une déconnexion ou une révocation n'émet pas de nouveau jeton."""
+    try:
+        donnees = token_backend.decode(raw, verify=True)
+    except TokenBackendError:
+        return False
+    origine = OutstandingToken.objects.filter(jti=donnees.get("jti")).first()
+    revoque = BlacklistedToken.objects.filter(token=origine).first() if origine else None
+    if revoque is None:
+        return False
+    if timezone.now() - revoque.blacklisted_at >= timedelta(seconds=DELAI_COURSE_RAFRAICHISSEMENT_S):
+        return False
+    return OutstandingToken.objects.filter(user_id=origine.user_id, pk__gt=origine.pk).exists()
 
 
 class RafraichirView(APIView):
@@ -209,6 +238,10 @@ class RafraichirView(APIView):
                 ancien.blacklist()
                 nouveau = emettre_jetons(admin, borne=est_borne(ancien))
         except (TokenError, Admin.DoesNotExist):
+            if _renouvele_par_un_autre_onglet(raw):
+                # un autre onglet vient de renouveler la session : ses nouveaux cookies sont déjà dans le navigateur,
+                # ne pas les effacer (sinon l'utilisateur est déconnecté de tous ses onglets)
+                return Response({"code": "SESSION_DEJA_RENOUVELEE"}, status=status.HTTP_409_CONFLICT)
             response = Response({"code": "SESSION_EXPIREE"}, status=status.HTTP_401_UNAUTHORIZED)
             _effacer_cookies(response)
             return response
@@ -238,7 +271,10 @@ class DeconnexionView(APIView):
         acces = request.COOKIES.get(settings.JWT_COOKIE_ACCESS)
         if acces:
             try:
-                revoquer_acces(AccessToken(acces))
+                jeton_acces = AccessToken(acces)
+                revoquer_acces(jeton_acces)
+                # connexions temps réel de cette session : fermées tout de suite (sinon jusqu'à expiration du jeton)
+                notifier([groupe_compte(jeton_acces["user_id"])], type_message="perimetre")
             except TokenError:
                 pass
         response = Response(status=status.HTTP_204_NO_CONTENT)

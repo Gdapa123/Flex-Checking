@@ -2,6 +2,9 @@
 import { z } from 'zod';
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+// texte sur plusieurs lignes (miroir de validation.CONTROLE_MULTILIGNE_RE) : sauts de ligne et tabulation admis
+// eslint-disable-next-line no-control-regex
+export const CONTROLE_MULTILIGNE_RE = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
 
 export const champNom = (libelle) =>
   z.string().trim().min(2, `Indiquez votre ${libelle}.`).max(80, '80 caractères maximum.');
@@ -72,5 +75,15 @@ export function formaterTelephone(v) {
   const d = v.replace(/\D/g, '').slice(0, 10);
   return d.replace(/(\d{2})(?=\d)/g, '$1 ');
 }
+
+/** Paramètres « Données personnelles » (miroir de ParametresSerializer : 1 à 60 mois, email facultatif). */
+export const schemaDonneesPersonnelles = z.object({
+  dureeConservationMois: z.coerce
+    .number({ invalid_type_error: 'Indiquez un nombre de mois.' })
+    .int('Indiquez un nombre entier de mois.')
+    .min(1, 'Au moins 1 mois.')
+    .max(60, 'Au plus 60 mois.'),
+  contactDonnees: z.union([z.literal(''), z.string().trim().regex(EMAIL_RE, 'Adresse email invalide.')]),
+});
 
 export const schemaCouleur = z.string().regex(/^#[0-9a-f]{6}$/i, 'Couleur au format #RRGGBB attendue.');

@@ -1,9 +1,9 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-14
-commit: 36389e6
-sources: [README.md, docker-compose.yml, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py]
+verifie: 2026-10-22
+commit: be899ff
+sources: [.gitignore, README.md, docker-compose.yml, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
 
 # Installation et développement local
@@ -21,12 +21,12 @@ docker compose exec django python manage.py seed_demo
 
 | Service | Port hôte |
 |---|---|
-| mysql | 3307 |
-| redis | 6380 |
+| mysql | 3307, poste local seulement (`127.0.0.1`) |
+| redis | 6380, poste local seulement |
 | mailpit | 8025 (UI), 1025 (SMTP), poste local seulement |
-| django | 8000 |
-| frontend (Vite) | 5173 |
-| proxy (Caddy) | 443, 8443 |
+| django | 8000, poste local seulement (`127.0.0.1`, depuis le 2026-10-22 : serveur de développement en DEBUG) |
+| frontend (Vite, image `node:24-alpine`) | 5173, poste local seulement (les téléphones passent par le proxy HTTPS) |
+| proxy (Caddy) | 443 poste local seulement (`flex-checking.localhost`) ; **8443 ouvert au réseau local** (scan sur téléphone) |
 
 ## Sans Docker (hors MySQL / Redis)
 Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PATH=/opt/homebrew/opt/mysql-client/lib/pkgconfig`),
@@ -34,6 +34,10 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
 `npm run dev` (proxy `/api` → `:8000`, WebSocket compris).
 
 ## Données de démonstration (`seed_demo`, idempotent, jamais en production)
+- Refusé hors développement (`DEBUG` faux) sauf avec `--force` (environnement de test seulement), depuis le
+  2026-10-22.
+- Les journaux de `runserver` contiennent l’URL complète, dont la recherche `?q=` (souvent un email) : ne pas les
+  partager (R24 de [risques-et-dette](../project/risques-et-dette.md) ; Gunicorn masque en production).
 - Comptes : super admin `direction.evenements@mde.ci` ; admins `mariam.kone@`, `kouame.brou@`, `ines.toure@mde.ci`.
   Mots de passe : variables `DEMO_MOT_DE_PASSE_SUPER_ADMIN` / `DEMO_MOT_DE_PASSE_ADMIN`, sinon tirés au hasard
   et affichés une fois ; `--reinitialiser-mots-de-passe` pour les réappliquer.
@@ -46,9 +50,12 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
 ## Variables d’environnement (noms seulement)
 `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `APP_PUBLIC_URL`, `NUM_PROXIES`,
 `MYSQL_*`, `DB_HOST`, `DB_PORT`, `DATABASE_URL`, `DB_SSLMODE`, `REDIS_URL`, `REDIS_CACHE_URL`, `EMAIL_*`,
-`DEFAULT_FROM_EMAIL`, `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS`, `JWT_COOKIE_SECURE`, `CELERY_TASK_ALWAYS_EAGER`,
+`DEFAULT_FROM_EMAIL` (adresse seule : le nom d’expéditeur vient des paramètres), `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS`, `JWT_COOKIE_SECURE`, `CELERY_TASK_ALWAYS_EAGER`,
 `LIMITE_ANONYME`, `LIMITE_COMPTE`, `LIMITE_INSCRIPTION_IP`, `WEB_CONCURRENCY`, `DB_CONCURRENCE`, `ATTENTE_MAX`,
-`EXPORT_SEUIL_ASYNCHRONE`, `CRON_SECRET` (cron Vercel du sondage), `DEMO_MOT_DE_PASSE_*`. Modèle : `.env.example`.
+`EXPORT_SEUIL_ASYNCHRONE`, `CRON_SECRET` (cron Vercel du sondage, lu dans `backend/config/settings.py` ; absent de
+`.env.example`, inutile en local où Celery Beat envoie les sondages), `DEMO_MOT_DE_PASSE_*`. Modèle : `.env.example`.
+`.gitignore` exclut `.env` et `.env.*` (sauf `.env.example`), les clés (`*.key`, `*.p12`, `*.pfx`), les sauvegardes
+SQL (`*.sql`, `*.sql.gz`, `sauvegardes/`) et `.claude/settings.local.json`.
 
 ## Tester le scan sur un téléphone
 README §6 : certificat mkcert pour l’IP, autorité mkcert installée sur le téléphone, `https://<IP>:8443/scan`,

@@ -22,6 +22,8 @@ x-backend: &backend
     REDIS_URL: redis://redis:6379/0
     DJANGO_DEBUG: "0"
     NUM_PROXIES: "1"
+  # exports lourds : écrits par Celery, téléchargés par Django → dossier commun aux conteneurs
+  volumes: [media-data:/app/media]
   restart: unless-stopped
   depends_on:
     mysql:
@@ -38,7 +40,6 @@ services:
       - --default-time-zone=+00:00
       - --max-connections=600
       - --innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER:-1G}
-      - --innodb-flush-log-at-trx-commit=2
       - --skip-name-resolve
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -124,6 +125,7 @@ services:
     depends_on: [django]
 
 volumes:
+  media-data:
   mysql-data:
   redis-data:
   caddy-data:

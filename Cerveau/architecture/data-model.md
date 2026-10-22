@@ -1,15 +1,15 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-14
-commit: 36389e6
-sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py]
+verifie: 2026-10-21
+commit: be899ff
+sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py, backend/apps/noyau/sondages.py]
 ---
 
 # Modèle de données
 
 Base MySQL 8 utf8mb4 (Postgres sur l’environnement Vercel), stockage en UTC, fuseau d’affichage `Africa/Abidjan` (UTC+0).
-Migrations : `0001_initial` → `0009_sondage_satisfaction` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma), `0001_initial` (comptes).
+Migrations : `0001_initial` → `0009_sondage_satisfaction` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma, et affiche leur nombre ; la 0009 ajoute `sondage_actif`, les champs de l’email n°3, le type `SONDAGE` et les deux tables du sondage), `0001_initial` (comptes).
 
 ## Entités
 
@@ -51,23 +51,28 @@ Table de référence `INSCRIT` (ordre 1), `PRESENT` (ordre 2), créée par data 
 ### EmailEnvoye
 `invite`, `type` (INVITATION | MAGAZINE | SONDAGE), `statut` (EN_ATTENTE | ENVOYE | ECHEC), `tentatives`, `envoye_le`,
 `erreur`, `cree_le`. Une ligne par envoi (chaque renvoi crée une ligne). La colonne « Email 1 » affiche le
-statut de la **dernière** ligne INVITATION.
+statut de la **dernière** ligne INVITATION. Libellés communs : `libelle_email` / `LIBELLES_EMAIL` (« Email n°1 · invitation », « Email n°2 · magazine », « Email n°3 · sondage »).
 
 ### JournalActivite
 `auteur` (NULL = « Système »), `action` (codes de `journal.CATEGORIES`), `cible_type`, `cible_id`, `details`
 (JSON **sans donnée personnelle**), `date`.
 
 ### Parametres (singleton pk=1)
-Objets et corps des emails n°1, n°2 et n°3 (texte avec variables), `duree_resultat_scan` (2 | 3 | 5 s, défaut 3),
+- `duree_conservation_mois` (1–60, défaut 12) et `contact_donnees` (email, facultatif) : protection des données personnelles (migration `0010`, colonnes avec `db_default`) ; `Evenement.anonymise_le` (null) date l'anonymisation des invités (voir [donnees-personnelles](../features/donnees-personnelles.md)).
+Objets et corps des emails n°1, n°2 et n°3 (`objet_email_3`, `corps_email_3` ; texte avec variables, dont `{lien_sondage}`), `duree_resultat_scan` (2 | 3 | 5 s, défaut 3),
 `son_actif`, `vibration_actif`, `expediteur` (« Flex’Checking · MDE Business School »).
 
 ### InvitationSondage
-`invite` (OneToOne, CASCADE), `jeton` (unique, `token_urlsafe(24)`), `cree_le`, `expire_le` (= création + 24 h).
+`invite` (OneToOne, CASCADE, `related_name="sondage"`), `jeton` (unique, `token_urlsafe(24)`), `cree_le`, `expire_le`
+(= création + 24 h, `DUREE_SONDAGE_HEURES`), `repondu` (booléen **sans horodatage**). Créée par
+`sondages.planifier_sondages`, une seule par invité.
 
 ### ReponseSondage
-`invitation` (OneToOne, CASCADE), `evenement` (CASCADE), `note_globale` et `note_accueil` (1-5), `recommandation`
-(0-10), `commentaire` (≤ 1 000), `appareil` et `appareil_local` (empreintes SHA-256), `cree_le`. Contrainte
-**unique (evenement, appareil)** ; index (evenement, appareil_local).
+**Anonyme** : rattachée à la cérémonie seulement, ni à l’invité ni au lien. `evenement` (CASCADE),
+`note_globale` et `note_accueil` (1-5), `recommandation` (0-10), `commentaire` (≤ 1 000), `appareil` et
+`appareil_local` (empreintes SHA-256 de « id cérémonie : identifiant »), `cree_le` (arrondi à l’heure par
+`sondages.repondre`). Contrainte **unique (evenement, appareil)** (`sondage_un_par_appareil`) ; index
+(evenement, appareil_local). La réponse unique par lien passe par `InvitationSondage.repondu`.
 
 ### ErreurTechnique
 `source` (NAVIGATEUR | SERVEUR | TACHE | EMAIL), `signature` (sha256, unique), `type`, `message`, `lieu`,
@@ -79,5 +84,5 @@ Objets et corps des emails n°1, n°2 et n°3 (texte avec variables), `duree_res
 
 ## Suppressions en cascade (super admin uniquement)
 - Programme → ses cérémonies → leurs invités (confirmation par saisie du nom s’il a des cérémonies).
-- Cérémonie → invités, emails, émargements (confirmation par saisie du nom s’il y a des invités).
+- Cérémonie → invités, emails, émargements, liens et réponses du sondage (confirmation par saisie du nom s’il y a des invités).
 - Admin : ses émargements restent (admin à NULL) ; dernier super admin et son propre compte protégés.

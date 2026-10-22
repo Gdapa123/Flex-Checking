@@ -142,6 +142,9 @@ class TempsReelConsumer(AsyncJsonWebsocketConsumer):
         if jeton_revoque(self.jeton, admin):  # mot de passe changé ou réinitialisé : session révoquée
             await self.close(code=FERMETURE_SESSION)
             return
+        if await database_sync_to_async(acces_revoque)(self.jeton):  # déconnexion de cette session
+            await self.close(code=FERMETURE_SESSION)
+            return
         await self._rejoindre(await _groupes(admin))
         await self.send_json({"type": "maj", "sujets": ["moi", "evenements", "evenement"], "evenements": []})
 

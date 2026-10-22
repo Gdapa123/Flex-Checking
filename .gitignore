@@ -21,3 +21,16 @@ media-tests/
 
 # Coffre Obsidian : état de l’interface propre à chaque poste
 Cerveau/.obsidian/workspace*.json
+
+# Fichiers sensibles : jamais commités (seul le modèle .env.example est suivi)
+.env.*
+!.env.example
+*.key
+*.p12
+*.pfx
+# sauvegardes de la base (données personnelles d'invités)
+*.sql
+*.sql.gz
+sauvegardes/
+# réglages locaux de Claude Code (propres au poste)
+.claude/settings.local.json

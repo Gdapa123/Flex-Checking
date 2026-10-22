@@ -112,6 +112,8 @@ def inscrire(evenement, donnees):
 
 # --- Émargement ---
 PRESENT, DEJA_EMARGE, CODE_INVALIDE, AUTRE_EVENEMENT = "PRESENT", "DEJA_EMARGE", "CODE_INVALIDE", "AUTRE_EVENEMENT"
+# scan hors ligne rejoué alors que la présence a été annulée APRÈS ce scan : l'annulation l'emporte
+ANNULE_DEPUIS = "ANNULE_DEPUIS"
 
 
 def compteurs(evenement):
@@ -158,6 +160,9 @@ def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode,
 
         maintenant = timezone.now()
         passage = _date_passage(date_client, maintenant)
+        rejoue = bool(date_client and (maintenant - date_client).total_seconds() > 120)
+        if rejoue and invite.emargements.filter(annule_le__gt=passage).exists():
+            return _resultat(ANNULE_DEPUIS, evenement, invite=invite)
         invite.statut = Statut.par_code(statuts.PRESENT)
         invite.present_le = passage
         invite.mode_emargement = mode

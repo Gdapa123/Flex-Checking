@@ -1,9 +1,9 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-13
-commit: dc0c75a
-sources: [PLAN.md, backend/apps/noyau/emails.py, backend/apps/noyau/services.py, backend/apps/noyau/tests/test_emargement.py]
+verifie: 2026-10-21
+commit: be899ff
+sources: [PLAN.md, backend/apps/noyau/emails.py, backend/apps/noyau/services.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/tests/test_emargement.py]
 ---
 
 # ADR-004 — L’email n°2 (magazine) ne part qu’une fois par invité
@@ -22,4 +22,13 @@ Le plan initial ne comptait que les statuts EN_ATTENTE et ENVOYE ; le code est p
 
 ## Conséquences
 - ➕ jamais de doublon, même en cas de course ou de ré-émargement.
-- ➖ un email n°2 en échec définitif ne repart pas tout seul : renvoi manuel depuis la fiche (« Renvoyer l’email n°2 »).
+- ➖ un email n°2 en échec définitif ne repart pas tout seul : renvoi manuel depuis la fiche (« Renvoyer l’email n°2 »)
+  ou, depuis `bd4f807`, renvoi groupé de l’écran A7 « Suivi des emails » (`suivi_emails.renvoyer_echecs` : invités
+  dont le dernier email n°2 est en échec et encore Présents) ; ces renvois manuels ne passent pas par
+  `magazine_deja_parti`, ce qui est conforme à la décision (seul le déclenchement automatique est bloqué).
+
+## Vérification (2026-10-21, `be899ff`)
+Toujours appliquée : `services.emarger` appelle `emails.magazine_deja_parti` après le verrou `select_for_update` sur
+l’invité. Test : `test_annulation_puis_reemargement_sans_second_magazine` (l’annulation y est désormais faite par
+le super admin, voir [ADR-011](ADR-011-annulation-reservee-super-admin.md)) ; un même mécanisme « une seule fois »
+existe pour l’email n°3 ([ADR-012](ADR-012-sondage-satisfaction.md)).

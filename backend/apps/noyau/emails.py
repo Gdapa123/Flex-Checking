@@ -66,9 +66,8 @@ class EmailAvecImagesInline(EmailMultiAlternatives):
 
 
 def _remplacer(texte, valeurs):
-    for cle, valeur in valeurs.items():
-        texte = texte.replace("{" + cle + "}", valeur)
-    return texte
+    """Une seule passe : une valeur saisie par un invité (« {code} » comme prénom) n'est jamais remplacée à son tour."""
+    return re.sub(r"\{(\w+)\}", lambda m: valeurs.get(m[1], m[0]), texte)
 
 
 def _paragraphes_html(texte, valeurs):
@@ -210,6 +209,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "code": source.code,
         "badge_present": f"Présent·e · {dates.heure_dt(source.present_le)}" if source.present_le else "Présent·e",
         "expediteur": p.expediteur,
+        "lien_confidentialite": f"{settings.APP_PUBLIC_URL}/confidentialite",
         "ic": {
             nom: image(f"ic-{nom}-{c.strip('#')}", icone_png(nom, c))
             for nom, c in [
@@ -257,7 +257,12 @@ def construire_message(email_envoye):
     p = Parametres.charger()
     source = Source.depuis_invite(invite, avec_sondage=email_envoye.type == TypeEmail.SONDAGE)
     rendu = rendre(email_envoye.type, source, parametres=p)
-    return message_depuis_rendu(rendu, invite.email, p)
+    message = message_depuis_rendu(rendu, invite.email, p)
+    # identifiant stable par envoi : si une relance renvoie le même email après une panne du worker (livraison « au
+    # moins une fois »), la messagerie du destinataire le reconnaît comme un doublon
+    domaine = settings.DEFAULT_FROM_EMAIL.rsplit("@", 1)[-1].strip("> ") or "localhost"
+    message.extra_headers["Message-ID"] = f"<flex-checking-{email_envoye.pk}@{domaine}>"
+    return message
 
 
 def message_depuis_rendu(rendu, destinataire, parametres, *, prefixe_objet=""):

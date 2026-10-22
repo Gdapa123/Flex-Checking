@@ -1,8 +1,8 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-14
-commit: 36389e6
+verifie: 2026-10-21
+commit: be899ff
 sources: [backend/apps, frontend/src]
 ---
 
@@ -12,53 +12,53 @@ sources: [backend/apps, frontend/src]
 
 | Fichier | Contenu principal |
 |---|---|
-| `models.py` | Programme, Evenement, AncienSlug, Statut, Invite, Emargement, EmailEnvoye, JournalActivite, Parametres (singleton), ErreurTechnique — voir [data-model](data-model.md) |
+| `models.py` | Programme, Evenement, AncienSlug, Statut, Invite, Emargement, EmailEnvoye, JournalActivite, Parametres (singleton), ErreurTechnique, InvitationSondage, ReponseSondage ; `libelle_email` (libellés uniques des trois emails) — voir [data-model](data-model.md) |
 | `statuts.py` | constantes `INSCRIT`, `PRESENT` (le code ne référence jamais les libellés) |
 | `services.py` | `etat_inscriptions`, `statut_evenement`, `tirer_code`, `creer_invite`, `inscrire`, `emarger`, `annuler_emargement`, `annuler_presence`, `compteurs` |
-| `serializers.py` | sérialiseurs, `tokens_programme`, `evenements_annotes`, `invites_annotes` (sous-requêtes email1/email2) |
+| `serializers.py` | sérialiseurs (dont `EvenementBorneSerializer`, liste réduite pour la borne ; `EmargementRequeteSerializer.choix_borne`), `tokens_programme`, `evenements_annotes`, `invites_annotes` (sous-requêtes email1/email2) |
 | `validation.py` | nom, email, téléphone (+225, 10 chiffres), couleur, refus des caractères de contrôle, `entier`, `date_iso`, `donnees_objet` |
 | `filtres.py` | recherche (nom, prénom, email, entreprise, code, téléphone), filtres, tri (`TRIS`), `PaginationInvites` (25/50/100) |
 | `vues_public.py` | événement public, inscription, renvoi du QR, agenda .ics |
-| `vues_scan.py` | émargement, annulation, derniers passages, réglages de scan |
+| `vues_scan.py` | émargement, annulation (super admin), derniers passages, réglages de scan, recherche de la borne ; jeton signé « C’est moi » (`jeton_choix_borne`, `choix_borne_valide`) |
 | `suivi_emails.py` | suivi des emails (A7) : compteurs, échecs, renvoi groupé, email de test |
-| `sondages.py` | sondage de satisfaction : planification (8 h, idempotente), état, résultats, NPS, réponse unique |
+| `sondages.py` | sondage de satisfaction : `planifier_sondages` (8 h, idempotente ; sans file : envoi dans un budget de 200 s), `etat`, `resultats`, `resume_global`, NPS, `repondre` (réponse unique par lien et par appareil), `sondage_renvoyable` |
 | `vues_sondage.py` | page publique du sondage, déclencheur du cron (`CRON_SECRET`), cumul super admin |
 | `vues_invites.py` | listes, détail/PATCH/DELETE, QR PNG, renvoi, historique, actions groupées, exports, suivi de tâche |
-| `vues_admin.py` | viewsets Programme / Evenement / Admin, paramètres, aperçu email, journal, exports globaux, analyses, rapports |
+| `vues_admin.py` | viewsets Programme / Evenement / Admin (actions `statistiques`, `rapport`, `apercu_emails`, `sondage`, `suivi_emails`, `renvoyer_echecs`, `email_test`), paramètres, aperçu email, journal, exports globaux, analyses, rapports |
 | `vues_erreurs.py` | signalement navigateur (public), consultation et résolution (super admin) |
-| `emails.py` | rendu (`rendre`), `construire_message` (CID + pièces jointes), `planifier`, `magazine_deja_parti` |
-| `tasks.py` | `envoyer_email` (3 relances 30 s / 2 min / 8 min), `relancer_emails_en_attente` (beat 5 min), `purger` (beat 1 h) |
+| `emails.py` | rendu des trois emails (`rendre`, gabarits `invitation`, `magazine`, `sondage`), `lien_sondage`, `construire_message` (CID + pièces jointes), `message_depuis_rendu` (email de test), `planifier`, `magazine_deja_parti` |
+| `tasks.py` | `envoyer_email` (3 relances 30 s / 2 min / 8 min ; email n°3 non envoyé si lien clos ou présence annulée), `relancer_emails_en_attente` (beat 5 min), `envoyer_sondages` (beat toutes les heures de 8 h à 20 h), `purger` (beat 1 h) |
 | `taches.py` | tâches d’export et d’action groupée > 50 invités, état en cache `tache:<id>`, fichiers à usage unique |
 | `temps_reel.py` | signaux Django → `notifier` (regroupé, après commit) ; invalidation des caches |
 | `consumers.py` | `TempsReelConsumer` (WebSocket `/api/ws/`) |
 | `caches.py` | `lire`, `invalider` (deux fois : immédiat + au commit), clés `stats:<id>`, `public:<slug>`, `analytique` |
 | `statistiques.py` | tableau de bord d’une cérémonie |
 | `analytique.py` | analyses globales et indicateurs techniques (super admin) |
-| `rapports.py` | PDF ReportLab : `rapport_evenement`, `rapport_global` |
+| `rapports.py` | PDF ReportLab : `rapport_evenement`, `rapport_global` (avec section satisfaction, `_section_satisfaction`) |
 | `exports.py` | lignes invités / présences / emails / journal, CSV (BOM, « ; ») et XLSX, neutralisation des formules |
 | `journal.py`, `journal_texte.py` | `journaliser` (actions listées dans `CATEGORIES`), libellés reconstitués à l’affichage |
 | `erreurs.py`, `mesures.py` | erreurs techniques groupées par signature ; métriques par minute dans Redis |
 | `ics.py`, `qr.py`, `icones_email.py`, `theme.py`, `dates.py` | .ics, QR PNG, icônes PNG des emails, dérivation des couleurs, formats français |
-| `middleware.py`, `logs.py`, `exceptions.py` | santé `/api/sante/`, CSP et en-têtes, masquage PII, gestionnaire d’erreurs (`ErreurMetier`) |
+| `middleware.py`, `logs.py`, `exceptions.py` | santé `/api/sante/`, CSP et en-têtes, masquage PII et des jetons du sondage (`masquer_jetons`), gestionnaire d’erreurs (`ErreurMetier`) |
 | `management/commands/seed_demo.py` | données de démonstration idempotentes |
 
 ## Backend — `backend/apps/comptes/`
 | Fichier | Contenu |
 |---|---|
 | `models.py` | `Admin` (email unique, rôle, `actif`, `doit_changer_mot_de_passe`, `version_session`) |
-| `authentication.py` | `CookieJWTAuthentication`, `emettre_jetons`, `jeton_revoque` |
+| `authentication.py` | `CookieJWTAuthentication`, `emettre_jetons`, `est_borne`, `revoquer_acces`, `jeton_revoque`, `verifier_csrf` |
 | `permissions.py` | `CompteUtilisable` (défaut), `EstAdmin`, `EstSuperAdmin`, `evenements_visibles` |
-| `throttles.py` | `CacheDeSecours`, `ConnexionThrottle`, `ConnexionCompteThrottle` |
-| `views.py` | csrf, connexion, rafraîchir, déconnexion, moi, mot de passe |
+| `throttles.py` | `CacheDeSecours`, `ident_reseau` (IPv6 regroupée par /64), `AnonymeThrottle`, `LimiteSensible`, `ConnexionThrottle`, `ConnexionIpThrottle`, `cle_echecs_connexion` (20 échecs/h par compte), `MotDePasseCompteThrottle` (+ `Heure`), `LimiteIpPartagee` |
+| `views.py` | csrf, connexion (poste connu : cookie signé `fc_poste`), rafraîchir (CSRF, verrou), déconnexion, moi, mot de passe, vérification du mot de passe, mode borne |
 
 ## Frontend — `frontend/src/features/`
 | Dossier | Écrans |
 |---|---|
 | `invite/` | `InscriptionPage` (présentation → formulaire → états), `Presentation`, `ConfirmationPage`, `PratiquePage`, `pratique.jsx`, `EtatCarte`, `LienInvalide`, `commun.jsx`, `SondagePage` (sondage de satisfaction) |
-| `scan/` | `ScanSetup` (S1), `ScanPoste` (S2–S12 selon l’appareil), `composants.jsx`, `useCamera` (ZXing), `fileHorsLigne` (IndexedDB), `reglages`, `retour` (son, vibration), `useWakeLock`, `useEvenementsScan` |
-| `admin/` | `ChoixCeremonie` (A2), `EspaceEvenement` (mise en page), `TableauDeBord` (A3), `CarteSatisfaction` (A3), `SuiviEmails` (A7) |
+| `scan/` | `ScanApp` (routes), `ScanSetup` (S1), `ScanPoste` (S2–S12 selon l’appareil), `composants.jsx`, `useCamera` (ZXing), `fileHorsLigne` (IndexedDB), `reglages`, `retour` (son, vibration), `useWakeLock`, `useEvenementsScan` |
+| `admin/` | `AdminApp` (routes), `ChoixCeremonie` (A2), `EspaceEvenement` (mise en page), `TableauDeBord` (A3), `CarteSatisfaction` (A3), `SuiviEmails` (A7, onglet `emails` : compteurs, échecs, renvoi groupé, email de test, aperçu ; remplace l’ancien `ApercuEmails`, supprimé) |
 | `invites/` | `GestionInvites` (A4 et SA9), `PanneauInvite` (A5), `PanneauAjout` (A6), `badges` |
-| `super/` | `SuperApp`, `VueGlobale`, `Analyses`, `Programmes`, `Evenements`, `TousInvites`, `Comptes`, `Parametres`, `Journal`, `Erreurs` |
+| `super/` | `SuperApp`, `VueGlobale`, `Analyses` (dont satisfaction), `Programmes`, `Evenements`, `TousInvites`, `Comptes`, `Parametres`, `Journal`, `Erreurs`, `ErreurChargement`, `donnees.js` |
 | `auth/` | `ConnexionAdmin`, `ConnexionSuper`, `FormulaireConnexion`, `ChangerMotDePasse`, `RequireRole`, `useMoi`, `Introuvable` |
 
 ## Partagé

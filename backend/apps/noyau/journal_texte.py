@@ -127,7 +127,11 @@ def decrire(e, cibles):  # noqa: C901 — table de correspondance volontairement
             return f"Inscriptions ouvertes · {cible.nom_affiche if cible else ''}"
         case "INSCRIPTIONS_FERMETURE":
             return f"Inscriptions fermées · {cible.nom_affiche if cible else ''}"
+        case "DONNEES_ANONYMISATION":
+            return f"Données personnelles anonymisées · {nom_ev} · {d.get('invites', 0)} invité(s)"
         case "PARAMETRES":
+            if "duree_conservation_mois" in d:
+                return f"Durée de conservation des données : {d['duree_conservation_mois']} mois"
             if "duree_resultat_scan" in d:
                 return f"Durée d’affichage du scan : {d['duree_resultat_scan']} s"
             return "Paramètres mis à jour"

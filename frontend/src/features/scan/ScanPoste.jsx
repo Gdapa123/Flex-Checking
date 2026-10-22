@@ -79,6 +79,13 @@ function presenterResultat(r, { mode, poste }) {
         nom: '',
         meta: `Inscrit à la ${r.evenementAutre}`,
       };
+    case 'ANNULE_DEPUIS':
+      return {
+        type: 'ANNULE_DEPUIS',
+        titre: 'Présence annulée depuis ce scan',
+        nom,
+        meta: 'Le passage hors ligne date d’avant l’annulation : il n’a pas été pris en compte. Rescannez si besoin.',
+      };
     case 'HORS_LIGNE':
       return {
         type: 'HORS_LIGNE',

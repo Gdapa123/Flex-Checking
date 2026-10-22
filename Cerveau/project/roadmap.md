@@ -1,8 +1,8 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
+verifie: 2026-10-21
+commit: be899ff
 sources: [PLAN.md, git log]
 ---
 
@@ -15,6 +15,8 @@ sources: [PLAN.md, git log]
 | 2026-10-09 | Phase 0 : `PLAN.md` validé. Premier commit (phases 1 à 6 : socle, super admin, invité, scan, admin, finition). Logos SVG. Écran de présentation, champs obligatoires, mots de passe hors dépôt. |
 | 2026-10-12 | Temps réel WebSocket ; analyses et rapports PDF, montée en charge, résilience ; sécurité (sessions révocables, mot de passe temporaire imposé) ; environnement de test Vercel ; suppressions du super admin ; nouvel écran des cérémonies ; revue UX ; consentement ; magazine de la promotion, scan rapide. |
 | 2026-10-13 | Création de ce wiki (`Cerveau/`). |
+| 2026-10-13 | Borne restreinte côté serveur (ADR-010), scan agrandi, sécurité. |
+| 2026-10-14 | Sondage de satisfaction (email n°3, ADR-012), écran « Suivi des emails », annulation réservée au super admin (ADR-011), audit de sécurité, crons Vercel. |
 
 Toutes les phases prévues par `PLAN.md` §10 sont livrées. Le travail en cours est de la finition demandée au fil de l’eau.
 

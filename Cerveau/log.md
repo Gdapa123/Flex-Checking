@@ -386,3 +386,123 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   `SondagePage` présent ; CSP sans `data:` dans `frame-src`, Referrer-Policy `same-origin`.
 - **Risques ou limites :** données de démo du sondage (éditions 2025) non semées sur Neon ; premier envoi réel du
   sondage au lendemain d'une cérémonie (à observer dans Suivi des emails).
+
+## [2026-10-21] tests | Refactorisation de `parcours.spec.js`
+
+- **Contexte :** demande de refactorisation du parcours e2e, sans changement de comportement.
+- **Modifications :** aide `evenementPmdOuvert` (connexion + recherche de l'événement PMD ouvert, désormais vérifiée
+  aussi dans le test temps réel) et `urlInvites` partagées par les deux tests ; étapes numérotées du parcours
+  devenues des `test.step` (visibles dans le rapport et les traces) ; contexte public créé via les fixtures
+  `browser` et `baseURL` au lieu de l'URL `http://localhost:5174` codée en dur ; champs du formulaire remplis en
+  boucle ; fixture `request` inutilisée (et `void request`) retirée.
+- **Fichiers concernés :** `frontend/e2e/parcours.spec.js`
+- **Validation :** ESLint + Prettier ok ; `npx playwright test --list` : 3 tests chargés. `npm run e2e` **non
+  exécuté** (Docker arrêté : MySQL et Redis injoignables).
+- **Risques ou limites :** à rejouer avec `npm run e2e` avant de considérer la refactorisation validée.
+
+## [2026-10-21] documentation | /wiki-maj : wiki resynchronisé sur `be899ff`
+
+- **Contexte :** 37 pages signalées à revérifier (sources modifiées par `ffa45e4`, `bd4f807`, `be899ff` après leur
+  vérification sur `dc0c75a` / `36389e6`).
+- **Modifications :** toutes les pages revérifiées contre le code (diffs relus), frontmatter `verifie: 2026-10-21`,
+  `commit: be899ff`, `sources` réduites aux fichiers lus. Corrections notables :
+  - `architecture/data-model.md` : `ReponseSondage` est anonyme (pas de lien vers l'invitation) ;
+    `InvitationSondage.repondu` assure « une réponse par lien ».
+  - `specifications/functional-requirements.md` : EF-24 citait une vue inexistante (`VueRecherche` →
+    `vues_scan.RechercheBorneView`) ; ajout de EF-26 (sondage) et EF-27 (suivi des emails).
+  - `architecture/components.md` : `ConnexionCompteThrottle` n'existe plus ; `ApercuEmails.jsx` supprimé retiré partout.
+  - `api/endpoints.md` : réponse réelle du cron (`{programmes, envoyes}`, 404 si `CRON_SECRET` absent ou < 32 car.).
+  - `features/sondage-satisfaction.md` : 18 tests backend / 7 frontend ; prénom masqué dès que le lien n'est plus ouvert.
+  - `features/scan-emargement.md`, `temps-reel.md`, `hors-ligne.md` : jeton `choixBorne`, sujet `sondage`,
+    intervalles de secours, purge à 7 jours.
+  - `testing/test-strategy.md` : 242 tests backend collectés, 64 Vitest, 3 Playwright.
+  - `project/risques-et-dette.md` : R13 (« C'est moi » hors ligne pouvant bloquer la file), R14 (renvoi n°2 sans
+    `magazine_actif`), R15 (petits écarts : `ignores` non affiché, email n°3 hors liste, `X-Frame-Options`,
+    `CRON_SECRET` absent de `.env.example`), R16 (sondage Vercel après 12 h) ; R7 atténué ; R4 complété.
+  - `project/roadmap.md` : historique des 13 et 14 octobre ; `index.md` : date de vérification et libellé des risques.
+- **Fichiers concernés :** les 37 pages signalées, plus `project/roadmap.md`, `index.md`.
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` ; comptages par `pytest --collect-only` et
+  `playwright test --list` (aucun test exécuté).
+- **Risques ou limites :** `testing/test-cases.md` reste signalé tant que `frontend/e2e/parcours.spec.js` n'est pas
+  commité. README et `PLAN.md` toujours en retard (R2, R4), hors périmètre du wiki. R13 déduit du code, non testé.
+
+## [2026-10-21] documentation | Guide de déploiement sur VPS Infomaniak
+
+- **Contexte :** demande d'un guide pour déployer toutes les fonctionnalités sur Infomaniak au moindre coût.
+- **Modifications :** nouvelle page `operations/deploiement-infomaniak.md` (VPS Lite 2 vCPU / 4 Go, Docker,
+  DNS, `.env` de production et réglages « petit serveur », SMTP de la messagerie existante, sauvegardes MySQL,
+  contrôles fonctionnalité par fonctionnalité, test de charge, mises à jour). Nouveau risque R17 : exports lourds
+  introuvables en production Docker (pas de volume commun entre Celery et Django), contourné dans le guide par
+  `docker-compose.infomaniak.yml`. Index mis à jour.
+- **Fichiers concernés :** `Cerveau/operations/deploiement-infomaniak.md`, `Cerveau/project/risques-et-dette.md`,
+  `Cerveau/index.md` ; code lu : `docker-compose.prod.yml`, `backend/apps/noyau/taches.py`,
+  `backend/apps/noyau/vues_invites.py`, `backend/config/settings.py`.
+- **Validation :** procédure non exécutée (aucun VPS) ; `lint_wiki.py` relancé.
+- **Risques ou limites :** dimensionnement estimé, à confirmer par le test de charge sur le VPS ; tarifs
+  Infomaniak non vérifiés sur la page officielle ; R17 à corriger dans le dépôt.
+
+## [2026-10-22] sécurité | Audit de durcissement : sessions, borne, emails, déploiement
+
+- **Contexte :** audit de sécurité et de fiabilité du 2026-10-22 ; changements de code non commités (base `be899ff`),
+  wiki resynchronisé selon `/wiki-maj`.
+- **Modifications (code, constatées dans `git diff`) :**
+  - Réseau : `docker-compose.yml` publie Django 8000 et Caddy 443 sur `127.0.0.1` (8443 reste ouvert au réseau local
+    pour le scan sur téléphone) ; en production seuls 80/443 sont publiés. `.gitignore` renforcé (`.env.*`, clés,
+    sauvegardes SQL, `.claude/settings.local.json`) ; audit des secrets : aucun secret réel dans le dépôt ni l'historique.
+  - `docker-compose.prod.yml` : volume `media-data:/app/media` partagé (**R17 résolu**) ; `innodb-flush-log-at-trx-commit=2`
+    retiré (durabilité par défaut).
+  - Sessions : poste connu avec son propre compteur d'échecs (20/h) ; rafraîchissements simultanés → 409
+    `SESSION_DEJA_RENOUVELEE` sans effacer les cookies (`_renouvele_par_un_autre_onglet`, `lib/api.js`) ; déconnexion →
+    `perimetre` et fermeture 4001 du WebSocket de la session ; désactivation d'un compte → `nouvelle_version_session`.
+  - Emails : renvoi du n°2 refusé si `magazine_actif` est faux (**R14 résolu**) ; renvoi individuel du n°3 seulement
+    après un échec, 202 sans envoi si l'invité a répondu (anonymat) ; `_remplacer` en une passe ; `Message-ID` stable ;
+    relance des tentatives perdues (> 1 h).
+  - **Bug corrigé** : `JSON_UNDERSCOREIZE.no_underscore_before_number` passé à `False` : les modèles d'emails modifiés
+    par le super admin n'étaient jamais enregistrés depuis le premier commit.
+  - Scan : `MAX_CODES_INVALIDES_BORNE` = 10 ; résultat `ANNULE_DEPUIS` pour un scan rejoué antérieur à une annulation ;
+    `fileHorsLigne.rejouer` retire un 403 `CHOIX_BORNE_INVALIDE` (**R13 résolu**).
+  - Caractères de contrôle refusés : nom du programme, objets des emails, `poste`, motifs d'annulation, commentaire du
+    sondage (`sans_controle_multiligne` + miroir `CONTROLE_MULTILIGNE_RE`).
+  - `seed_demo` refusé hors `DEBUG` sans `--force` ; Pillow 13.0.0 ; CI en `permissions: contents: read`.
+- **Modifications (wiki) :** `api/endpoints.md`, `features/authentification.md`, `scan-emargement.md`, `hors-ligne.md`,
+  `emails.md`, `sondage-satisfaction.md`, `configuration-super-admin.md`, `gestion-invites.md`, `temps-reel.md`,
+  `specifications/non-functional-requirements.md` (ENF-S12 ajouté), `testing/test-cases.md`, `testing/test-strategy.md`,
+  `operations/setup.md`, `operations/deployment.md`, `operations/deploiement-infomaniak.md` (étape 5 simplifiée : plus
+  de `docker-compose.infomaniak.yml` ; `DEFAULT_FROM_EMAIL` en adresse seule ; `seed_demo --force`),
+  `decisions/ADR-012-sondage-satisfaction.md`, `project/risques-et-dette.md`, `index.md`.
+  Risques : R13, R14, R17 résolus ; R15 revérifié (inchangé) ; nouveaux R18 (inscription automatisable, lié à R11),
+  R19 (codes de borne devinables), R20 (dernier qui écrit gagne), R21 (migrations sans expand/contract), R22 (images non
+  épinglées, Redis sans mot de passe), R23 (un avis par appareil), R24 (journaux de `runserver` avec `?q=`) ; R6 inchangé.
+- **Fichiers concernés :** `docker-compose.yml`, `docker-compose.prod.yml`, `.gitignore`, `.github/workflows/ci.yml`,
+  `backend/config/settings.py`, `backend/requirements.txt`, `backend/apps/comptes/views.py`,
+  `backend/apps/noyau/{consumers,emails,serializers,services,sondages,tasks,validation,vues_admin,vues_invites,vues_scan,vues_sondage}.py`,
+  `backend/apps/noyau/management/commands/seed_demo.py`, `frontend/src/lib/{api,schemas}.js`,
+  `frontend/src/features/scan/{ScanPoste.jsx,composants.jsx,fileHorsLigne.js,retour.js}`,
+  `frontend/src/features/invite/SondagePage.jsx` ; tests `backend/apps/noyau/tests/test_durcissement.py` (nouveau),
+  `test_audit_securite.py`, `test_invites.py`, `test_sondage.py`, `test_temps_reel.py`, `frontend/tests/fileHorsLigne.test.js` (nouveau).
+- **Validation :** contrôles exécutés le 2026-10-22 (rapportés par la session de développement) : pytest sur MySQL 8
+  (Docker) 257 passed ; ruff check + format OK ; Vitest 66/66 (15 fichiers) ; ESLint + Prettier OK ; `npm run build`
+  OK ; Playwright 3/3 après `migrate` + `seed_demo`. `python3 Cerveau/outils/lint_wiki.py` : 0 erreur.
+- **Décision :** mise à jour de [ADR-012](decisions/ADR-012-sondage-satisfaction.md) (renvoi individuel du sondage).
+- **Risques ou limites :** modifications non commitées : le script signale les pages comme « à revérifier » jusqu'au
+  commit (relancer `/wiki-maj` ensuite). R18, R19, R21 restent à trancher (MDE) ; l'estimation de 25 % de R19 vient
+  de l'audit, non recalculée. Le renvoi groupé du n°3 (A7) compte désormais les invités ayant répondu comme
+  traités, sans leur envoyer d'email (`suivi_emails.renvoyer_echecs`) : `traites` ne révèle plus de réponse
+  (pytest relancé : 257 passed).
+
+## [2026-10-22] sécurité | Protection des données personnelles (conservation limitée, politique de confidentialité)
+
+- **Contexte :** demande d'un dispositif de protection des données à caractère personnel (application publique).
+- **Modifications :** module `donnees_personnelles.py` (anonymisation des invités des cérémonies plus anciennes que
+  la durée de conservation : identité effacée, QR invalidé, erreurs d'envoi et liens du sondage supprimés,
+  journal `DONNEES_ANONYMISATION`) ; tâche nocturne `anonymiser_donnees` (Beat 3 h 30) et passage par le cron
+  Vercel ; réglages super admin `duree_conservation_mois` (1–60, défaut 12) et `contact_donnees` (migration `0010`,
+  `db_default`) ; route publique `public/confidentialite/` ; page `/confidentialite` (loi n° 2013-450, droits,
+  ARTCI) reliée au consentement et au pied des emails ; section « Données personnelles » des Paramètres.
+- **Fichiers concernés :** voir [donnees-personnelles](features/donnees-personnelles.md) (sources).
+- **Validation :** pytest MySQL **264 passed** ; ruff OK ; `makemigrations --check` sans changement ; Vitest
+  **68/68** ; ESLint + Prettier OK ; build OK ; Playwright **3/3** (audit axe de `/confidentialite` compris).
+- **Décision :** [ADR-013](decisions/ADR-013-conservation-limitee-anonymisation.md).
+- **Risques ou limites :** anonymisation irréversible (durée réglée trop courte = effacement dès la nuit suivante) ;
+  sauvegardes antérieures non anonymisées (chiffrement et rotation dans le guide) ; formalités ARTCI à vérifier par
+  MDE ; texte du consentement toujours « conformément au RGPD » (R8, non modifié).
