@@ -39,6 +39,10 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
   infalsifiable (`signing`), limite par IP + email inchangée.
 - **Rafraîchissement** (`auth/rafraichir/`) : CSRF exigé (le frontend envoie `X-CSRFToken`) ; jeton verrouillé
   (`select_for_update` sur `OutstandingToken`) : deux rafraîchissements simultanés n'ouvrent pas deux sessions.
+  **Postgres** (2026-10-26, non commité) : la requête verrouillée est triée par `pk` ; le tri par défaut du modèle
+  (`user`, clé nullable) ajoutait une jointure externe que Postgres refuse de verrouiller (`FOR UPDATE cannot be
+  applied to the nullable side of an outer join`), soit une erreur 500 à chaque rafraîchissement sur Vercel + Neon
+  (MySQL l'accepte). Constaté en lançant la suite pytest sur Postgres : 6 tests en échec avant, 267/267 après.
   **Onglets simultanés** (2026-10-22) : si le jeton refusé est authentique (signature et expiration vérifiées) et a
   été révoqué il y a moins de 30 s (`DELAI_COURSE_RAFRAICHISSEMENT_S`) par une rotation (un jeton plus récent du compte
   émis dans la fenêtre de cette rotation, de 2 s avant à 5 s après la révocation : une nouvelle connexion sur un

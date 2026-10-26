@@ -3,17 +3,35 @@
 POSTGRES = "django.db.backends.postgresql"
 
 
-def base_depuis_url(config, sslmode_defaut="require"):
+def base_depuis_url(config, sslmode_defaut="require", pool_max=0):
     """Base décrite par DATABASE_URL (dictionnaire de `env.db`).
 
     Les options portées par l'URL (`?sslmode=verify-full&channel_binding=require`…) sont conservées : les
     écraser abaisserait silencieusement la sécurité de la connexion choisie par l'URL. Le chiffrement est
     seulement imposé par défaut (`sslmode_defaut`) quand l'URL ne précise rien.
+
+    `pool_max` > 0 (Postgres seulement) : connexions réutilisées d'une requête à l'autre (pool natif de Django,
+    `psycopg_pool`). Sans pool, chaque requête rouvre une connexion chiffrée vers une base distante (Neon :
+    TCP, TLS et authentification SCRAM), soit plusieurs centaines de millisecondes par appel d'API. Les
+    connexions du pool gardent exactement les mêmes options (chiffrement, liaison de canal).
     """
     options = {"connect_timeout": 5, **config.get("OPTIONS", {})}
+    base = {**config, "CONN_MAX_AGE": 0}
     if config.get("ENGINE") == POSTGRES:
         options.setdefault("sslmode", sslmode_defaut)
-    return {**config, "CONN_MAX_AGE": 0, "OPTIONS": options}
+        if pool_max > 0:
+            options["pool"] = pool_postgres(pool_max)
+            # connexion coupée pendant l'inactivité (base mise en veille, relais PgBouncer) : détectée avant
+            # usage et remplacée (Django passe alors `ConnectionPool.check_connection` au pool)
+            base["CONN_HEALTH_CHECKS"] = True
+    return {**base, "OPTIONS": options}
+
+
+def pool_postgres(taille_max):
+    """Paramètres du pool : une connexion prête, au plus `taille_max` (file d'attente ASGI, voir
+    `config/concurrence.py`). Les connexions inactives sont fermées avant les délais d'inactivité côté
+    serveur. Pool saturé : erreur après `timeout` secondes plutôt qu'une attente sans fin."""
+    return {"min_size": 1, "max_size": taille_max, "timeout": 10, "max_idle": 240, "max_lifetime": 1800}
 
 
 def caches_sans_redis():

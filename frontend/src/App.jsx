@@ -10,9 +10,14 @@ const Sondage = lazy(() => import('./features/invite/SondagePage'));
 const Confidentialite = lazy(() => import('./features/invite/ConfidentialitePage'));
 const ConnexionAdmin = lazy(() => import('./features/auth/ConnexionAdmin'));
 const ConnexionSuper = lazy(() => import('./features/auth/ConnexionSuper'));
-const AdminApp = lazy(() => import('./features/admin/AdminApp'));
-const SuperApp = lazy(() => import('./features/super/SuperApp'));
-const ScanApp = lazy(() => import('./features/scan/ScanApp'));
+// espaces protégés : leur code (public, sans donnée) se télécharge pendant la vérification de la session
+// (voir RequireRole `precharger`) plutôt qu'après, ce qui évite un aller-retour réseau à l'ouverture
+const chargerAdmin = () => import('./features/admin/AdminApp');
+const chargerSuper = () => import('./features/super/SuperApp');
+const chargerScan = () => import('./features/scan/ScanApp');
+const AdminApp = lazy(chargerAdmin);
+const SuperApp = lazy(chargerSuper);
+const ScanApp = lazy(chargerScan);
 const Introuvable = lazy(() => import('./features/auth/Introuvable'));
 
 function Chargement() {
@@ -38,7 +43,7 @@ export default function App() {
         <Route
           path="/admin/*"
           element={
-            <RequireRole roles={['ADMIN', 'SUPER_ADMIN']} connexion="/connexion">
+            <RequireRole roles={['ADMIN', 'SUPER_ADMIN']} connexion="/connexion" precharger={chargerAdmin}>
               <AdminApp />
             </RequireRole>
           }
@@ -46,7 +51,7 @@ export default function App() {
         <Route
           path="/scan/*"
           element={
-            <RequireRole roles={['ADMIN', 'SUPER_ADMIN']} connexion="/connexion">
+            <RequireRole roles={['ADMIN', 'SUPER_ADMIN']} connexion="/connexion" precharger={chargerScan}>
               <ScanApp />
             </RequireRole>
           }
@@ -54,7 +59,7 @@ export default function App() {
         <Route
           path="/super/*"
           element={
-            <RequireRole roles={['SUPER_ADMIN']} connexion="/super/connexion">
+            <RequireRole roles={['SUPER_ADMIN']} connexion="/super/connexion" precharger={chargerSuper}>
               <SuperApp />
             </RequireRole>
           }

@@ -14,8 +14,12 @@ import ChangerMotDePasse from './ChangerMotDePasse';
  * Seul un 401 déconnecte : une panne réseau ou serveur garde l'utilisateur dans son espace
  * (le poste de scan continue avec le dernier compte connu, pour émarger hors ligne).
  */
-export function RequireRole({ roles, connexion, children }) {
+export function RequireRole({ roles, connexion, precharger, children }) {
   const { data, isLoading, error, refetch, isFetching } = useMoi();
+  useEffect(() => {
+    // en parallèle de /auth/moi ; un échec est ignoré (le chargement normal réessaiera et affichera l'erreur)
+    precharger?.().catch(() => {});
+  }, [precharger]);
   const location = useLocation();
   const qc = useQueryClient();
   const nonConnecte = error?.status === 401;

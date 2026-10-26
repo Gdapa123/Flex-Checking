@@ -3,7 +3,7 @@ type: operations
 statut: implémenté
 verifie: 2026-10-26
 commit: d220011
-sources: [docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
+sources: [backend/config/bases.py, backend/requirements.txt, docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
 ---
 
 # Déploiement
@@ -44,6 +44,11 @@ seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais
 ## Test en ligne — Vercel ([ADR-007](../decisions/ADR-007-environnement-test-vercel.md))
 - Frontend https://flex-checking.vercel.app (projet `flex-checking`) ; `.vercelignore` n’envoie que `frontend/`.
 - Backend https://flex-checking-api.vercel.app (projet `flex-checking-api`, `backend/Dockerfile.vercel`, `fra1`), base Neon.
+- Temps de réponse mesurés le 2026-10-26 (`curl`, avant le pool) : route sans base ≈ 0,16 s sur une connexion
+  réutilisée, `/api/sante/` (un `SELECT 1`) 0,6 à 1,1 s, premier appel après inactivité 5,2 s (démarrage de la
+  fonction). L'écart venait de l'ouverture d'une connexion chiffrée vers Neon à chaque requête : pool de
+  connexions Postgres depuis le 2026-10-26 (voir [ADR-009](../decisions/ADR-009-file-attente-concurrence.md)) ;
+  📋 gain à mesurer en ligne après déploiement.
 - Préparation de la base depuis un poste : `vercel env pull` (fichier privé), puis `migrate`, `createcachetable`, `seed_demo`
   (procédure du README ; depuis le 2026-10-22, `seed_demo --force` si `DEBUG` est faux). ❓ À confirmer : d'après `log.md` (2026-10-14), les variables de type « Secret » ne sont pas
   restituées par `vercel env pull` ; les migrations 0008 à 0011 ont été appliquées avec l'URL non poolée de Neon

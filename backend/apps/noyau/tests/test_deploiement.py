@@ -31,6 +31,18 @@ def test_url_mysql_sans_sslmode():
     assert "sslmode" not in base_depuis_url(_url("mysql://u:p@h/db"))["OPTIONS"]
 
 
+def test_pool_postgres_garde_le_chiffrement():
+    """Le pool réutilise les connexions sans rien changer à leur sécurité ; jamais de pool pour MySQL."""
+    base = base_depuis_url(_url("postgres://u:p@h/db?channel_binding=require"), "verify-full", pool_max=10)
+    assert base["OPTIONS"]["sslmode"] == "verify-full"
+    assert base["OPTIONS"]["channel_binding"] == "require"
+    assert base["OPTIONS"]["pool"]["max_size"] == 10
+    assert base["CONN_HEALTH_CHECKS"] is True  # connexion coupée détectée avant usage
+    assert base["CONN_MAX_AGE"] == 0  # exigé par Django avec un pool
+    assert "pool" not in base_depuis_url(_url("postgres://u:p@h/db"))["OPTIONS"]
+    assert "pool" not in base_depuis_url(_url("mysql://u:p@h/db"), pool_max=10)["OPTIONS"]
+
+
 @pytest.mark.django_db(transaction=True)
 def test_limites_connexion_partagees_entre_instances():
     """Sans Redis, une nouvelle instance (mémoire locale vide) ne remet pas le compteur de connexion à zéro."""

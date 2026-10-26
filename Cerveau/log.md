@@ -661,3 +661,30 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** `vercel ls` / `vercel inspect` : déploiement de production du frontend « Ready » ; `curl` 200 ;
   `python3 Cerveau/outils/lint_wiki.py` relancé (voir ci-dessous).
 - **Risques ou limites :** aucun risque nouveau ; le risque de build Vercel noté le 2026-10-23 est levé.
+
+## [2026-10-26] correction | Lenteur des pages : pool de connexions Postgres, rafraîchissement de session sur Postgres
+
+- **Contexte :** lenteur constatée au chargement des pages (environnement en ligne Vercel + Neon). Mesures `curl` :
+  route sans base ≈ 0,16 s, `/api/sante/` (un `SELECT 1`) 0,6 à 1,1 s, premier appel après inactivité 5,2 s.
+  Cause principale : une connexion TLS + SCRAM vers Neon ouverte à chaque requête (`CONN_MAX_AGE = 0`). Le code
+  du frontend est déjà découpé par écran et mis en cache (immutable + PWA) : il n'est pas en cause.
+- **Modifications :** (1) pool natif de Django pour Postgres (`config/bases.py` : `base_depuis_url(pool_max)`,
+  `pool_postgres`, `CONN_HEALTH_CHECKS`) ; taille `DB_CONCURRENCE + 2` ; variable `DB_POOL` (défaut actif) ;
+  dépendance `psycopg-pool==3.3.3` (publiée le 2026-09-22, paquet officiel de psycopg). Mêmes options de connexion
+  (TLS, liaison de canal) ; MySQL inchangé. (2) `RafraichirView` : `order_by("pk")` sur le jeton verrouillé, car
+  Postgres refusait le `FOR UPDATE` (jointure externe du tri par défaut) → 500 à chaque rafraîchissement sur Vercel
+  (R25). (3) Frontend : le code de l'espace protégé (admin, scan, super admin) se télécharge en parallèle de
+  `/auth/moi/` (`App.jsx` `charger*`, `RequireRole` `precharger`) au lieu d'après.
+- **Fichiers concernés :** `backend/config/bases.py`, `backend/config/settings.py`, `backend/requirements.txt`,
+  `backend/apps/comptes/views.py`, `backend/apps/noyau/tests/test_deploiement.py`, `frontend/src/App.jsx`,
+  `frontend/src/features/auth/RequireRole.jsx`.
+- **Validation :** `ruff check` / `ruff format --check` OK ; `pytest --create-db` **267 passed** sur MySQL et **267
+  passed** sur un Postgres local avec le pool (avant la correction de `RafraichirView` : 6 échecs sur Postgres) ;
+  essai ASGI (gunicorn + uvicorn) sur Postgres local : 100 appels de `/api/sante/` (dont 50 simultanés), tous en
+  200, ouvrent 10 connexions avec le pool contre 100 sans ; `npm run lint` OK ; Vitest 68/68 ; `npm run build` OK ;
+  `npm run e2e` 3/3. Un échec `seed_demo` observé avec `--reuse-db` venait d'une base de test périmée (OK avec
+  `--create-db`).
+- **Risques ou limites :** non déployé (gain en ligne à mesurer). Le démarrage à froid de la fonction Vercel (≈ 5 s)
+  n'est pas traité. Neon via PgBouncer (mode transaction) : Django n'utilise pas de requêtes préparées côté serveur
+  par défaut, compatible ; à surveiller dans les journaux après déploiement. R26 (réouverture après 15 min →
+  connexion) relevé, non corrigé.

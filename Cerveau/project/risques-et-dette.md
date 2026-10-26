@@ -3,7 +3,7 @@ type: project
 statut: implémenté
 verifie: 2026-10-26
 commit: d220011
-sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
+sources: [backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
 ---
 
 # Risques, limitations et dette technique
@@ -197,6 +197,21 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - `runserver` (développement, `docker-compose.yml`) journalise l'URL complète, dont `?q=` (souvent un email). En
   production, `backend/gunicorn.conf.py` applique `MasquerParametresUrl` / `MasquerDonneesPersonnelles`
   aux journaux d'accès. **Statut** : accepté (poste de développement).
+
+## R25 — Rafraîchissement de session en erreur 500 sur Postgres (fiabilité, moyen) — ✅ RÉSOLU le 2026-10-26
+- **Constat** : `RafraichirView` verrouillait `OutstandingToken` avec le tri par défaut du modèle (`user`, clé
+  nullable) → jointure externe refusée par Postgres sous `FOR UPDATE`. Sur Vercel + Neon, chaque rafraîchissement
+  échouait (500) : après 15 min, l'utilisateur était renvoyé à la connexion. MySQL (production) n'était pas touché ;
+  la CI ne teste que MySQL.
+- **Résolution** : `.order_by("pk")` (`backend/apps/comptes/views.py`) ; verrou identique. Suite pytest passée sur
+  Postgres (267/267). 📋 Proposition : ajouter une passe Postgres à la CI.
+
+## R26 — Réouverture de l'application après 15 min : écran de connexion malgré une session valide (UX, à confirmer)
+- **Constat** : `lib/api.js` ne tente pas `/auth/rafraichir/` pour les URL `/api/auth/*`, dont `/api/auth/moi/`
+  (lu par `RequireRole` au chargement). Le cookie `fc_access` expire après `JWT_ACCESS_MINUTES` (15) alors que
+  `fc_refresh` vaut 12 h : rouvrir l'onglet après 15 min d'inactivité mène à `/connexion` au lieu de renouveler
+  la session. Observé dans le code le 2026-10-26, non reproduit dans un navigateur. **Statut** : ouvert (toucher au
+  flux d'authentification : à décider).
 
 Rappel : le temps de réponse du renvoi du QR sur Vercel (R6) est inchangé au 2026-10-22.
 

@@ -234,7 +234,9 @@ class RafraichirView(APIView):
             with transaction.atomic():
                 ancien = RefreshToken(raw)
                 # verrou sur le jeton : deux rafraîchissements simultanés n'obtiennent pas chacun une nouvelle session
-                origine = OutstandingToken.objects.select_for_update().filter(jti=ancien["jti"]).first()
+                # order_by("pk") : le tri par défaut du modèle (« user », clé nullable) ajouterait une jointure externe,
+                # que Postgres refuse de verrouiller (FOR UPDATE) ; jti est unique, le tri ne change rien d'autre
+                origine = OutstandingToken.objects.select_for_update().filter(jti=ancien["jti"]).order_by("pk").first()
                 if origine is None or BlacklistedToken.objects.filter(token=origine).exists():
                     raise TokenError("jeton déjà utilisé")
                 admin = Admin.objects.get(pk=ancien["user_id"])

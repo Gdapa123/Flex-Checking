@@ -3,7 +3,7 @@ type: operations
 statut: implémenté
 verifie: 2026-10-26
 commit: d220011
-sources: [.gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
+sources: [backend/config/bases.py, .gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
 
 # Installation et développement local
@@ -64,7 +64,7 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
 
 ## Variables d’environnement (noms seulement)
 `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `APP_PUBLIC_URL`, `NUM_PROXIES`,
-`MYSQL_*`, `DB_HOST`, `DB_PORT`, `DATABASE_URL`, `DB_SSLMODE`, `REDIS_URL`, `REDIS_CACHE_URL`, `EMAIL_*`,
+`MYSQL_*`, `DB_HOST`, `DB_PORT`, `DATABASE_URL`, `DB_SSLMODE`, `DB_POOL` (Postgres : pool de connexions, actif par défaut, `0` pour le couper), `REDIS_URL`, `REDIS_CACHE_URL`, `EMAIL_*`,
 `DEFAULT_FROM_EMAIL` (adresse seule : le nom d’expéditeur vient des paramètres), `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS`, `JWT_COOKIE_SECURE`, `CELERY_TASK_ALWAYS_EAGER`,
 `LIMITE_ANONYME`, `LIMITE_COMPTE`, `LIMITE_INSCRIPTION_IP`, `WEB_CONCURRENCY`, `DB_CONCURRENCE`, `ATTENTE_MAX`,
 `EXPORT_SEUIL_ASYNCHRONE`, `CRON_SECRET` (cron Vercel du sondage, lu dans `backend/config/settings.py` ; absent de

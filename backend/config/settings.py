@@ -11,6 +11,7 @@ import environ
 from celery.schedules import crontab
 
 from .bases import base_depuis_url, caches_sans_redis
+from .concurrence import DB_CONCURRENCE
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent
@@ -90,8 +91,14 @@ DATABASES = {
 # Base fournie par une URL (ex. Postgres Neon pour l'environnement de test sur Vercel) : remplace MySQL.
 # Sans DATABASE_URL, la configuration MySQL ci-dessus s'applique (Docker Compose, VPS).
 # Les options de l'URL (sslmode, channel_binding…) priment ; à défaut, chiffrement imposé (DB_SSLMODE).
+# Postgres : pool de connexions (DB_POOL=0 pour le désactiver), dimensionné sur la file d'attente ASGI, plus
+# une marge pour le contrôle de santé qui ne passe pas par la file.
 if env("DATABASE_URL", default=""):
-    DATABASES["default"] = base_depuis_url(env.db("DATABASE_URL"), env("DB_SSLMODE", default="require"))
+    DATABASES["default"] = base_depuis_url(
+        env.db("DATABASE_URL"),
+        env("DB_SSLMODE", default="require"),
+        pool_max=DB_CONCURRENCE + 2 if env.bool("DB_POOL", default=True) else 0,
+    )
 
 AUTH_USER_MODEL = "comptes.Admin"
 PASSWORD_HASHERS = [
