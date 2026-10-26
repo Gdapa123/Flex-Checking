@@ -2,7 +2,7 @@
 type: architecture
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: d220011
 sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, frontend/src/App.jsx, backend/Dockerfile]
 ---
 

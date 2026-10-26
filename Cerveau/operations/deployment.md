@@ -2,7 +2,7 @@
 type: operations
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: d220011
 sources: [docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
 ---
 
@@ -59,8 +59,9 @@ seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais
   données expirées (`donnees_personnelles.anonymiser_donnees_expirees`, voir
   [donnees-personnelles](../features/donnees-personnelles.md)).
 - Build du frontend : Node.js ≥ 24.22.1 exigé par `frontend/package.json` (`engines`, `engine-strict` dans
-  `frontend/.npmrc`) ; ❓ à vérifier au prochain déploiement que Vercel construit avec une 24.x assez récente,
-  sinon le build échoue (la version en ligne reste la précédente).
+  `frontend/.npmrc`) ; ✅ vérifié le 2026-10-26 : le déploiement de production déclenché par le push de `d220011`
+  est « Ready » (le garde-fou `engines` est passé), site et `/confidentialite` en 200. Si Vercel construisait un jour
+  avec une 24.x plus ancienne, le build échouerait et la version en ligne resterait la précédente.
 
 ## Tests de charge
 Procédure et résultats de référence : `infra/charge/README.md` (à lancer sur un environnement de test,

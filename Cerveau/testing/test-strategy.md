@@ -2,7 +2,7 @@
 type: testing
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: d220011
 sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/.nvmrc, frontend/.npmrc, frontend/tests/fileHorsLigne.test.js, backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/, frontend/vite.config.js, frontend/package.json, frontend/playwright.config.js, frontend/tests/, .github/workflows/ci.yml]
 ---
 
@@ -36,7 +36,7 @@ qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertiss
 ## Dernière exécution locale connue
 | Date | Contrôle | Résultat |
 |---|---|---|
-| 2026-10-26 | Vérification complète sur le poste (Node 24.22.1, MySQL + Redis Docker, `seed_demo`) : `ruff check` + `ruff format --check`, `pytest`, `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **266 passed** ; lint OK ; Vitest **68/68** ; build OK ; Playwright **3/3** (accessibilité axe comprise) — base `44eceb5` + mise à niveau Node.js non commitée |
+| 2026-10-26 | Vérification complète sur le poste (Node 24.22.1, MySQL + Redis Docker, `seed_demo`) : `ruff check` + `ruff format --check`, `pytest`, `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **266 passed** ; lint OK ; Vitest **68/68** ; build OK ; Playwright **3/3** (accessibilité axe comprise) — base `44eceb5` + mise à niveau Node.js (commitée ensuite dans `d220011`) |
 | 2026-10-23 | `npm ci`, `npm run lint`, `npm test`, `npm run build` dans `node:24-alpine` (Node 24.22.1) | ✅ Vitest **68/68**, lint et build OK (mise à niveau Node.js, modifications non commitées) |
 | 2026-10-23 | `npm ci` dans `node:24.13.0-alpine` (garde-fou `engines`) | ✅ refusé comme attendu (`EBADENGINE`, `Required: ^24.22.1`) |
 | 2026-10-23 | `pytest` sur MySQL 8 | ✅ **266 passed** |

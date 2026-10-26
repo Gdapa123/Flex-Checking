@@ -646,3 +646,18 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   `.impeccable/review/avant/`.
 - **Risques ou limites :** le Node.js du poste est désormais en 24.22.1 (EBADENGINE levé) ; le build Vercel reste à
   vérifier au prochain déploiement.
+
+## [2026-10-26] documentation | /wiki-maj : pages alignées sur `d220011`
+
+- **Contexte :** commit et push de la mise à niveau de Node.js (`d220011`) ; 9 pages signalées par `lint_wiki.py`
+  car leurs sources (`frontend/package.json`, `.npmrc`, `.nvmrc`, `docker-compose.yml`, `ci.yml`,
+  `infra/charge/README.md`) ont changé dans ce commit.
+- **Modifications :** diff de code de `d220011` relu (engines `^24.22.1`, `engine-strict`, `.nvmrc` « 24 »,
+  `node-version-file` + `check-latest` en CI, `pull_policy: always`, test de charge `node:24-alpine --pull always`) :
+  conforme au texte déjà écrit. `verifie`/`commit` mis à jour sur les 9 pages ; `operations/deployment.md` : le point
+  ❓ « à vérifier au prochain déploiement » devient ✅ (build Vercel de production « Ready », site et
+  `/confidentialite` en 200) ; ENF-S14 et `test-strategy.md` ne parlent plus de modifications non commitées ;
+  `index.md` mis à jour.
+- **Validation :** `vercel ls` / `vercel inspect` : déploiement de production du frontend « Ready » ; `curl` 200 ;
+  `python3 Cerveau/outils/lint_wiki.py` relancé (voir ci-dessous).
+- **Risques ou limites :** aucun risque nouveau ; le risque de build Vercel noté le 2026-10-23 est levé.

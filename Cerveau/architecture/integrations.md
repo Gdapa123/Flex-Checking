@@ -2,7 +2,7 @@
 type: architecture
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: d220011
 sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, frontend/src/lib/agenda.js, frontend/src/features/scan/useCamera.js, frontend/vercel.json, backend/vercel.json, docker-compose.yml]
 ---
 
