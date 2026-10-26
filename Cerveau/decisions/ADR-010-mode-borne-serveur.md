@@ -1,9 +1,9 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-21
-commit: be899ff
-sources: [backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/fileHorsLigne.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/fileHorsLigne.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_durcissement.py]
 ---
 
 # ADR-010 — Borne libre-service : session restreinte côté serveur
@@ -47,6 +47,13 @@ réglages la restreint de nouveau ; le frontend renvoie toute route hors `/scan`
   recherche réduite, liste des cérémonies, `auth/borne/`, `auth/verifier-mot-de-passe/` ; `auth/moi/`
   (`IsAuthenticated`, renvoie `borne`) et la déconnexion (`AllowAny`) restent accessibles. Tests : `test_audit_securite.py` (recherche réduite, jeton `choix`, liste réduite
   des cérémonies).
-- ❓ À confirmer (déduit du code, non testé) : un « C’est moi » enregistré hors ligne garde un jeton `choix` de
-  5 min ; rejoué après expiration, il recevrait 403 et bloquerait la file hors ligne de la cérémonie (voir
-  [hors-ligne](../features/hors-ligne.md)).
+- Compléments du 2026-10-22 (commits `d91d426` et `7e0e071`, sans changement de décision) :
+  - « C’est moi » hors ligne : la file ne se bloque plus (`fileHorsLigne.rejouer` retire un 403
+    `CHOIX_BORNE_INVALIDE`, R13 résolu) et le jeton `choix` porte son heure d’émission : il est jugé à l’heure du
+    **passage** (`dateClient`, plafonnée à l’heure serveur ; de 1 min avant à 5 min après l’émission), sa signature
+    restant lisible 12 h (`vues_scan.choix_borne_valide`, `DELAI_REJEU_CHOIX_S`). Un passage touché hors ligne et
+    synchronisé plus tard est donc accepté. Test : `test_durcissement.py::test_c_est_moi_touche_hors_ligne_puis_synchronise`.
+  - Codes invalides en session borne plafonnés à 10 par 10 min (`MAX_CODES_INVALIDES_BORNE`, 30 sinon) ; le risque
+    résiduel de codes devinables reste ouvert (R19 de [risques-et-dette](../project/risques-et-dette.md)) ; le
+    blocage de la borne après 10 codes faux a été écarté (déni de service possible).
+- Mise en œuvre revérifiée au commit `44eceb5` (voir aussi [hors-ligne](../features/hors-ligne.md)).

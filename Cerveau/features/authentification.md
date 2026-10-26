@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py]
 ---
 
@@ -40,8 +40,9 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
 - **Rafraîchissement** (`auth/rafraichir/`) : CSRF exigé (le frontend envoie `X-CSRFToken`) ; jeton verrouillé
   (`select_for_update` sur `OutstandingToken`) : deux rafraîchissements simultanés n'ouvrent pas deux sessions.
   **Onglets simultanés** (2026-10-22) : si le jeton refusé est authentique (signature et expiration vérifiées) et a
-  été révoqué il y a moins de 30 s (`DELAI_COURSE_RAFRAICHISSEMENT_S`) par une rotation (un jeton plus récent existe
-  pour le compte), `RafraichirView` répond 409 `SESSION_DEJA_RENOUVELEE` **sans effacer les cookies**
+  été révoqué il y a moins de 30 s (`DELAI_COURSE_RAFRAICHISSEMENT_S`) par une rotation (un jeton plus récent du compte
+  émis dans la fenêtre de cette rotation, de 2 s avant à 5 s après la révocation : une nouvelle connexion sur un
+  autre appareil ne suffit pas, depuis `7e0e071`), `RafraichirView` répond 409 `SESSION_DEJA_RENOUVELEE` **sans effacer les cookies**
   (`_renouvele_par_un_autre_onglet`) ; une déconnexion ou une révocation n'émettant pas de nouveau jeton reste un
   401 `SESSION_EXPIREE`.
 - Champ mot de passe avec bouton « Afficher / Masquer » (`Champ`, aussi dans le changement de mot de passe).
@@ -61,9 +62,10 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
 
 ## Déconnexion
 Refresh mis en liste noire **et jeton d'accès révoqué** jusqu'à son expiration (`revoquer_acces`, jti en cache des
-limites) : un jeton volé ne sert plus, y compris pour le WebSocket. Depuis le 2026-10-22, la vue notifie
-`perimetre` au groupe du compte (`temps_reel.groupe_compte`) : `TempsReelConsumer.perimetre` ferme aussitôt (4001)
-la connexion temps réel dont le jeton d'accès est révoqué. Les autres appareils du compte restent connectés.
+limites) : un jeton volé ne sert plus, y compris pour le WebSocket. Depuis `7e0e071`, la vue envoie au groupe du compte
+(`temps_reel.groupe_compte`) le message `session_fermee` portant le jti du jeton d'accès :
+`TempsReelConsumer.session_fermee` ne ferme (4001) que la connexion temps réel ouverte avec ce jeton. Les autres
+appareils du compte restent connectés et ne sont pas sollicités (ils comparent seulement le jti).
 
 ## Session « borne libre-service » ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md))
 `POST auth/borne/` réémet les jetons avec la claim `borne` (conservée au rafraîchissement). `CompteUtilisable` refuse

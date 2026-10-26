@@ -1,9 +1,9 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-10-22
-commit: be899ff
-sources: [docker-compose.prod.yml, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
 ---
 
 # Déploiement sur un VPS Infomaniak, pas à pas
@@ -659,10 +659,12 @@ Toutes les commandes : **session SSH du serveur**, dans `/opt/flex-checking` (ta
 
 ### 10.1 Construire le site (frontend)
 
-Le site est construit dans un conteneur Node 24 (même version que l’intégration continue) : rien à installer.
+Le site est construit dans un conteneur Node 24, toujours la dernière version publiée (`--pull always`) : rien à
+installer. Si npm affiche « Unsupported engine » (`EBADENGINE`), la version téléchargée est trop ancienne pour les
+correctifs de sécurité exigés par `frontend/package.json` : réessayez plus tard ou prévenez le développeur.
 
 ```bash
-docker run --rm -v "$PWD/frontend:/app" -w /app node:24-alpine sh -c "npm ci && npm run build"
+docker run --rm --pull always -v "$PWD/frontend:/app" -w /app node:24-alpine sh -c "npm ci && npm run build"
 ```
 
 - **Si tout va bien (2 à 5 minutes) :** la fin affiche « built in … » ; `ls frontend/dist` montre
@@ -681,6 +683,7 @@ docker compose up -d --build
 - Les migrations créent aussi les statuts, les quatre programmes et les paramètres.
 - Le volume `media-data` (exports de plus de 50 invités, écrits par Celery puis téléchargés par Django) est
   déjà prévu dans `docker-compose.prod.yml` : **aucun fichier compose supplémentaire** n’est nécessaire.
+- Les journaux de chaque conteneur sont plafonnés (3 fichiers de 10 Mo) : ils ne peuvent pas remplir le disque.
 
 ### 10.3 Vérifier l’état
 
@@ -839,6 +842,8 @@ dans `.env`.
 
 La base contient les données personnelles des invités. Les sauvegardes sont donc **chiffrées** (AES-256)
 avant d’être écrites, puis rapatriées sur un poste de MDE.
+En complément, MySQL garde ses journaux binaires **7 jours** (`--binlog-expire-logs-seconds=604800` dans
+`docker-compose.prod.yml`) : ils couvrent une semaine si une sauvegarde nocturne a manqué.
 
 ### 14.1 Créer la phrase de chiffrement
 
@@ -995,8 +1000,9 @@ Une sauvegarde restée sur le VPS ne protège pas d’une perte du VPS.
 cd /opt/flex-checking
 sudo /usr/local/bin/flex-sauvegarde.sh
 git pull
-docker run --rm -v "$PWD/frontend:/app" -w /app node:24-alpine sh -c "npm ci && npm run build"
-docker compose up -d --build
+docker run --rm --pull always -v "$PWD/frontend:/app" -w /app node:24-alpine sh -c "npm ci && npm run build"
+docker compose build --pull
+docker compose up -d
 docker compose ps -a
 docker image prune -f
 ```
@@ -1006,6 +1012,22 @@ docker image prune -f
 - **Si `git pull` refuse (« Your local changes would be overwritten ») :** quelqu’un a modifié un fichier sur
   le serveur. Ne forcez rien : notez le message et demandez au développeur.
 - Le site installé sur les téléphones (PWA) se met à jour au chargement suivant (page d’entrée en `no-cache`).
+
+## Veille de sécurité (une fois par mois, et dès qu’une alerte paraît)
+
+Les failles des briques utilisées (Python, Node.js, MySQL, Redis, Caddy, Ubuntu) sont publiées sur leurs sites
+officiels. **Où :** navigateur. **Quoi :** consulter
+[nodejs.org/en/blog/vulnerability](https://nodejs.org/en/blog/vulnerability) (Node.js ne sert qu’à **construire** le
+frontend ; en production, Caddy sert des fichiers statiques), [python.org](https://www.python.org/downloads/),
+[ubuntu.com/security/notices](https://ubuntu.com/security/notices). Ce projet n’utilise **pas PHP** : les alertes
+PHP (par exemple CVE-2026-109618 et CVE-2026-109619 du 21/10/2026) ne le concernent pas.
+
+Node.js : les commandes de ce guide prennent toujours la dernière version 24.x (`--pull always`) ; rien à modifier,
+il suffit de reconstruire (« Mettre à jour l’application »). La version minimale acceptée est fixée dans
+`frontend/package.json` (`engines`), à relever par le développeur après une alerte. Pour les images de base du
+serveur (Python, MySQL, Redis, Caddy), reconstruisez avec `docker compose build --pull` puis
+`docker compose up -d` : `--pull` télécharge leurs derniers correctifs. Les mises à jour d’Ubuntu s’installent
+seules (`unattended-upgrades`).
 
 ## Surveillance minimale (gratuite)
 

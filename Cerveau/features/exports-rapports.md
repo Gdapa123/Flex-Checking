@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-21
-commit: be899ff
-sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/taches.py, backend/apps/noyau/rapports.py, backend/apps/noyau/analytique.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, frontend/src/lib/telechargement.js]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/taches.py, backend/apps/noyau/rapports.py, backend/apps/noyau/analytique.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, frontend/src/lib/telechargement.js, docker-compose.prod.yml]
 ---
 
 # Exports, rapports et analyses
@@ -23,7 +23,9 @@ sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/a
 - **Injection de formule neutralisée** : toute saisie commençant par `= + - @` tabulation ou retour chariot est
   préfixée d’une apostrophe (y compris le téléphone « +225 … »).
 - > 50 lignes (invités/présences) : tâche Celery, fichier unique supprimé au téléchargement, purge 6 h ;
-  sur Vercel le seuil est relevé (`EXPORT_SEUIL_ASYNCHRONE=1000000`).
+  sur Vercel le seuil est relevé (`EXPORT_SEUIL_ASYNCHRONE=1000000`). Fichiers écrits dans `MEDIA_ROOT/exports`
+  (`taches.DOSSIER`) ; en production Docker, volume `media-data:/app/media` partagé entre le backend et le worker
+  Celery (`docker-compose.prod.yml`, R17 résolu le 2026-10-22).
 - Chaque export est journalisé (format, nombre, type, cérémonie).
 
 ## Rapports PDF (ReportLab, `rapports.py`)

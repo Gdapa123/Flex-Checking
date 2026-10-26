@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/comptes/views.py, backend/apps/noyau/temps_reel.py, backend/apps/noyau/consumers.py, backend/config/asgi.py, backend/apps/comptes/authentication.py, frontend/src/lib/tempsReel.js, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, backend/apps/noyau/tests/test_temps_reel.py, frontend/tests/tempsReel.test.js]
 ---
 
@@ -30,10 +30,13 @@ Depuis `bd4f807` : `statistiques` recharge aussi `suivi-emails` (écran « Suivi
 - Sans Redis (`CHANNEL_LAYERS = {}`) : connexion acceptée puis fermée avec le code **4004** (temps réel indisponible).
 - Jeton d'accès révoqué par une déconnexion (`authentication.acces_revoque`) ou antérieur à un changement de mot de
   passe ou à une désactivation du compte (`jeton_revoque`, `version_session`) : fermeture 4001.
-- **Déconnexion immédiate** (2026-10-22) : `DeconnexionView` notifie `perimetre` au groupe `compte.<id>` ;
-  `TempsReelConsumer.perimetre` vérifie alors `acces_revoque` et ferme en 4001 la connexion de la session déconnectée
-  (auparavant, elle restait ouverte jusqu'à l'expiration du jeton) ; les autres sessions du compte recalculent
-  seulement leurs groupes.
+- **Déconnexion immédiate** : `DeconnexionView` envoie au groupe `compte.<id>` le message `session_fermee` avec le
+  jti du jeton d'accès ; `TempsReelConsumer.session_fermee` ferme en 4001 la seule connexion ouverte avec ce jeton
+  (auparavant, elle restait ouverte jusqu'à l'expiration du jeton). Depuis `7e0e071`, les autres sessions du compte
+  ne sont plus sollicitées (le 2026-10-22, un message `perimetre` leur faisait recalculer leurs groupes).
+  `perimetre` reste envoyé à chaque enregistrement du compte (rôle, mot de passe, activation : un compte désactivé
+  ou repassé en mot de passe temporaire est fermé en 4003) et aux changements d'affectation ; `fermer` (4003) à la
+  suppression du compte.
 
 ## Navigateur (`lib/tempsReel.js`)
 - Une connexion par onglet, ouverte par `RequireRole` dans les espaces connectés.

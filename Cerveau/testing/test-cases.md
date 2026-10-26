@@ -1,15 +1,15 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
-sources: [frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx, frontend/e2e/accessibilite.spec.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
 ---
 
 # Cas de test par domaine
 
 Correspondance entre les fichiers de test et les fonctionnalités. Les noms de tests décrivent le comportement attendu.
-Volumes : voir [test-strategy](test-strategy.md) (257 tests backend exécutés, 66 Vitest dans 15 fichiers, 3 Playwright au 2026-10-22).
+Volumes : voir [test-strategy](test-strategy.md) (266 tests backend exécutés, 68 Vitest dans 16 fichiers, 3 Playwright au 2026-10-22, confirmés le 2026-10-23 sauf Playwright).
 
 ## Backend (`backend/apps/noyau/tests/`)
 | Fichier | Couvre | Page |
@@ -30,7 +30,8 @@ Volumes : voir [test-strategy](test-strategy.md) (257 tests backend exécutés, 
 | `test_dates_inscription.py` | inscription jamais datée dans le futur (modèle), `seed_demo --force` sans date future, migration 0008 supprimant les inscriptions futures | [inscription](../features/inscription.md) |
 | `test_sondage.py` | envoi le lendemain aux seuls présents, programme désactivé, rattrapage, envoi sans file dans un budget puis reprise, jamais après clôture ni annulation, cron protégé par `CRON_SECRET`, lecture du lien, réponse unique par lien et par appareil, lien expiré, validation, résultats et droits, suivi et renvoi, email de test et aperçu, anonymat en base, section du rapport PDF, caractères de contrôle du commentaire refusés | [sondage-satisfaction](../features/sondage-satisfaction.md) |
 | `test_suivi_emails.py` | compteurs et échecs, droits (admins de la cérémonie, super admin), renvoi des seuls échecs, magazine non renvoyé aux invités plus présents, magazine désactivé, email de test (dont SMTP indisponible), type invalide | [emails](../features/emails.md) |
-| `test_durcissement.py` (2026-10-22) | sessions fermées à la désactivation, renvoi du sondage sans révéler qui a répondu, codes limités à la borne, modèles d'emails enregistrés (bug `JSON_UNDERSCOREIZE`), caractères de contrôle refusés, variables remplacées en une seule passe, `Message-ID` stable, relance d'une tentative perdue, scan hors ligne rejoué après annulation (`ANNULE_DEPUIS`), concurrence sur la dernière place, `seed_demo` refusé hors développement | [emails](../features/emails.md), [scan](../features/scan-emargement.md), [authentification](../features/authentification.md) |
+| `test_durcissement.py` (2026-10-22) | sessions fermées à la désactivation, codes limités à la borne, modèles d'emails enregistrés (bug `JSON_UNDERSCOREIZE`), caractères de contrôle refusés, variables remplacées en une seule passe, `Message-ID` stable, renvoi du sondage identique que l'invité ait répondu ou non (réponse, email, statut), `Message-ID` incluant l'hôte public, relance d'une tentative perdue seulement si la dernière date de plus d'1 h (`derniere_tentative_le`), scan hors ligne rejoué après annulation (`ANNULE_DEPUIS`, y compris rejeu de plus de 12 h), jeton « C’est moi » valable 5 min à l'heure du passage hors ligne, concurrence sur la dernière place, `seed_demo` refusé hors développement | [emails](../features/emails.md), [scan](../features/scan-emargement.md), [authentification](../features/authentification.md) |
+| `test_donnees_personnelles.py` (2026-10-22) | calcul des mois, anonymisation après la durée de conservation, durée réglable, page de confidentialité publique, réglages réservés au super admin, emails renvoyant vers la politique, cron sans file qui anonymise aussi, invités ajoutés après une anonymisation et motifs d'annulation effacés | [donnees-personnelles](../features/donnees-personnelles.md) |
 | `test_theme.py` | tokens de référence, contrastes, couleur de texte, Argon2 en production | — |
 
 ## Frontend (`frontend/tests/`)
@@ -39,15 +40,22 @@ Volumes : voir [test-strategy](test-strategy.md) (257 tests backend exécutés, 
 `sondage` (trois questions obligatoires, lien expiré, délai dépassé pendant la saisie, appareil déjà utilisé, déjà
 répondu, indicateurs et commentaires, jeton jamais transmis aux signalements), `suiviEmails` (compteurs, échecs et
 renvoi après confirmation, email de test, emails désactivés, carte de l'email n°3), `fileHorsLigne` (2026-10-22 :
-retrait d'un « C’est moi » expiré `CHOIX_BORNE_INVALIDE` puis rejeu des suivants ; arrêt sur un autre 403).
+retrait d'un « C’est moi » expiré `CHOIX_BORNE_INVALIDE` puis rejeu des suivants ; arrêt sur un autre 403), `confidentialite` (2026-10-22 : durée et contact affichés, validation des réglages 1 à 60 mois et email facultatif).
 
 ## E2E (`frontend/e2e/`)
 - `parcours.spec.js` (2 tests) : inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export,
-  découpé en étapes `test.step` ; temps réel (une inscription apparaît chez l’admin sans rechargement). Version de
-  travail **non commitée** au 2026-10-21 (aides `evenementPmdOuvert` / `urlInvites`, fixtures `browser` / `baseURL`,
-  même comportement selon la description du changement) ; exécutée avec succès le 2026-10-22 (voir [test-strategy](test-strategy.md)).
-- `accessibilite.spec.js` : audit axe-core des écrans principaux (iframes d'aperçu d'email exclues).
+  découpé en étapes `test.step` ; temps réel (une inscription apparaît chez l’admin sans rechargement). Aides
+  `evenementPmdOuvert` / `urlInvites`, fixtures `browser` / `baseURL` (refactorisation du 2026-10-21, commitée dans
+  `d91d426`) ; exécuté avec succès le 2026-10-22 (voir [test-strategy](test-strategy.md)).
+- `accessibilite.spec.js` : audit axe-core des écrans principaux, dont `/confidentialite` (iframes d'aperçu d'email exclues).
 
 ## Non couvert (constaté)
+- Sessions (constaté le 2026-10-26) : la déconnexion est testée pour la révocation du jeton d'accès, le maintien
+  des autres appareils en HTTP (`test_audit_securite.py::test_deconnexion_revoque_le_jeton_d_acces`) et la fermeture
+  4001 du WebSocket **de la session** (`test_temps_reel.py::test_deconnexion_ferme_le_temps_reel_de_la_session`) ;
+  aucun test ne vérifie que les connexions temps réel des **autres** appareils du compte restent ouvertes. La course
+  entre onglets n'est testée que par le 409 puis le refus après 5 min
+  (`test_rafraichissements_simultanes_sans_deconnexion`) : pas de test de la limite aux jetons émis dans la
+  fenêtre de la rotation.
 - File IndexedDB (`fileHorsLigne.js`) : seul `rejouer` est testé (Vitest, avec dépendances simulées) ; pas de test
   dans un vrai navigateur, ni de `purgerAnciens`.

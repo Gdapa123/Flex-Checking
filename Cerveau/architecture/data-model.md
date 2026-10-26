@@ -1,15 +1,15 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-21
-commit: be899ff
-sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py, backend/apps/noyau/sondages.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py, backend/apps/noyau/sondages.py, backend/apps/noyau/donnees_personnelles.py, backend/apps/comptes/migrations/]
 ---
 
 # Modèle de données
 
 Base MySQL 8 utf8mb4 (Postgres sur l’environnement Vercel), stockage en UTC, fuseau d’affichage `Africa/Abidjan` (UTC+0).
-Migrations : `0001_initial` → `0009_sondage_satisfaction` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma, et affiche leur nombre ; la 0009 ajoute `sondage_actif`, les champs de l’email n°3, le type `SONDAGE` et les deux tables du sondage), `0001_initial` (comptes).
+Migrations : `0001_initial` → `0011_derniere_tentative` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma, et affiche leur nombre ; la 0009 ajoute `sondage_actif`, les champs de l’email n°3, le type `SONDAGE` et les deux tables du sondage ; la 0010 les champs des données personnelles ; la 0011 `EmailEnvoye.derniere_tentative_le`), `0001_initial` et `0002_version_session` (comptes).
 
 ## Entités
 
@@ -20,7 +20,8 @@ PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740
 
 ### Evenement (cérémonie)
 `programme` (FK **PROTECT**), `date`, `heure_debut`, `heure_accueil`, `lieu`, `lien_carte`, `capacite` (≥ 1),
-`date_limite_inscription`, `inscriptions_ouvertes`, `slug_inscription` (unique), `admins` (M2M Admin).
+`date_limite_inscription`, `inscriptions_ouvertes`, `slug_inscription` (unique), `admins` (M2M Admin),
+`anonymise_le` (null ; date de la dernière anonymisation de ses invités, migration `0010`).
 - `nom_affiche` = « Graduation {programme} {année} » — **calculé, jamais stocké**.
 - Slug : `slugify(programme)-année-<6 hex>`, jamais réattribué (vérifie aussi `AncienSlug`).
 - Validations : date limite ≤ date ; accueil ≤ début.
@@ -42,6 +43,9 @@ Table de référence `INSCRIT` (ordre 1), `PRESENT` (ordre 2), créée par data 
   maintenant + 1 min (`ValidationError`). Le formulaire et l’ajout manuel les datent à l’heure du serveur. Garde-fou
   applicatif seulement (MySQL n’accepte pas `NOW()` dans un `CHECK`) ; `bulk_create` le contourne, d’où le test sur
   `seed_demo`.
+- **Invité anonymisé** (`donnees_personnelles.anonymiser_evenement`) : nom « Anonyme », prénom, téléphone,
+  entreprise, fonction et `consentement_le` vidés, email `anonyme-<id>@anonyme.invalid`, nouveau `qr_token` ;
+  c’est ce domaine d’email qui distingue un invité anonymisé (pas `Evenement.anonymise_le`).
 - Index : (evenement, statut), (evenement, present_le), (evenement, nom), (evenement, inscrit_le).
 
 ### Emargement
@@ -49,7 +53,8 @@ Table de référence `INSCRIT` (ordre 1), `PRESENT` (ordre 2), créée par data 
 `date`, `date_client`, `annule_le`, `annule_par`, `motif_annulation`. Une annulation ne supprime jamais la ligne.
 
 ### EmailEnvoye
-`invite`, `type` (INVITATION | MAGAZINE | SONDAGE), `statut` (EN_ATTENTE | ENVOYE | ECHEC), `tentatives`, `envoye_le`,
+`invite`, `type` (INVITATION | MAGAZINE | SONDAGE), `statut` (EN_ATTENTE | ENVOYE | ECHEC), `tentatives`,
+`derniere_tentative_le` (null, migration `0011` ; sert à la relance des tentatives perdues), `envoye_le`,
 `erreur`, `cree_le`. Une ligne par envoi (chaque renvoi crée une ligne). La colonne « Email 1 » affiche le
 statut de la **dernière** ligne INVITATION. Libellés communs : `libelle_email` / `LIBELLES_EMAIL` (« Email n°1 · invitation », « Email n°2 · magazine », « Email n°3 · sondage »).
 
@@ -58,7 +63,7 @@ statut de la **dernière** ligne INVITATION. Libellés communs : `libelle_email`
 (JSON **sans donnée personnelle**), `date`.
 
 ### Parametres (singleton pk=1)
-- `duree_conservation_mois` (1–60, défaut 12) et `contact_donnees` (email, facultatif) : protection des données personnelles (migration `0010`, colonnes avec `db_default`) ; `Evenement.anonymise_le` (null) date l'anonymisation des invités (voir [donnees-personnelles](../features/donnees-personnelles.md)).
+- `duree_conservation_mois` (1–60, défaut 12) et `contact_donnees` (email, facultatif) : protection des données personnelles (migration `0010`, colonnes avec `db_default`) ; voir [donnees-personnelles](../features/donnees-personnelles.md).
 Objets et corps des emails n°1, n°2 et n°3 (`objet_email_3`, `corps_email_3` ; texte avec variables, dont `{lien_sondage}`), `duree_resultat_scan` (2 | 3 | 5 s, défaut 3),
 `son_actif`, `vibration_actif`, `expediteur` (« Flex’Checking · MDE Business School »).
 

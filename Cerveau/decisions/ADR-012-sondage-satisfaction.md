@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/suivi_emails.py, backend/config/settings.py, backend/vercel.json]
 ---
 
@@ -37,12 +37,14 @@ sondage qu'une seule fois ».
 Le code est conforme aux décisions 1 à 6 : jeton `secrets.token_urlsafe(24)` (32 caractères), `expire_le =
 création + 24 h`, `InvitationSondage` `OneToOne`, contrainte unique `(evenement, appareil)`, aucune utilisation de
 l'IP pour l'unicité (l'IP ne sert qu'à la limite de débit de 60/h), `tasks._sondage_perime`. Le renvoi manuel
-(fiche ou A7) réutilise le même lien et n'est possible que s'il est ouvert et sans réponse.
+(fiche ou A7) réutilise le même lien.
 
-Mise à jour du 2026-10-22 (non commitée) : le renvoi **individuel** depuis la fiche (`vues_invites.RenvoiEmailView`)
-n'est plus conditionné à l'absence de réponse, pour préserver l'anonymat : il exige un lien ouvert et un dernier
-envoi n°3 en échec (`sondages.sondage_renvoyable`) ; si l'invité a déjà répondu, la vue répond 202 sans rien envoyer
-(`sondage_repondu`). Le renvoi groupé de A7 (`suivi_emails`) écarte toujours les liens répondus. Commentaire :
+Mise à jour du 2026-10-22 (commits `d91d426` puis `7e0e071`) : le renvoi n'est plus conditionné à l'absence de
+réponse, pour préserver l'anonymat. Le renvoi **individuel** depuis la fiche (`vues_invites.RenvoiEmailView`) exige
+un lien ouvert et un dernier envoi n°3 en échec (`sondages.sondage_renvoyable`) ; le renvoi groupé de A7
+(`suivi_emails.renvoyer_echecs`) reprend les échecs dont le lien est ouvert. Dans les deux cas, le traitement est
+identique que l'invité ait répondu ou non (réponse, journal, envoi réel, statut ; `sondage_repondu` supprimé) :
+un invité qui a déjà répondu peut recevoir de nouveau son lien, qui affiche « déjà répondu ». Commentaire :
 caractères de contrôle refusés (`validation.sans_controle_multiligne`).
 
 ## Limites assumées

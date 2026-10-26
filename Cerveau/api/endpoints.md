@@ -1,8 +1,8 @@
 ---
 type: api
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/serializers.py, backend/apps/comptes/views.py, backend/apps/comptes/throttles.py, backend/config/settings.py, backend/vercel.json]
 ---
 
@@ -22,8 +22,8 @@ en JSON uniquement (415 sinon).
 |---|---|---|---|
 | GET | `auth/csrf/` | P | pose le cookie CSRF (204) |
 | POST | `auth/connexion/` | P (CSRF exigé) | `{email, motDePasse}` (email ASCII) → profil + cookies ; limites 5/min par IP et email, 30/min par IP (`LIMITE_CONNEXION_IP`), 20 échecs/h par compte ; un **poste connu** (cookie signé `fc_poste`, 90 jours, posé à chaque connexion réussie) a son propre compteur de 20 échecs/h (`cle + ":poste-connu"`, 2026-10-22) |
-| POST | `auth/rafraichir/` | P (cookie refresh, CSRF exigé) | rotation sous verrou (`select_for_update` sur le jeton : deux rafraîchissements simultanés n’ouvrent pas deux sessions), 204 ou 401 `SESSION_EXPIREE` (cookies effacés) ; **409 `SESSION_DEJA_RENOUVELEE`** sans effacer les cookies si le jeton, authentique, a été révoqué il y a moins de 30 s par une rotation (autre onglet, `_renouvele_par_un_autre_onglet`) |
-| POST | `auth/deconnexion/` | P | liste noire du refresh, jeton d’accès révoqué, notification `perimetre` au groupe du compte (le WebSocket de cette session est fermé en 4001), cookies effacés |
+| POST | `auth/rafraichir/` | P (cookie refresh, CSRF exigé) | rotation sous verrou (`select_for_update` sur le jeton : deux rafraîchissements simultanés n’ouvrent pas deux sessions), 204 ou 401 `SESSION_EXPIREE` (cookies effacés) ; **409 `SESSION_DEJA_RENOUVELEE`** sans effacer les cookies si le jeton, authentique, a été révoqué il y a moins de 30 s par une rotation (autre onglet, `_renouvele_par_un_autre_onglet` : un jeton plus récent du compte émis dans la fenêtre de cette rotation, de 2 s avant à 5 s après la révocation ; une connexion sur un autre appareil ne compte pas) |
+| POST | `auth/deconnexion/` | P | liste noire du refresh, jeton d’accès révoqué, message `session_fermee` (jti du jeton) au groupe du compte : seule la connexion temps réel ouverte avec ce jeton est fermée en 4001, les autres appareils ne sont pas sollicités ; cookies effacés |
 | GET | `auth/moi/` | connecté | `{id, nom, email, role, initiales, doitChangerMotDePasse}` |
 | POST | `auth/mot-de-passe/` | connecté (pas en borne) | `{actuel, nouveau}` (≤ 256 caractères, nouveau ≥ 10) → nouvelles sessions ; 5/min, 30/h par compte |
 | POST | `auth/verifier-mot-de-passe/` | connecté (borne comprise) | `{motDePasse}` → 204 (session complète si borne) ou 400 `MOT_DE_PASSE_INCORRECT` ; 5/min, 30/h par compte |
@@ -45,7 +45,7 @@ en JSON uniquement (415 sinon).
 ## Scan (`vues_scan.py`)
 | Méthode | Route | Droits | Détail |
 |---|---|---|---|
-| POST | `evenements/<id>/emargement/` | A (borne) | exactement un de `qrToken`, `code`, `inviteId` + `mode`, `poste`, `appareil`, `dateClient`, `choixBorne` → `{resultat, invite, presentLe, poste, mode, evenementAutre, magazineEnvoye, emargementId, presents, inscrits}` ; `resultat` ∈ `PRESENT`, `DEJA_EMARGE`, `CODE_INVALIDE`, `AUTRE_EVENEMENT`, `ANNULE_DEPUIS` (scan rejoué antérieur à une annulation) ; `poste` sans caractère de contrôle ; codes invalides : 30 / 10 min par compte et cérémonie, **10 en session borne** (429) ; en borne, `inviteId` exige le jeton signé `choixBorne` rendu par la recherche (5 min, sinon 403 `CHOIX_BORNE_INVALIDE`) et 12 passages manuels/min (429) |
+| POST | `evenements/<id>/emargement/` | A (borne) | exactement un de `qrToken`, `code`, `inviteId` + `mode`, `poste`, `appareil`, `dateClient`, `choixBorne` → `{resultat, invite, presentLe, poste, mode, evenementAutre, magazineEnvoye, emargementId, presents, inscrits}` ; `resultat` ∈ `PRESENT`, `DEJA_EMARGE`, `CODE_INVALIDE`, `AUTRE_EVENEMENT`, `ANNULE_DEPUIS` (scan rejoué antérieur à une annulation) ; `poste` sans caractère de contrôle ; codes invalides : 30 / 10 min par compte et cérémonie, **10 en session borne** (429) ; en borne, `inviteId` exige le jeton signé `choixBorne` rendu par la recherche (valable 5 min après son émission, mesurées à l'heure du passage `dateClient` bornée à l'heure du serveur, rejeu hors ligne accepté jusqu'à 12 h ; sinon 403 `CHOIX_BORNE_INVALIDE`) et 12 passages manuels/min (429) |
 | POST | `emargements/<id>/annulation/` | S | `{motif}` (sans caractère de contrôle) → `{resultat: ANNULE, inviteId, nomComplet, presents, inscrits}` |
 | GET | `evenements/<id>/emargements/recents/` | A | 30 derniers passages + compteurs |
 | GET | `parametres/scan/` | A (borne) | durée, son, vibration |
@@ -57,12 +57,12 @@ en JSON uniquement (415 sinon).
 | GET | `evenements/<id>/invites/` | A | `q, statut, mode, magazine, email1, tri, page, taille` → `{total, page, pages, taille, compteurs:{tous, inscrits, presents, aRenvoyer}, resultats}` |
 | POST | `evenements/<id>/invites/` | A | ajout manuel (+ `envoyerInvitation`) |
 | POST | `evenements/<id>/invites/actions-groupees/` | A (SUPPRIMER : S) | `{action: VALIDER/RENVOYER/EXPORTER/SUPPRIMER, ids (≤ 5 000), tous, format}` ; > 50 → 202 `{tacheId, nb}` ; RENVOYER : 5/h par compte (429), invités ayant reçu une invitation depuis moins d’1 h ignorés → `{traites, ignores}` |
-| GET | `evenements/<id>/invites/export/` | A | `format=xlsx|csv` + filtres |
+| GET | `evenements/<id>/invites/export/` | A | `format=xlsx\|csv` + filtres |
 | GET | `invites/` | S | tous les invités (+ `evenement`, `programme`) |
 | GET | `invites/export/` | S | export de tous les invités |
 | GET, PATCH, DELETE | `invites/<id>/` | A (DELETE : S) | fiche, modification, suppression |
 | GET | `invites/<id>/qr.png` | A | QR PNG |
-| POST | `invites/<id>/renvoi-email/` | A | `{type: INVITATION|MAGAZINE|SONDAGE}` → 202 ; 409 `MAGAZINE_INDISPONIBLE` (invité non présent, ou magazine désactivé / sans lien : `suivi_emails.magazine_disponible`) ; 409 `SONDAGE_INDISPONIBLE` (sondage désactivé, lien expiré, ou dernier envoi n°3 pas en échec : `sondages.sondage_renvoyable`) ; si l’invité a déjà répondu, 202 **sans envoi** (réponse identique : l’admin n’apprend pas qui a répondu) |
+| POST | `invites/<id>/renvoi-email/` | A | `{type: INVITATION\|MAGAZINE\|SONDAGE}` → 202 ; 409 `MAGAZINE_INDISPONIBLE` (invité non présent, ou magazine désactivé / sans lien : `suivi_emails.magazine_disponible`) ; 409 `SONDAGE_INDISPONIBLE` (sondage désactivé, lien expiré, ou dernier envoi n°3 pas en échec : `sondages.sondage_renvoyable`) ; la règle et l’envoi ne dépendent pas de la réponse de l’invité (l’admin n’apprend pas qui a répondu : un invité ayant répondu reçoit de nouveau son lien, qui affiche « déjà répondu ») |
 | GET | `invites/<id>/historique/` | A | événements datés |
 | POST | `invites/<id>/presence/` | A | valider (MANUEL) |
 | POST | `invites/<id>/presence/annulation/` | S | annuler la présence (`{motif}` sans caractère de contrôle) |
@@ -80,7 +80,7 @@ en JSON uniquement (415 sinon).
 | GET | `evenements/<id>/apercu-emails/` | A | HTML des trois emails (`TypeEmail.values`) avec données fictives ; utilisé par l’écran « Suivi des emails » (`SuiviEmails.jsx`) |
 | GET | `evenements/<id>/sondage/` | A | résultats du sondage : état, envoyés, réponses, taux, moyennes, NPS, répartitions, 20 commentaires anonymes |
 | GET | `evenements/<id>/suivi-emails/` | A | compteurs envoyés / en attente / en échec par email, 50 derniers échecs |
-| POST | `evenements/<id>/suivi-emails/renvoyer-echecs/` | A | `{type}` : replanifie les envois dont le dernier est en échec (n°2 et n°3 : présents seulement ; n°3 : lien ouvert et sans réponse) → `{traites}` (10/h) ; 409 `MAGAZINE_INDISPONIBLE` / `SONDAGE_INDISPONIBLE` |
+| POST | `evenements/<id>/suivi-emails/renvoyer-echecs/` | A | `{type}` : replanifie les envois dont le dernier est en échec (n°2 et n°3 : présents seulement ; n°3 : lien non expiré, que l’invité ait répondu ou non) → `{traites}` (10/h) ; 409 `MAGAZINE_INDISPONIBLE` / `SONDAGE_INDISPONIBLE` |
 | POST | `evenements/<id>/suivi-emails/test/` | A | `{type}` : email de test **synchrone** (objet « [Test] ») vers le compte connecté → `{destinataire}` (10/h) ; 502 `ENVOI_IMPOSSIBLE` si SMTP échoue |
 | CRUD | `admins/` | S | POST renvoie `motDePasseTemporaire` une fois ; PATCH `actif: false` incrémente `version_session` (sessions fermées, elles ne revivent pas à la réactivation) |
 | POST | `admins/<id>/reinitialiser-mot-de-passe/` | S | nouveau mot de passe temporaire, sessions fermées |
@@ -88,13 +88,13 @@ en JSON uniquement (415 sinon).
 | POST | `parametres/apercu-email/` | S | `{type, objet, corps, programme}` → `{objet, html, texte}` |
 | GET | `journal/` | S | `auteur` (id ou `systeme`), `categorie`, `action`, `du`, `au`, `page` (50) |
 | GET | `comptes/` | S | liste courte (filtre auteur) |
-| GET | `exports/<invites|presences|emails|journal>/` | S | `format`, `evenement`, `programme` |
+| GET | `exports/<invites\|presences\|emails\|journal>/` | S | `format`, `evenement`, `programme` |
 | GET | `analytique/`, `analytique/technique/`, `rapports/global/` | S | analyses, indicateurs, PDF |
 | GET | `analytique/sondages/` | S | satisfaction : cumul et ligne par cérémonie |
-| GET | `erreurs-techniques/` | S | `statut=a_traiter|resolues|toutes`, `source`, `page` (30) |
+| GET | `erreurs-techniques/` | S | `statut=a_traiter\|resolues\|toutes`, `source`, `page` (30) |
 | PATCH | `erreurs-techniques/<id>/` | S | `{resolue}` |
-| POST | `erreurs-techniques/actions/` | S | `{action: resoudre_tout|supprimer_resolues}` |
+| POST | `erreurs-techniques/actions/` | S | `{action: resoudre_tout\|supprimer_resolues}` |
 
 ## WebSocket
 `/api/ws/` : canal descendant uniquement ; messages `{type: "pret"}`, `{type: "maj", sujets, evenements}` ;
-fermetures 4001 (session) et 4003 (compte). Voir [temps-reel](../features/temps-reel.md).
+fermetures 4001 (session), 4003 (compte) et 4004 (temps réel indisponible, sans Redis). Voir [temps-reel](../features/temps-reel.md).

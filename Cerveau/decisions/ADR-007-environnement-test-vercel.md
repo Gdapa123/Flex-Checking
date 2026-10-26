@@ -1,9 +1,9 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-21
-commit: be899ff
-sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 
 # ADR-007 — Environnement de test en ligne sur Vercel, sans Redis
@@ -24,7 +24,10 @@ Besoin d’une URL de test accessible sans serveur dédié.
   satisfaction est déclenché par les **crons Vercel** de `backend/vercel.json` (8 h et 12 h UTC, chemins distincts
   `?passage=8h` / `?passage=12h` pour que Vercel ne les fusionne pas) vers `GET /api/taches-planifiees/sondages/`
   (`vues_sondage.CronSondagesView`), protégé par la variable `CRON_SECRET` (≥ 32 caractères, sinon route en 404).
-  Voir [ADR-012](ADR-012-sondage-satisfaction.md).
+  Voir [ADR-012](ADR-012-sondage-satisfaction.md). Depuis le 2026-10-22 (`d91d426`), le même cron lance aussi
+  l'anonymisation des données personnelles expirées (`donnees_personnelles.anonymiser_donnees_expirees`, clé
+  `anonymisation` de la réponse), assurée ailleurs par la tâche Beat nocturne `anonymiser_donnees` (3 h 30) —
+  voir [ADR-013](ADR-013-conservation-limitee-anonymisation.md).
 
 ## Conséquences
 - ➕ démonstration en ligne sans infrastructure.

@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/vues_invites.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/rapports.py, backend/apps/noyau/logs.py, backend/apps/noyau/temps_reel.py, backend/config/settings.py, backend/vercel.json, backend/templates/emails/sondage.html, backend/templates/emails/sondage.txt, backend/apps/noyau/tests/test_sondage.py, frontend/src/App.jsx, frontend/src/lib/signalement.js, frontend/src/lib/tempsReel.js, infra/Caddyfile.prod, frontend/src/features/invite/SondagePage.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/features/super/Analyses.jsx]
 ---
 
@@ -59,11 +59,12 @@ Gabarit `templates/emails/sondage.html` / `.txt` : carte « Votre avis en 3 ques
 date de clôture. Objet et contenu modifiables (Paramètres, onglet « Email n°3 · sondage », variable
 `{lien_sondage}`). Suivi dans l'écran A7 (compteurs, échecs, renvoi groupé, email de test).
 Renvoi **individuel** (`POST /api/invites/<id>/renvoi-email/`, 2026-10-22) : seulement si le dernier envoi n°3 est en
-échec et le lien encore ouvert (`sondages.sondage_renvoyable`), **indépendamment de la réponse** ; si l'invité a
-déjà répondu, la vue répond 202 sans rien envoyer (`sondage_repondu`) : un admin ne peut pas savoir qui a répondu
-(réponses anonymes). Le renvoi groupé de A7 (`suivi_emails.renvoyer_echecs`) suit la même règle : un invité en
-échec dont le lien est ouvert est compté dans `traites` même s'il a déjà répondu, mais ne reçoit rien ; le total ne
-révèle donc pas qui a répondu.
+échec et le lien encore ouvert (`sondages.sondage_renvoyable`), **indépendamment de la réponse**. Depuis `7e0e071`
+(2026-10-22), le traitement est **identique que l'invité ait répondu ou non** : même réponse 202, même journal
+`EMAIL_RENVOI`, email réellement renvoyé et même statut d'envoi (`sondage_repondu` supprimé) ; un admin ne peut donc
+pas savoir qui a répondu. Au pire, un invité qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà
+répondu ». Le renvoi groupé de A7 (`suivi_emails.renvoyer_echecs`) suit la même règle : tout invité en échec dont le
+lien est ouvert est renvoyé et compté, qu'il ait répondu ou non.
 
 ## Analyses
 - **A3** (tableau de bord admin) : carte « Satisfaction des participants » (`CarteSatisfaction.jsx`) — état (à

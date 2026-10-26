@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-21
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [frontend/src/features/admin/ChoixCeremonie.jsx, frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/admin/TableauDeBord.jsx, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/lib/tempsReel.js, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/statistiques.py, backend/apps/noyau/vues_admin.py]
 ---
 
@@ -54,8 +54,10 @@ n°2 Magazine, **n°3 Sondage de satisfaction** (« envoyé le lendemain à 8 h,
   tentatives, date ; bouton « Renvoyer les N emails » avec confirmation
   (`POST /evenements/<id>/suivi-emails/renvoyer-echecs/` `{type}`, 10/h par compte, `suivi_emails.renvoyer_echecs`) ;
   lien vers la liste des invités filtrée `?email1=ECHEC` (invitation seulement). Renvoi ignoré pour les n°2 et n°3
-  si l’invité n’est plus Présent, et pour le n°3 si le lien a expiré (24 h) ou a déjà servi. Journal `EMAIL_RENVOI`
-  si au moins un envoi.
+  si l’invité n’est plus Présent, et pour le n°3 si le lien a expiré (24 h). Le n°3 repart **que l’invité ait
+  répondu ou non** (même total, même journal : l’admin ne peut pas déduire qui a répondu ; un invité qui a déjà
+  répondu reçoit de nouveau son lien, qui affiche « déjà répondu » — `7e0e071`). Journal `EMAIL_RENVOI` si au moins
+  un envoi.
 - **M’envoyer un test** (`POST /evenements/<id>/suivi-emails/test/`, 10/h par compte) : l’email rempli avec
   l’invitée fictive part à l’adresse du compte connecté, objet préfixé « [Test] » ; aucune ligne `EmailEnvoye`
   créée ; échec SMTP → 502 `ENVOI_IMPOSSIBLE` ; journal `EMAIL_TEST`.

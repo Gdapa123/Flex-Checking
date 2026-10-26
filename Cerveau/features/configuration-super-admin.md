@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
-sources: [backend/config/settings.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/super/SuperApp.jsx, frontend/src/features/super/VueGlobale.jsx, frontend/src/features/super/Analyses.jsx, frontend/src/features/super/Programmes.jsx, frontend/src/features/super/Evenements.jsx, frontend/src/features/super/Comptes.jsx, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/serializers.py, backend/apps/noyau/urls.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/config/settings.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/super/SuperApp.jsx, frontend/src/features/super/VueGlobale.jsx, frontend/src/features/super/Analyses.jsx, frontend/src/features/super/Programmes.jsx, frontend/src/features/super/Evenements.jsx, frontend/src/features/super/Comptes.jsx, frontend/src/features/super/Parametres.jsx, frontend/src/features/super/Journal.jsx, backend/apps/noyau/journal.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/serializers.py, backend/apps/noyau/urls.py]
 ---
 
 # Espace super admin (configuration globale)
@@ -20,8 +20,8 @@ Lien d’évitement « aller au contenu » (`LienEvitement`, cible `main#contenu
 | SA5 Cérémonies | `/super/evenements/:id?` (`nouveau`) | programme actif, dates et heures, capacité, lieu, lien carte, inscriptions ouvertes, admins affectés, lien et QR d’inscription (PNG), **régénération du lien**, suppression ; garde « Quitter sans enregistrer ? » |
 | SA9 Invités | `/super/invites` | [gestion-invites](gestion-invites.md) en univers MDE |
 | SA6 Comptes | `/super/admins` | création (mot de passe temporaire affiché une fois — [ADR-003](../decisions/ADR-003-comptes-mot-de-passe-temporaire.md)), modification, réinitialisation, désactivation, suppression, matrice d’affectation aux cérémonies à venir ; actions de ligne en boutons icônes avec libellé accessible et info-bulle |
-| SA7 Paramètres | `/super/parametres` | modèles des emails n°1, n°2 et **n°3 · sondage** (onglets ; variables insérables dont `{lien_sondage}` ; aperçu HTML serveur `POST /api/parametres/apercu-email/` différé 400 ms, une réponse périmée n’écrase pas une saisie plus récente), durée d’affichage du scan, son, vibration |
-| SA8 Exports et journal | `/super/journal` | 4 exports (invités, présences, emails, journal) en CSV/Excel avec périmètre programme/cérémonie ; journal filtrable par type, auteur (dont « Système »), période ; 50 par page |
+| SA7 Paramètres | `/super/parametres` | modèles des emails n°1, n°2 et **n°3 · sondage** (onglets ; variables insérables dont `{lien_sondage}` ; aperçu HTML serveur `POST /api/parametres/apercu-email/` différé 400 ms, une réponse périmée n’écrase pas une saisie plus récente), durée d’affichage du scan, son, vibration ; section **Données personnelles** (2026-10-22) : durée de conservation `dureeConservationMois` (1–60 mois, défaut 12) et contact `contactDonnees` (email), validés par `schemaDonneesPersonnelles` (Zod) et `ParametresSerializer`, lien vers `/confidentialite` ; **raccourcir** la durée ouvre un dialogue de confirmation qui annonce la date limite (`moisAvant`, miroir de `donnees_personnelles.mois_avant`) et l’anonymisation définitive dès la nuit suivante — voir [donnees-personnelles](donnees-personnelles.md) ; enregistrement journalisé `PARAMETRES` (durée comprise, pas le contact) |
+| SA8 Exports et journal | `/super/journal` | 4 exports (invités, présences, emails, journal) en CSV/Excel avec périmètre programme/cérémonie ; journal filtrable par catégorie (Émargement, Invité, Email, Configuration, Export, Compte, **Données personnelles** — `DONNEES_ANONYMISATION`, ajoutée au filtre le 2026-10-22), auteur (dont « Système »), période ; 50 par page ; l’export « Suivi des emails » couvre les emails n°1 à n°3 |
 | Erreurs | `/super/erreurs` | [erreurs-techniques](erreurs-techniques.md) |
 
 ## Garde-fous serveur

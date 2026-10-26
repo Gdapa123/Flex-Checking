@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-21
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/temps_reel.py, backend/apps/noyau/consumers.py, frontend/src/lib/tempsReel.js, README.md]
 ---
 
@@ -33,3 +33,5 @@ aucune donnée personnelle dans les messages ; repli automatique sur l’interro
 - Mise en œuvre au 2026-10-21 : le principe est inchangé ; le sondage de satisfaction (`bd4f807`) a ajouté le sujet
   `sondage` (signaux sur `InvitationSondage` et `ReponseSondage`), toujours sans donnée personnelle. Détail :
   [temps-reel](../features/temps-reel.md).
+- Au 2026-10-26 (`7e0e071`) : le message de service `session_fermee` (identifiant du jeton déconnecté, aucune
+  donnée d’invité) ferme la seule connexion de la session déconnectée, sans remettre en cause le principe.

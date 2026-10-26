@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-21
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [PLAN.md, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/ScanPoste.jsx, backend/apps/noyau/vues_scan.py]
 ---
 
@@ -24,7 +24,7 @@ Sur la disposition « Borne » seulement : aucune liste avant 3 caractères sais
   pas verrouillé ([R1](../project/risques-et-dette.md), marqué résolu le 2026-10-13). Corrigé par
   [ADR-010](ADR-010-mode-borne-serveur.md) (session restreinte côté serveur).
 
-## Mise en œuvre (vérifiée au commit `be899ff`)
+## Mise en œuvre (vérifiée au commit `44eceb5`)
 - Navigateur : `composants.jsx` n’affiche aucune liste sous 3 caractères sur la borne et montre l’entreprise seule
   (« Particulier » à défaut) avec le bouton « C’est moi » ; téléphone et ordinateur affichent `entreprise · email`.
 - Serveur (ajout de [ADR-010](ADR-010-mode-borne-serveur.md)) : la borne interroge

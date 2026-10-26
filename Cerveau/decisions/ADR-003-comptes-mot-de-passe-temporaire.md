@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-21
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [PLAN.md, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, frontend/src/features/auth/ChangerMotDePasse.jsx, frontend/src/features/auth/RequireRole.jsx]
 ---
 
@@ -25,11 +25,13 @@ affiche la marche à suivre (contacter la direction des événements).
 Renforcement du 2026-10-12 : tant que le mot de passe temporaire n’est pas changé, toute l’API est refusée
 (sauf `auth/moi/`, `auth/mot-de-passe/`, déconnexion), WebSocket compris.
 
-## Mise en œuvre (vérifiée au commit `be899ff`)
+## Mise en œuvre (vérifiée au commit `44eceb5`)
 - `AdminViewSet.create` et `AdminViewSet.reinitialiser` (`backend/apps/noyau/vues_admin.py`, super admin seul) :
   `mot_de_passe_temporaire()` (`XXXX-XXXX-XXXX`, alphabet sans caractères ambigus) renvoyé une seule fois dans
   `motDePasseTemporaire`, `doit_changer_mot_de_passe = True` ; la réinitialisation incrémente aussi
   `version_session` (sessions ouvertes fermées). Journal : `ADMIN_CREATION`, `ADMIN_MOT_DE_PASSE`.
+  Depuis le 2026-10-22, la **désactivation** d'un compte incrémente aussi `version_session` (`AdminViewSet.perform_update`) :
+  ses sessions ne revivent pas s'il est réactivé ([authentification](../features/authentification.md)).
 - Blocage : `CompteUtilisable` refuse le compte tant que le mot de passe est temporaire (message
   `MOT_DE_PASSE_A_CHANGER`) ; seuls `auth/moi/` et `auth/mot-de-passe/` déclarent `IsAuthenticated` ; connexion,
   rafraîchissement, CSRF et déconnexion sont `AllowAny`. Frontend : `RequireRole` affiche `ChangerMotDePasse`.

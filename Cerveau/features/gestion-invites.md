@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/features/invites/PanneauAjout.jsx, backend/apps/noyau/vues_invites.py, backend/apps/noyau/filtres.py, backend/apps/noyau/taches.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/test_invites.py]
 ---
 
@@ -28,7 +28,7 @@ Un seul composant, `GestionInvites`, sert à l’admin (une cérémonie, univers
 | Annuler la présence | ligne, fiche | **super admin** ([ADR-011](../decisions/ADR-011-annulation-reservee-super-admin.md)) | `AnnulerPresenceView` en `EstSuperAdmin` ; dialogue de confirmation ; motif sans caractère de contrôle ; `BoutonPresence` ne rend rien à un admin pour un invité présent |
 | Renvoyer l’invitation | fiche, sélection (confirmation) | admin | nouvel EmailEnvoye. Fiche : 5 renvois/h par compte et par invité (`RenvoiEmailThrottle`). Sélection : invités ayant déjà reçu une invitation depuis moins d’1 h ignorés (réponse `{traites, ignores}`), 5 renvois groupés/h par compte (429 `TROP_DE_TENTATIVES`), journal seulement si au moins un envoi |
 | Renvoyer l’email n°2 | fiche | admin | invité Présent et magazine disponible (`magazine_actif` et lien, `suivi_emails.magazine_disponible`, depuis le 2026-10-22) |
-| Renvoyer l’email n°3 (sondage) | API seulement (`POST /invites/<id>/renvoi-email/` `{type: SONDAGE}`) | admin | refusé (`SONDAGE_INDISPONIBLE`) si le sondage est désactivé pour le programme, hors de sa fenêtre de 24 h ou si le dernier envoi n’est pas en échec (`sondages.sondage_renvoyable`) ; invité ayant déjà répondu → 202 sans envoi (l’admin n’apprend pas qui a répondu) ; pas de bouton dans la fiche — à confirmer s’il en faut un |
+| Renvoyer l’email n°3 (sondage) | API seulement (`POST /invites/<id>/renvoi-email/` `{type: SONDAGE}`) | admin | refusé (`SONDAGE_INDISPONIBLE`) si le sondage est désactivé pour le programme, hors de sa fenêtre de 24 h ou si le dernier envoi n’est pas en échec (`sondages.sondage_renvoyable`) ; sinon nouvel envoi et journal `EMAIL_RENVOI`, **que l’invité ait répondu ou non** (réponse, journal et statut identiques : l’admin n’apprend pas qui a répondu ; `sondage_repondu` supprimé le 2026-10-22, `7e0e071`) ; pas de bouton dans la fiche — à confirmer s’il en faut un |
 | Modifier la fiche | fiche | admin | PATCH, journalisé avec la liste des champs |
 | Exporter (vue filtrée ou sélection) | barre / sélection | admin | CSV ou Excel ([exports](exports-rapports.md)) |
 | Supprimer | fiche, sélection | **super admin** | définitif (emails, émargements) ; journal = nombre seulement |

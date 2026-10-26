@@ -1,9 +1,9 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
-sources: [.gitignore, README.md, docker-compose.yml, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [.gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
 
 # Installation et développement local
@@ -25,7 +25,7 @@ docker compose exec django python manage.py seed_demo
 | redis | 6380, poste local seulement |
 | mailpit | 8025 (UI), 1025 (SMTP), poste local seulement |
 | django | 8000, poste local seulement (`127.0.0.1`, depuis le 2026-10-22 : serveur de développement en DEBUG) |
-| frontend (Vite, image `node:24-alpine`) | 5173, poste local seulement (les téléphones passent par le proxy HTTPS) |
+| frontend (Vite, image `node:24-alpine`, `pull_policy: always` ; Node ≥ 24.22.1 imposé par `engines` + `.npmrc` `engine-strict`) | 5173, poste local seulement (les téléphones passent par le proxy HTTPS) |
 | proxy (Caddy) | 443 poste local seulement (`flex-checking.localhost`) ; **8443 ouvert au réseau local** (scan sur téléphone) |
 
 ## Images et espace disque (2026-10-22)
@@ -35,7 +35,8 @@ docker compose exec django python manage.py seed_demo
   l'image `dev`, contrôle de santé 200 avec l'image `prod`.
 - Développement : une seule image `flex-checking-backend:dev` pour django, celery et celery-beat.
 - Journaux des conteneurs plafonnés (`x-journaux` : 3 × 10 Mo par service) dans les deux fichiers compose ; journaux
-  binaires MySQL gardés 3 jours (`--binlog-expire-logs-seconds=259200`).
+  binaires MySQL gardés 7 jours (`--binlog-expire-logs-seconds=604800`, dev et prod ; 3 jours envisagés puis portés à
+  7 par la revue de code du 2026-10-22, tant que les sauvegardes ne sont pas automatisées dans le dépôt).
 - Ménage sans perte de données (garde les volumes nommés `mysql-data`, `frontend-node-modules`) :
   `docker compose down` · `docker image prune` · `docker builder prune -af` · `docker volume prune` (volumes
   anonymes inutilisés seulement). Ne jamais lancer `docker compose down -v` ni `docker volume rm …mysql-data`.

@@ -14,7 +14,7 @@
 2. HTTP (1 000 ouvertures du lien, 500 inscriptions, 300 tableaux de bord, scénario mixte) :
 
    ```bash
-   docker run --rm --network flex-checking_default -v "$PWD/infra/charge:/w:ro" node:20-alpine \
+   docker run --rm --pull always --network flex-checking_default -v "$PWD/infra/charge:/w:ro" node:24-alpine \
      node /w/charge.mjs http://django:8001 <lien d'inscription> <id événement> <email admin> <mot de passe>
    ```
 

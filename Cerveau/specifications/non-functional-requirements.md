@@ -1,9 +1,9 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
-sources: [docker-compose.yml, docker-compose.prod.yml, .gitignore, .github/workflows/ci.yml, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/config/settings.py, backend/config/bases.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/logs.py, infra/Caddyfile.prod, frontend/vercel.json, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, backend/apps/noyau/tasks.py, backend/apps/noyau/emails.py, backend/apps/noyau/donnees_personnelles.py, .gitignore, .github/workflows/ci.yml, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/config/settings.py, backend/config/bases.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/logs.py, infra/Caddyfile.prod, frontend/vercel.json, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
 ---
 
 # Exigences non fonctionnelles
@@ -23,6 +23,8 @@ sources: [docker-compose.yml, docker-compose.prod.yml, .gitignore, .github/workf
 | ENF-S11 | Pas de confusion d'identité par Unicode | emails ASCII uniquement (collation insensible aux accents) |
 | ENF-S9 | Secrets hors dépôt | `.env` non commité, `DJANGO_SECRET_KEY` ≥ 32 caractères obligatoire hors debug, mots de passe de démo par variables ; `.gitignore` renforcé le 2026-10-22 (`.env.*` sauf `.env.example`, `*.key`, `*.p12`, `*.pfx`, sauvegardes `*.sql`, `*.sql.gz`, `sauvegardes/`, `.claude/settings.local.json`) ; audit du 2026-10-22 : aucun secret réel dans le dépôt ni dans l'historique ; `seed_demo` refusé hors `DEBUG` sans `--force` |
 | ENF-S12 | Surface réseau minimale | développement (`docker-compose.yml`) : Django 8000 et Caddy 443 publiés sur `127.0.0.1` seulement, 8443 ouvert au réseau local (scan sur téléphone) ; production (`docker-compose.prod.yml`) : seuls 80/443 (TCP et UDP) de Caddy publiés ; CI : jeton GitHub en `permissions: contents: read` |
+| ENF-S13 | Conservation limitée des données personnelles | anonymisation automatique des invités des cérémonies plus anciennes que `duree_conservation_mois` (défaut 12), chaque nuit (Beat 3 h 30) ou par le cron Vercel ; politique publique `/confidentialite` ([donnees-personnelles](../features/donnees-personnelles.md), [ADR-013](../decisions/ADR-013-conservation-limitee-anonymisation.md)) |
+| ENF-S14 | Chaîne de construction à jour | Node.js ≥ 24.22.1 exigé par `frontend/package.json` (`engines`) et `frontend/.npmrc` (`engine-strict=true`), CI sur le dernier correctif 24.x (`check-latest`), image `node:24-alpine` re-téléchargée (`pull_policy: always`) — modifications non commitées au 2026-10-26 ; image backend sans compilateur (étape `construction` séparée, `backend/Dockerfile`) ; images de base non épinglées par empreinte (R22) |
 
 ### Limites de débit (valeurs du code)
 | Portée | Limite |
@@ -67,8 +69,9 @@ Les limites sensibles (connexion, renvoi, codes, mot de passe) et les limites pa
 ## Résilience
 | Panne | Comportement |
 |---|---|
-| File Celery | l’inscription ou le scan réussit ; l’email reste « en attente » et est relancé (y compris une tentative programmée perdue, après 1 h) ; `Message-ID` stable par envoi contre les doublons |
-| Disque MySQL (production) | durabilité InnoDB par défaut (`innodb-flush-log-at-trx-commit=2` retiré de `docker-compose.prod.yml` le 2026-10-22) |
+| File Celery | l’inscription ou le scan réussit ; l’email reste « en attente » et est relancé (`tasks.relancer_emails_en_attente` : jamais parti depuis 15 min, ou dernière tentative de plus d'1 h, `derniere_tentative_le`, migration `0011`) ; `Message-ID` stable par envoi, incluant l'hôte public et la date de création (base de test ≠ production) contre les doublons |
+| Disque MySQL (production) | durabilité InnoDB par défaut (`innodb-flush-log-at-trx-commit=2` retiré de `docker-compose.prod.yml` le 2026-10-22) ; journaux binaires 7 jours (`--binlog-expire-logs-seconds=604800`) |
+| Disque plein (journaux) | journaux des conteneurs plafonnés à 3 × 10 Mo par service (`x-journaux`, dev et prod) |
 | Redis | pas de cache ni de temps réel ; limites en mémoire locale ; interrogation périodique |
 | WebSocket | reconnexion progressive, rechargement complet |
 | Réseau au scan | file IndexedDB, synchronisation |

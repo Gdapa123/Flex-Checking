@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
-sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
 ---
 
 # Emails n°1 (invitation), n°2 (magazine) et n°3 (sondage)
@@ -24,8 +24,9 @@ pas disponible (`suivi_emails.magazine_disponible` : `magazine_actif` **et** `li
 renvoi groupé, depuis le 2026-10-22) ;
 n°3 refusé (`SONDAGE_INDISPONIBLE`) si le programme a désactivé le sondage ou si le lien n’est plus renvoyable
 (`sondages.sondage_renvoyable` : lien encore ouvert **et dernier envoi n°3 en ÉCHEC**, indépendamment de la
-réponse) ; si l’invité a déjà répondu, 202 sans envoi (`sondage_repondu`) : l’admin n’apprend pas qui a répondu.
-Le renvoi du n°3 réutilise le même lien.
+réponse). Depuis le 2026-10-22 (`7e0e071`), l’envoi a lieu **que l’invité ait répondu ou non** (réponse, journal
+et statut d’email identiques ; `sondage_repondu` supprimé) : l’admin n’apprend pas qui a répondu ; au pire, un invité
+qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répondu ». Le renvoi du n°3 réutilise le même lien.
 
 ## Envoi (`emails.planifier` → `tasks.envoyer_email`)
 1. Ligne `EmailEnvoye` (EN_ATTENTE) créée dans la transaction.
@@ -34,12 +35,15 @@ Le renvoi du n°3 réutilise le même lien.
 3. Verrou de cache `email-envoi:<id>` (pas de double envoi concurrent).
 4. Échec → 3 nouvelles tentatives à 30 s, 2 min, 8 min, puis ECHEC (« À renvoyer ») + erreur technique.
 5. Celery beat toutes les 5 min (`tasks.relancer_emails_en_attente`, ≤ 500) : relance des emails EN_ATTENTE sans
-   tentative créés depuis plus de 15 min, et (2026-10-22) de ceux qui ont déjà au moins une tentative et ont été
-   créés depuis plus d’1 h (tentative programmée perdue : file Redis vidée ou redémarrée).
+   tentative créés depuis plus de 15 min, et de ceux qui ont déjà au moins une tentative et dont la **dernière
+   tentative** (`EmailEnvoye.derniere_tentative_le`, migration `0011`, datée à chaque essai par `tasks._envoyer`) date
+   de plus d’1 h — à défaut de cette date (envois antérieurs à la migration), créés depuis plus d’1 h. Le nouvel essai
+   programmé a alors été perdu (file Redis vidée ou redémarrée) ; un email en plein cycle de tentatives n’est pas touché.
 6. Sans Redis (Vercel) : envoi dans la requête, une seule tentative.
-7. **`Message-ID` stable** (`emails.construire_message`, 2026-10-22) : `<flex-checking-<pk>@<domaine de
-   DEFAULT_FROM_EMAIL>>` ; si une relance renvoie le même email (livraison « au moins une fois »), la messagerie du
-   destinataire le reconnaît comme doublon.
+7. **`Message-ID` stable** (`emails.construire_message`) :
+   `<flex-checking-<pk>.<horodatage de cree_le>.<hôte de APP_PUBLIC_URL>@<domaine de DEFAULT_FROM_EMAIL>>` ; si une
+   relance renvoie le même email (livraison « au moins une fois »), la messagerie du destinataire le reconnaît comme
+   doublon ; l’hôte et la date évitent qu’une base de test et la production produisent le même identifiant.
 
 ## Contenu (`emails.rendre`)
 - Modèles éditables par le super admin (objet + corps texte, `Parametres.objet_email_1..3` / `corps_email_1..3`,
@@ -76,7 +80,8 @@ Le renvoi du n°3 réutilise le même lien.
   `GET evenements/<id>/suivi-emails/`, `POST …/suivi-emails/renvoyer-echecs/` (10/h, `relance_emails`),
   `POST …/suivi-emails/test/` (10/h, `email_test`).
 - Renvoi groupé : seuls les invités dont le **dernier** envoi du type est en échec ; n°2 et n°3 : seulement les
-  invités encore présents ; n°3 : seulement si le lien est encore ouvert et sans réponse ; refus
+  invités encore présents ; n°3 : seulement si le lien est encore ouvert (24 h), **que l’invité ait répondu ou non**
+(anonymat, `suivi_emails.renvoyer_echecs`) ; refus
   `MAGAZINE_INDISPONIBLE` / `SONDAGE_INDISPONIBLE` si l’email est désactivé pour le programme ; journal
   `EMAIL_RENVOI`. Email de test : objet préfixé « [Test] », envoi SMTP synchrone (`message.send()`), 502
   `ENVOI_IMPOSSIBLE` si le serveur SMTP échoue ; journal `EMAIL_TEST` (catégorie Email).

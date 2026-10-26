@@ -85,7 +85,10 @@ services:
     command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
 
   frontend:
+    # dernière version 24.x, re-téléchargée à chaque démarrage (correctifs de sécurité) ; minimum imposé par
+    # frontend/package.json (engines + engine-strict)
     image: node:24-alpine
+    pull_policy: always
     logging: *journaux
     working_dir: /app
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"

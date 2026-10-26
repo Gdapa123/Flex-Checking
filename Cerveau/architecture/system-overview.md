@@ -1,9 +1,9 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-21
-commit: be899ff
-sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, frontend/src/App.jsx]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, frontend/src/App.jsx, backend/Dockerfile]
 ---
 
 # Vue d’ensemble du système
@@ -23,7 +23,8 @@ Gunicorn + workers Uvicorn (ASGI)  ── config.asgi
    ├── Redis base 0                      broker Celery + relais Channels
    ├── Redis base 1                      cache (stats, page publique, analyses, limites, mesures)
    └── Celery worker + beat              emails, actions groupées, exports lourds, relances, purges,
-                                         sondage de satisfaction (email n°3, chaque heure de 8 h à 20 h)
+                                         sondage de satisfaction (email n°3, chaque heure de 8 h à 20 h),
+                                         anonymisation des données expirées (3 h 30)
 ```
 
 ## Couches backend (`backend/`)
@@ -36,6 +37,7 @@ Gunicorn + workers Uvicorn (ASGI)  ── config.asgi
 | Diffusion | `temps_reel.py`, `consumers.py` | signaux → notifications après commit → WebSocket |
 | Emails | `emails.py`, `tasks.py`, `suivi_emails.py`, `sondages.py`, `templates/emails/` | rendu HTML/texte des trois emails, envoi Celery, relances, suivi des envois, sondage planifié |
 | Transverse | `journal.py`, `erreurs.py`, `mesures.py`, `caches.py`, `validation.py`, `logs.py` | journal d’activité, erreurs techniques, métriques, cache, validation, masquage PII |
+| Données personnelles | `donnees_personnelles.py` | anonymisation des invités après la durée de conservation ([donnees-personnelles](../features/donnees-personnelles.md)) |
 
 Détail : [components](components.md).
 
@@ -62,9 +64,9 @@ Détail : [components](components.md).
 ## Environnements
 | Environnement | Base | Redis / Celery | Fichier |
 |---|---|---|---|
-| Dev Docker | MySQL (port hôte 3307, lié à `127.0.0.1`) | oui (6380, `127.0.0.1`) + Mailpit ; frontend Node 24 (5173, `127.0.0.1`) | `docker-compose.yml` |
+| Dev Docker | MySQL (port hôte 3307, lié à `127.0.0.1`) | oui (6380, `127.0.0.1`) + Mailpit ; frontend `node:24-alpine` re-téléchargé à chaque démarrage (`pull_policy: always`, minimum 24.22.1 imposé par `frontend/package.json`), port 5173 sur `127.0.0.1` ; journaux des conteneurs plafonnés (3 × 10 Mo) | `docker-compose.yml` |
 | Dev sans Docker | MySQL/Redis du compose | Celery eager possible | README §2 |
-| Test en ligne | Postgres Neon (`DATABASE_URL`) | **non** ; sondage déclenché par deux crons Vercel (8 h et 12 h, `backend/vercel.json`, secret `CRON_SECRET`) | Vercel, `backend/Dockerfile.vercel` |
-| Production | MySQL | oui | `docker-compose.prod.yml` |
+| Test en ligne | Postgres Neon (`DATABASE_URL`) | **non** ; sondage puis anonymisation déclenchés par deux crons Vercel (8 h et 12 h, `backend/vercel.json`, secret `CRON_SECRET`) | Vercel, `backend/Dockerfile.vercel` |
+| Production | MySQL (journaux binaires 7 jours) | oui ; image backend en plusieurs étapes, sans compilateur (`backend/Dockerfile`, cible `prod`) ; journaux des conteneurs plafonnés | `docker-compose.prod.yml` |
 
 Voir [deployment](../operations/deployment.md).

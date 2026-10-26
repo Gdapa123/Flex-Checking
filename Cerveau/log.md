@@ -563,3 +563,86 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   `auth/rafraichir/` sans CSRF 403 ; HSTS, CSP, Referrer-Policy présents.
 - **Risques ou limites :** renseigner le contact « données personnelles » dans Super admin › Paramètres ;
   formalités ARTCI à vérifier par MDE.
+
+## [2026-10-23] sécurité | Alertes PHP et Node.js du 21/10/2026 : vérification et mise à niveau de Node.js
+
+- **Contexte :** vidéo signalant des failles critiques PHP (« PHP2Shell ») et Node.js ; vérification sur php.net et
+  nodejs.org. php.net : CVE-2026-109618 et CVE-2026-109619 (exécution de code à distance sans authentification,
+  CVSS 4.0 9,2), corrigées dans 8.5.12 / 8.4.27 / 8.3.36 / 8.2.35 ; « PHP2Shell » et l'exploitation « déjà en cours »
+  ne figurent pas sur php.net (exploit démontré seulement). nodejs.org : 10 failles dont 4 élevées (CVE-2026-111497 :
+  écriture hors limites du décodeur Brotli, exécution de code à distance), corrigées dans 22.23.4 / 24.22.1 /
+  26.12.1. Projet : aucun PHP ; Node.js sert seulement à construire et tester le frontend (production : fichiers
+  statiques), sur le poste (v24.13.0), le conteneur de développement, la CI, Vercel et le test de charge (Node 20).
+- **Modifications :** minimum Node 24.22.1 imposé partout par `frontend/package.json` (`engines`) et
+  `frontend/.npmrc` (`engine-strict=true`) — y compris le build Vercel ; étiquettes flottantes toujours
+  re-téléchargées (`node:24-alpine` + `pull_policy: always`, `--pull always`) ; CI : `node-version-file:
+  frontend/.nvmrc` (« 24 ») + `check-latest` ; test de charge : Node 24 au lieu de 20 ; guide : veille de sécurité en
+  section propre, reconstruction avec `docker compose build --pull`.
+- **Fichiers concernés :** `frontend/package.json`, `frontend/.npmrc`, `frontend/.nvmrc`, `docker-compose.yml`,
+  `.github/workflows/ci.yml`, `infra/charge/README.md`, `Cerveau/operations/deploiement-infomaniak.md`,
+  `Cerveau/operations/setup.md`, `Cerveau/testing/test-strategy.md`.
+- **Validation :** conteneur `node:24-alpine` (v24.22.1) : `npm ci`, lint, Vitest **68/68**, build OK ; garde-fou
+  vérifié dans `node:24.13.0-alpine` : `npm ci` refusé (`EBADENGINE`, `Required: ^24.22.1`) ; `package-lock.json` :
+  seuls `engines` et des drapeaux `peer` réordonnés (aucune version modifiée) ; pytest MySQL **266 passed** ;
+  `docker compose config` OK ; `ci.yml` relu (YAML valide). Revue de code : 9 remarques, toutes traitées.
+- **Décision :** une seule version minimale (`engines`) plutôt qu'un numéro figé à plusieurs endroits.
+- **Risques ou limites :** le Node.js du poste (v24.13.0, `/usr/local/bin`) doit être mis à jour par l'utilisateur :
+  `npm ci` y est désormais refusé (EBADENGINE) ; si Vercel construisait encore avec une 24.x antérieure à 24.22.1,
+  le build échouerait (la version en ligne resterait la précédente) — à vérifier au prochain déploiement.
+
+## [2026-10-26] documentation | /wiki-maj : wiki resynchronisé sur `44eceb5`
+
+- **Contexte :** 38 pages signalées « à revérifier » par `lint_wiki.py` après les commits `d91d426` et `7e0e071`
+  (2026-10-22) et la mise à niveau de Node.js non commitée (2026-10-23).
+- **Modifications :** les 38 pages revérifiées contre le code (diffs `be899ff..44eceb5` et `git diff`), `verifie`
+  2026-10-26, `commit` 44eceb5, `sources` ajustées. Corrections de fond :
+  - Sondage : le renvoi individuel et groupé du n°3 ne dépend plus de la réponse de l'invité (`sondage_repondu`
+    supprimé) ; l'ancien « 202 sans envoi » et « lien sans réponse » étaient faux dans `api/endpoints.md`,
+    `gestion-invites.md`, `tableau-de-bord.md`, `emails.md`, `sondage-satisfaction.md`, ADR-012.
+  - Sessions : déconnexion → message `session_fermee` (au lieu de `perimetre`) ; 409 `SESSION_DEJA_RENOUVELEE` limité
+    aux jetons émis dans la fenêtre de rotation (`authentification.md`, `temps-reel.md`, ADR-002, ADR-006).
+  - Borne : jeton « C'est moi » jugé à l'heure du passage (5 min, rejeu 12 h), `ANNULE_DEPUIS` comparé à l'heure de
+    l'appareil (`scan-emargement.md`, `hors-ligne.md`, ADR-010, ADR-011).
+  - Emails : relance par `EmailEnvoye.derniere_tentative_le` (migration `0011`), `Message-ID` avec l'hôte public.
+  - Données personnelles : critère « invités encore identifiables », effacement de `consentement_le` et des motifs,
+    consentement « loi n° 2013-450 », confirmation de réduction de durée (interface seulement) ; ADR-013 décision 5.
+  - Modèle de données : migrations jusqu'à `0011`, `comptes/0002_version_session` ajoutée (manquait).
+  - Exploitation : journaux binaires MySQL **7 jours** (la page `setup.md` disait 3), image backend multi-étapes,
+    journaux de conteneurs plafonnés, migrations Neon 0008–0011.
+  - Spécifications : EF-28 (données personnelles), ENF-S13 (conservation limitée), ENF-S14 (chaîne de construction).
+  - Tests : `test_donnees_personnelles.py`, compléments de `test_durcissement.py`, volumes 266 / 68 ; « Dernière
+    exécution » complétée avec les seuls résultats consignés dans ce journal.
+  - `index.md` : date, EF-01 à EF-28, R8 atténué.
+- **Fichiers concernés :** 38 pages de `Cerveau/` (voir `git status Cerveau`), `Cerveau/index.md`.
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 avertissement ; 9 pages encore signalées
+  uniquement à cause des fichiers Node.js non commités (`frontend/package.json`, `.npmrc`, `.nvmrc`,
+  `docker-compose.yml`, `ci.yml`, `infra/charge/README.md`), dont le contenu est déjà décrit. Aucune suite de tests
+  relancée pour ce passage.
+- **Risques ou limites :** R8 passe à 🟡 atténué (la case de consentement ne nomme toujours ni l'email n°2 ni le
+  sondage) ; R13, R21, R22, R23 complétés ; nouvelle limitation assumée : confirmation de réduction de la durée de
+  conservation absente de l'API. Lacunes de tests notées : déconnexion sans effet sur les autres appareils, fenêtre de
+  rotation entre onglets. README toujours en retard (R4 : 79 tests annoncés ; écran I7). Relancer `/wiki-maj` après le
+  commit de la mise à niveau Node.js.
+
+## [2026-10-26] lint | Revue de l'affichage des pages du wiki
+
+- **Contexte :** contrôle du rendu Markdown (Obsidian, GitHub) après le `/wiki-maj` du jour.
+- **Modifications :** `api/endpoints.md` : cinq lignes de tableau dont le code contenait un `|` non échappé
+  (`xlsx|csv`, `INVITATION|MAGAZINE|SONDAGE`, `<invites|presences|…>`, `a_traiter|…`, `resoudre_tout|…`) découpaient
+  la cellule en colonnes supplémentaires ; pipes échappés (`\|`).
+- **Validation :** script ad hoc sur toutes les pages : colonnes des tableaux cohérentes, blocs de code fermés, aucune
+  entité HTML ; frontmatter YAML valide partout (PyYAML) ; `lint_wiki.py` : 0 erreur.
+
+## [2026-10-26] tests | Vérification complète avant commit
+
+- **Contexte :** dernière vérification du code et des tests demandée avant de poursuivre (base `44eceb5` + mise à
+  niveau Node.js non commitée ; aucun fichier applicatif modifié depuis).
+- **Validation :** sur le poste (Node 24.22.1 ; MySQL et Redis du compose ; `migrate` + `seed_demo`) : `ruff check`
+  et `ruff format --check` OK ; `pytest` **266 passed** ; `npm run lint` OK ; Vitest **68/68** ; `npm run build` OK ;
+  `npm run e2e` **3/3** (parcours, temps réel, accessibilité axe) ; `docker compose config` OK ; `lint_wiki.py` :
+  0 erreur (9 pages signalées à cause des fichiers Node.js non commités).
+- **Autre :** essai d'un redesign avec le skill Impeccable (installé dans `.claude/skills/impeccable/`, sans hook)
+  abandonné à la demande de l'utilisateur ; aucun fichier applicatif touché ; captures « avant » conservées dans
+  `.impeccable/review/avant/`.
+- **Risques ou limites :** le Node.js du poste est désormais en 24.22.1 (EBADENGINE levé) ; le build Vercel reste à
+  vérifier au prochain déploiement.

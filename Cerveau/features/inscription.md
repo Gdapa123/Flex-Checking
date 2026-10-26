@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-21
-commit: be899ff
-sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/features/invite/LienInvalide.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/invite/Presentation.jsx, frontend/src/features/invite/ConfirmationPage.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/PratiquePage.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_dates_inscription.py, frontend/tests/schemas.test.js]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/features/invite/LienInvalide.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/invite/Presentation.jsx, frontend/src/features/invite/ConfirmationPage.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/PratiquePage.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_dates_inscription.py, frontend/tests/schemas.test.js]
 ---
 
 # Inscription des invités (espace public)
@@ -21,7 +21,10 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
    retour du téléphone revient à la présentation).
 3. **Formulaire** : civilité, nom, prénom, email, téléphone (+225), entreprise, fonction, consentement —
    **tous obligatoires**. Validation Zod au fil de l’eau, erreurs visibles après sortie du champ ou envoi ;
-   « Champ obligatoire » pour un champ vide ; pastille « N informations à compléter ».
+   « Champ obligatoire » pour un champ vide ; pastille « N informations à compléter ». La case de consentement
+   renvoie vers la [politique de confidentialité](donnees-personnelles.md) (`/confidentialite`, nouvel onglet) ;
+   mention : « conformément à la loi ivoirienne n° 2013-450 sur la protection des données personnelles »
+   (au lieu du RGPD depuis `7e0e071`).
 4. `POST /api/public/evenements/<slug>/inscription/` → 201 → `/i/<slug>/confirmation` (état passé par la
    navigation et `sessionStorage`).
 5. **Confirmation** : badge « Inscrit·e », récapitulatif, carte « Votre invitation », infos pratiques (agenda,

@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 sources: [backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py]
 ---
 
@@ -31,7 +31,7 @@ synchronisés sur l’appareil (`fileHorsLigne.compterTout`).
 | Disposition | Particularités |
 |---|---|
 | Téléphone (S2) | caméra plein écran, compteur présents / inscrits, barre Code · Rechercher · Annuler (super admin seulement) · Torche · Caméra, « Dernier » passage |
-| Borne (S11) | « Présentez votre QR code », gros boutons « Saisir mon code » et « Rechercher mon nom », « C’est moi ». **Session restreinte côté serveur** ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md)) ; recherche par `GET evenements/<id>/borne/recherche/` (`vues_scan.RechercheBorneView`) : nom, prénom, entreprise, ≥ 3 caractères vérifiés par le serveur, 10 résultats, sans email/téléphone/code, chaque résultat portant un jeton signé `choix` ([ADR-008](../decisions/ADR-008-borne-recherche-restreinte.md)). « C’est moi » envoie `inviteId` + `choixBorne` : sans jeton valide (5 min, lié au compte, à la cérémonie et à l’invité) → 403 `CHOIX_BORNE_INVALIDE` ; 12 émargements manuels/min par compte et cérémonie en session borne (429). La liste des cérémonies y est réduite (`EvenementBorneSerializer` : ni hôtes ni lien d’inscription). Cadenas « Espace hôte » : mot de passe de l'hôte vérifié par le serveur avant les réglages ; bouton retour bloqué (entrée d'historique répétée) ; dès que l'hôte quitte son espace (réglages, annulation…), la session redevient restreinte ; espace hôte refermé après 90 s sans interaction ; restriction retentée toutes les 15 s et au retour du réseau, badge « Session non restreinte · reconnexion au serveur… » au-delà de 5 s. Recherche : chaque mot ≥ 3 caractères, 30 recherches/min par compte. En session borne, démarrer un autre type de poste depuis la configuration exige le mot de passe ; un refus du serveur au passage en mode borne bloque le démarrage (seule une coupure réseau le permet) |
+| Borne (S11) | « Présentez votre QR code », gros boutons « Saisir mon code » et « Rechercher mon nom », « C’est moi ». **Session restreinte côté serveur** ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md)) ; recherche par `GET evenements/<id>/borne/recherche/` (`vues_scan.RechercheBorneView`) : nom, prénom, entreprise, ≥ 3 caractères vérifiés par le serveur, 10 résultats, sans email/téléphone/code, chaque résultat portant un jeton signé `choix` ([ADR-008](../decisions/ADR-008-borne-recherche-restreinte.md)). « C’est moi » envoie `inviteId` + `choixBorne` : sans jeton valide → 403 `CHOIX_BORNE_INVALIDE`. Le jeton (`vues_scan.jeton_choix_borne`) est lié au compte, à la cérémonie et à l’invité et porte son heure d’émission ; `choix_borne_valide` l’accepte si l’**heure du passage** (`dateClient`, plafonnée à l’heure serveur) tombe entre 1 min avant et 5 min après l’émission, la signature restant lisible 12 h (`DELAI_REJEU_CHOIX_S`) : un « C’est moi » touché hors ligne puis synchronisé plus tard reste accepté (2026-10-22, `7e0e071`) ; 12 émargements manuels/min par compte et cérémonie en session borne (429). La liste des cérémonies y est réduite (`EvenementBorneSerializer` : ni hôtes ni lien d’inscription). Cadenas « Espace hôte » : mot de passe de l'hôte vérifié par le serveur avant les réglages ; bouton retour bloqué (entrée d'historique répétée) ; dès que l'hôte quitte son espace (réglages, annulation…), la session redevient restreinte ; espace hôte refermé après 90 s sans interaction ; restriction retentée toutes les 15 s et au retour du réseau, badge « Session non restreinte · reconnexion au serveur… » au-delà de 5 s. Recherche : chaque mot ≥ 3 caractères, 30 recherches/min par compte. En session borne, démarrer un autre type de poste depuis la configuration exige le mot de passe ; un refus du serveur au passage en mode borne bloque le démarrage (seule une coupure réseau le permet) |
 | Ordinateur (S12) | douchette (champ toujours focalisé, accepte aussi un code à 4 chiffres) ou webcam, panneau de résultat, historique « Derniers passages » (session) |
 
 ## Règle serveur (`services.emarger`) — atomique et idempotente
@@ -43,7 +43,8 @@ synchronisés sur l’appareil (`fileHorsLigne.compterTout`).
    - `CODE_INVALIDE` ;
    - `DEJA_EMARGE` : heure, poste et mode du premier passage non annulé ;
    - `ANNULE_DEPUIS` (2026-10-22) : scan **rejoué** (`date_client` antérieure de plus de 120 s à l’heure serveur)
-     alors qu’une présence de l’invité a été annulée **après** ce passage : l’annulation l’emporte, l’invité n’est
+     alors qu’une présence de l’invité a été annulée **après** l’heure de l’appareil (`annule_le > date_client`,
+     même pour un rejeu de plus de 12 h, daté sinon de l’heure serveur) : l’annulation l’emporte, l’invité n’est
      pas repassé présent. Affiché « Présence annulée depuis ce scan » (`ScanPoste.presenterResultat`), style
      avertissement et badge d’historique « Annulé depuis » (`composants.STYLES_RESULTAT`, `BADGES_HISTORIQUE`),
      son et vibration d’erreur (`retour.signaler`) ;
@@ -97,7 +98,8 @@ Voir [hors-ligne](hors-ligne.md).
 annulation par le super admin sans second magazine, hors ligne, limitation des codes, concurrence) ;
 `test_audit_securite.py` (recherche réduite de la borne, `test_borne_emarge_seulement_un_nom_propose_par_la_recherche`,
 `test_borne_ne_voit_ni_hotes_ni_lien_d_inscription`) ; `test_durcissement.py` (`test_borne_limite_les_codes_tires_au_hasard`,
-`test_scan_hors_ligne_rejoue_apres_annulation`) ; `frontend/tests/resultat.test.jsx`.
+`test_scan_hors_ligne_rejoue_apres_annulation`, rejeu de plus de 12 h compris ;
+`test_c_est_moi_touche_hors_ligne_puis_synchronise`) ; `frontend/tests/resultat.test.jsx`.
 
 ## Limites
 - La borne reste un poste public : un invité peut émarger quelqu'un d'autre avec « C’est moi » (inhérent au

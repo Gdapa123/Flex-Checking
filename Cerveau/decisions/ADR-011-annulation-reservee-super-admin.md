@@ -1,9 +1,9 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-21
-commit: be899ff
-sources: [backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invites/GestionInvites.jsx, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_invites.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invites/GestionInvites.jsx, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 
 # ADR-011 — Annulation d'un émargement réservée au super admin
@@ -34,3 +34,9 @@ Les deux routes exigent `EstSuperAdmin` (403 pour un admin). L'interface masque 
   retiré de la barre, grille de 4 outils au lieu de 5 sur téléphone), `FeuilleReglages` n’affiche le bouton que si
   `onAnnulation` est fourni, `BoutonPresence` ne rend rien pour un invité présent si le compte n’est pas super admin.
   Aucun test frontend ni e2e ne couvre le masquage (recherche dans `frontend/tests/` et `frontend/e2e/`).
+- Compléments du 2026-10-22 (revérifiés au commit `44eceb5`, sans changement de décision) : le motif d'annulation
+  est refusé s'il contient un caractère de contrôle (`validate_motif` → `validation.sans_controle`, dans
+  `vues_scan.py` et `vues_invites.py`) ; un scan hors ligne **rejoué** dont l'heure d'appareil précède une annulation
+  ne repasse pas l'invité présent (résultat `ANNULE_DEPUIS`, voir [scan-emargement](../features/scan-emargement.md)) ;
+  les motifs d'annulation sont effacés à l'anonymisation des données personnelles
+  ([donnees-personnelles](../features/donnees-personnelles.md)).

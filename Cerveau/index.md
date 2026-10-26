@@ -1,14 +1,14 @@
 ---
 type: index
-verifie: 2026-10-22
-commit: be899ff
+verifie: 2026-10-26
+commit: 44eceb5
 ---
 
 # Flex’Checking — index du wiki
 
 Point d’entrée de la documentation. L’agent lit cette page en premier pour répondre à une question, puis les
-pages pertinentes, puis vérifie dans le code. Toutes les pages ont été revérifiées le 2026-10-21 sur le commit `be899ff` ; les pages touchées par l'audit de
-durcissement du 2026-10-22 (modifications non commitées) l'ont été de nouveau ce jour-là.
+pages pertinentes, puis vérifie dans le code. Toutes les pages ont été revérifiées le 2026-10-26 sur le commit `44eceb5` (commits `d91d426` et `7e0e071` du
+2026-10-22 compris) ; la mise à niveau de Node.js du 2026-10-23, non commitée, y est déjà décrite.
 
 ## Règles
 | Page | Description |
@@ -27,7 +27,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R24 (R1, R13, R14, R17 résolus ; R7 atténué) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R24 (R1, R13, R14, R17 résolus ; R7, R8 atténués) et limitations assumées |
 
 ## Architecture
 | Page | Description |
@@ -57,7 +57,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 ## Spécifications
 | Page | Description |
 |---|---|
-| [specifications/functional-requirements.md](specifications/functional-requirements.md) | EF-01 à EF-25 avec leur preuve (test ou fichier) |
+| [specifications/functional-requirements.md](specifications/functional-requirements.md) | EF-01 à EF-28 avec leur preuve (test ou fichier) |
 | [specifications/non-functional-requirements.md](specifications/non-functional-requirements.md) | Sécurité, limites de débit, charge, résilience, accessibilité, localisation |
 
 ## API

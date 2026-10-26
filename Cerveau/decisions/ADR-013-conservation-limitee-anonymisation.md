@@ -1,9 +1,9 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-22
-commit: be899ff
-sources: [backend/apps/noyau/donnees_personnelles.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/vues_sondage.py]
+verifie: 2026-10-26
+commit: 44eceb5
+sources: [backend/apps/noyau/donnees_personnelles.py, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/vues_sondage.py]
 ---
 
 # ADR-013 — Données personnelles : conservation limitée par anonymisation automatique
@@ -23,10 +23,14 @@ information et droits des personnes.
 3. **Passe quotidienne** (Celery Beat 3 h 30 ; cron quotidien sur l'environnement sans Beat), idempotente et
    journalisée.
 4. **Politique de confidentialité publique** (`/confidentialite`) reliée au consentement et au pied de chaque email,
-   avec le contact et la durée réglés.
+   avec le contact et la durée réglés ; alignée sur le fonctionnement réel (prestataires techniques et transferts,
+   retrait du consentement, avis anonymes conservés) le 2026-10-22 (`7e0e071`).
+5. **Critère « invités encore identifiables »** plutôt que « cérémonie déjà traitée » (`7e0e071`) : un invité ajouté
+   ou corrigé après une passe est anonymisé à la suivante ; date du consentement et motifs d'annulation sont aussi
+   effacés.
 
 ## Conséquences
 - Opération irréversible : un réglage trop court efface l'identité des invités des cérémonies concernées dès la nuit
-  suivante (le changement de durée est journalisé).
+  suivante (le changement de durée est journalisé ; l'interface demande une confirmation avant de la raccourcir).
 - Les anciennes sauvegardes contiennent encore les données : à chiffrer et à faire tourner (guide de déploiement).
 - Voir [donnees-personnelles](../features/donnees-personnelles.md).
