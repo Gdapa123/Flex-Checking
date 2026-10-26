@@ -47,8 +47,11 @@ seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais
 - Temps de réponse mesurés le 2026-10-26 (`curl`, avant le pool) : route sans base ≈ 0,16 s sur une connexion
   réutilisée, `/api/sante/` (un `SELECT 1`) 0,6 à 1,1 s, premier appel après inactivité 5,2 s (démarrage de la
   fonction). L'écart venait de l'ouverture d'une connexion chiffrée vers Neon à chaque requête : pool de
-  connexions Postgres depuis le 2026-10-26 (voir [ADR-009](../decisions/ADR-009-file-attente-concurrence.md)) ;
-  📋 gain à mesurer en ligne après déploiement.
+  connexions Postgres depuis le 2026-10-26 (voir [ADR-009](../decisions/ADR-009-file-attente-concurrence.md)).
+  ✅ Mesuré en ligne après déploiement de `43f99c5` (30 appels chacun) : `/api/sante/` médiane 0,17 s (p90 0,21 s)
+  au lieu de 0,6 à 1,1 s ; `/api/auth/csrf/` 0,16 s. ❓ Une 404 de `public/evenements/<slug>/` (lien inconnu)
+  reste à 1,04 s en ligne alors qu'elle prend 4 ms en local (2 requêtes SQL) : cause non identifiée, sans effet
+  sur un lien valide (mis en cache).
 - Préparation de la base depuis un poste : `vercel env pull` (fichier privé), puis `migrate`, `createcachetable`, `seed_demo`
   (procédure du README ; depuis le 2026-10-22, `seed_demo --force` si `DEBUG` est faux). ❓ À confirmer : d'après `log.md` (2026-10-14), les variables de type « Secret » ne sont pas
   restituées par `vercel env pull` ; les migrations 0008 à 0011 ont été appliquées avec l'URL non poolée de Neon

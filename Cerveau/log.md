@@ -688,3 +688,16 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   n'est pas traité. Neon via PgBouncer (mode transaction) : Django n'utilise pas de requêtes préparées côté serveur
   par défaut, compatible ; à surveiller dans les journaux après déploiement. R26 (réouverture après 15 min →
   connexion) relevé, non corrigé.
+
+## [2026-10-26] deploy | Pool de connexions Postgres et rafraîchissement de session en ligne (Vercel)
+
+- **Contexte :** « commite et déploie sur Vercel ».
+- **Modifications :** commit `43f99c5` poussé (frontend déployé au push, « Ready ») ; backend `flex-checking-api`
+  déployé par `vercel deploy --prod` (deux déploiements identiques, le second lancé par erreur, le plus récent en
+  production, « Ready »). Aucune migration.
+- **Validation :** en ligne, 30 appels chacun : `/api/sante/` médiane 0,17 s, p90 0,21 s (avant : 0,6 à 1,1 s) ;
+  `/api/auth/csrf/` 0,16 s ; `auth/rafraichir/` sans CSRF 403 ; `/api/evenements/` sans session 401 ; CSP et HSTS
+  présents sur `/connexion`.
+- **Risques ou limites :** 404 de `public/evenements/<slug>/` à 1,04 s en ligne (4 ms en local), cause non
+  identifiée ; démarrage à froid de la fonction (≈ 5 s) inchangé ; rafraîchissement de session non testé en ligne
+  avec un vrai compte (couvert par pytest sur Postgres).
