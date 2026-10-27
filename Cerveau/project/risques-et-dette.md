@@ -2,7 +2,7 @@
 type: project
 statut: implémenté
 verifie: 2026-10-27
-commit: 2365b1f
+commit: bed9942
 sources: [backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
 ---
 

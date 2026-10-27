@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/suivi_emails.py, backend/config/settings.py, backend/vercel.json]
 ---
 

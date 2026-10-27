@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 44eceb5
+verifie: 2026-10-27
+commit: bed9942
 sources: [PLAN.md, backend/apps/noyau/emails.py, backend/apps/noyau/services.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/tests/test_emargement.py]
 ---
 

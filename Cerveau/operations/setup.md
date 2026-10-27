@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/config/bases.py, .gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
 

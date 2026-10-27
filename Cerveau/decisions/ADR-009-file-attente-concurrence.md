@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/config/bases.py, backend/config/settings.py, backend/config/concurrence.py, backend/config/asgi.py, backend/apps/noyau/consumers.py, docker-compose.prod.yml, infra/charge/README.md]
 ---
 

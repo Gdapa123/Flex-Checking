@@ -1,8 +1,8 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, backend/apps/noyau/tasks.py, backend/apps/noyau/emails.py, backend/apps/noyau/donnees_personnelles.py, .gitignore, .github/workflows/ci.yml, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/config/settings.py, backend/config/bases.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/logs.py, infra/Caddyfile.prod, frontend/vercel.json, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
 ---
 

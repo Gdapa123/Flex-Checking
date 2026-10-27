@@ -1,8 +1,8 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-26
-commit: 44eceb5
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py, backend/apps/noyau/sondages.py, backend/apps/noyau/donnees_personnelles.py, backend/apps/comptes/migrations/]
 ---
 

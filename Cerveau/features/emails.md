@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
 ---
 

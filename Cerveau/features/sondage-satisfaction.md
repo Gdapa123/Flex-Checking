@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/apps/noyau/vues_invites.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/rapports.py, backend/apps/noyau/logs.py, backend/apps/noyau/temps_reel.py, backend/config/settings.py, backend/vercel.json, backend/templates/emails/sondage.html, backend/templates/emails/sondage.txt, backend/apps/noyau/tests/test_sondage.py, frontend/src/App.jsx, frontend/src/lib/signalement.js, frontend/src/lib/tempsReel.js, infra/Caddyfile.prod, frontend/src/features/invite/SondagePage.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/features/super/Analyses.jsx]
 ---
 

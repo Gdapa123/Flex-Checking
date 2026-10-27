@@ -1,8 +1,8 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx, frontend/e2e/accessibilite.spec.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
 ---
 

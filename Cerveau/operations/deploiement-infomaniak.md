@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
 ---
 

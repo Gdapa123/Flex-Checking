@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 

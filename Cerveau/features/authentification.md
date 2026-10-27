@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: bed9942
 sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx]
 ---
 
