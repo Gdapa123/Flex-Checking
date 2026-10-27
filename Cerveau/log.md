@@ -732,3 +732,14 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   temps réel, accessibilité axe) sur MySQL et Redis Docker. Revue de code : pas de défaut ; libellé répété dans le
   champ, conséquence assumée de la demande. Contrôles relancés après l’ajout de l’aide : lint, 68/68, build, e2e 3/3.
 - **Risques ou limites :** le formulaire d’ajout manuel (`PanneauAjout.jsx`) garde ses exemples.
+
+## [2026-10-27] deploy | Placeholders du formulaire d’inscription en ligne (Vercel)
+
+- **Contexte :** push de `e206295` (commit de code `2365b1f`) sur `main`.
+- **Modifications :** déploiement de production automatique du projet `flex-checking` (frontend seul ; le backend
+  n’a pas changé, `flex-checking-api` non redéployé).
+- **Validation :** `vercel inspect` : déploiement « Ready », cible production, alias `https://flex-checking.vercel.app`.
+  Site en 200 ; le module `InscriptionPage` servi en ligne contient l’aide « 10 chiffres, par exemple
+  07 12 34 56 78 » et plus aucun des anciens exemples (« Ex. KOUASSI », « nom@entreprise.ci »).
+- **Risques ou limites :** formulaire non soumis en ligne (éviter un invité de test dans la base Neon) ; rendu
+  vérifié par le contenu du module, pas par une capture d’écran.
