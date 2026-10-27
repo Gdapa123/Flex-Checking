@@ -31,12 +31,19 @@ const ORDRE = ['civilite', 'nom', 'prenom', 'email', 'telephone', 'entreprise', 
 // Tous les champs sont obligatoires. `demi` = demi-largeur sur mobile (deux champs par ligne) ;
 // Email et Téléphone prennent toute la largeur.
 const CHAMPS = [
-  { k: 'nom', demi: true, ac: 'family-name', ph: 'Ex. KOUASSI' },
-  { k: 'prenom', demi: true, ac: 'given-name', ph: 'Ex. Aya' },
-  { k: 'email', type: 'email', im: 'email', ac: 'email', ph: 'nom@entreprise.ci' },
-  { k: 'telephone', type: 'tel', im: 'tel', ac: 'tel-national', ph: '07 12 34 56 78', prefixe: '+225' },
-  { k: 'entreprise', demi: true, ac: 'organization', ph: 'Ex. Orange CI' },
-  { k: 'fonction', demi: true, ac: 'organization-title', ph: 'Ex. Directrice RH' },
+  { k: 'nom', demi: true, ac: 'family-name' },
+  { k: 'prenom', demi: true, ac: 'given-name' },
+  { k: 'email', type: 'email', im: 'email', ac: 'email' },
+  {
+    k: 'telephone',
+    type: 'tel',
+    im: 'tel',
+    ac: 'tel-national',
+    prefixe: '+225',
+    aide: '10 chiffres, par exemple 07 12 34 56 78',
+  },
+  { k: 'entreprise', demi: true, ac: 'organization' },
+  { k: 'fonction', demi: true, ac: 'organization-title' },
 ];
 const NOMS_CHAMPS = {
   nom: 'Nom',
@@ -268,8 +275,9 @@ function Formulaire({ ev, slug }) {
                   type={f.type || 'text'}
                   inputMode={f.im || 'text'}
                   autoComplete={f.ac}
-                  placeholder={f.ph}
+                  placeholder={NOMS_CHAMPS[f.k]}
                   prefixe={f.prefixe}
+                  aide={f.aide}
                   value={v[f.k]}
                   required
                   erreur={err}

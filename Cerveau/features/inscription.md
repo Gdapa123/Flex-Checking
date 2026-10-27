@@ -20,7 +20,8 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
    `magazineActif`), puis « Commencer mon inscription » → `?etape=formulaire` (entrée d’historique : le bouton
    retour du téléphone revient à la présentation).
 3. **Formulaire** : civilité, nom, prénom, email, téléphone (+225), entreprise, fonction, consentement —
-   **tous obligatoires**. Validation Zod au fil de l’eau, erreurs visibles après sortie du champ ou envoi ;
+   **tous obligatoires**. Chaque champ a son libellé visible et le reprend en placeholder ; le téléphone
+   affiche en plus l’aide « 10 chiffres, par exemple 07 12 34 56 78 ». Validation Zod au fil de l’eau, erreurs visibles après sortie du champ ou envoi ;
    « Champ obligatoire » pour un champ vide ; pastille « N informations à compléter ». La case de consentement
    renvoie vers la [politique de confidentialité](donnees-personnelles.md) (`/confidentialite`, nouvel onglet) ;
    mention : « conformément à la loi ivoirienne n° 2013-450 sur la protection des données personnelles »

@@ -718,3 +718,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** `python3 Cerveau/outils/lint_wiki.py` relancé : 50 pages, 0 erreur, 0 page à revérifier,
   0 avertissement. Aucun code modifié, contrôles backend et frontend non relancés.
 - **Risques ou limites :** `Cerveau/.obsidian/graph.json` modifié par Obsidian, non touché.
+
+## [2026-10-27] fonctionnalité | Formulaire d’inscription : le libellé du champ sert de placeholder
+
+- **Contexte :** demande de remplacer les exemples affichés dans les champs (« Ex. KOUASSI », « nom@entreprise.ci »…)
+  par le libellé du champ.
+- **Modifications :** `CHAMPS` n’a plus de clé `ph` ; le placeholder de chaque champ vient de `NOMS_CHAMPS`
+  (Nom, Prénom, Email, Téléphone, Entreprise, Fonction). Le libellé visible au-dessus du champ est conservé.
+  Après la revue de code, le champ téléphone affiche l’aide « 10 chiffres, par exemple 07 12 34 56 78 » (prop
+  `aide` de `Champ`, reliée par `aria-describedby`) pour ne pas perdre l’indication de format.
+- **Fichiers concernés :** `frontend/src/features/invite/InscriptionPage.jsx`, `Cerveau/features/inscription.md`
+- **Validation :** `npm run lint` OK, `npm test` 68/68, `npm run build` OK, `npm run e2e` 3/3 (parcours complet,
+  temps réel, accessibilité axe) sur MySQL et Redis Docker. Revue de code : pas de défaut ; libellé répété dans le
+  champ, conséquence assumée de la demande. Contrôles relancés après l’ajout de l’aide : lint, 68/68, build, e2e 3/3.
+- **Risques ou limites :** le formulaire d’ajout manuel (`PanneauAjout.jsx`) garde ses exemples.
