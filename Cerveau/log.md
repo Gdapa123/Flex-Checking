@@ -778,3 +778,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   (aucune messagerie n'envoie un formulaire sans cela, hors AMP) ; Outlook Windows n'affiche pas le formulaire
   (bouton conservé) ; non testé sur de vraies boîtes (Gmail mobile, Outlook.com, Yahoo) ; commentaire non repris si une
   question manque ; Postgres non relancé ; non déployé.
+
+## [2026-10-27] deploy | Questionnaire dans l'email n°3 en ligne (Vercel)
+
+- **Contexte :** « fait les » (commit, alignement du wiki, déploiement).
+- **Modifications :** commits `bed9942` et `3106714` poussés (frontend déployé au push) ; backend
+  `flex-checking-api` déployé par l'utilisateur (`vercel deploy --prod`, image `3106714f71f4`, « READY », alias
+  `https://flex-checking-api.vercel.app`). Aucune migration.
+- **Validation :** en ligne, via `https://flex-checking.vercel.app` : `/api/sante/` 200 ; `POST
+  /api/public/sondages/<lien inconnu>/reponse/` (formulaire) → 303 vers `/sondage/<lien>` ; jeton `' OR '1'='1` → 303
+  vers la page (jeton encodé, aucune requête en base) ; `GET` → 303 ; module `SondagePage` en ligne avec la reprise
+  des notes. Aucune réponse réelle envoyée (base Neon).
+- **Risques ou limites :** rendu et envoi non testés dans de vraies messageries (envoyer l'email de test n°3
+  depuis Paramètres : son lien est factice, la page affichera « lien non valide ») ; SPF/DKIM/DMARC du domaine
+  d'envoi à vérifier.
