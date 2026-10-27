@@ -743,3 +743,38 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   07 12 34 56 78 » et plus aucun des anciens exemples (« Ex. KOUASSI », « nom@entreprise.ci »).
 - **Risques ou limites :** formulaire non soumis en ligne (éviter un invité de test dans la base Neon) ; rendu
   vérifié par le contenu du module, pas par une capture d’écran.
+
+## [2026-10-27] fonctionnalité | Sondage de satisfaction : questionnaire dans le corps de l'email n°3
+
+- **Contexte :** demande de l'utilisateur (capture de l'email n°3) : « le formulaire ou le questionnaire du sondage
+  doit se trouver directement dans le corps du mail, pas de redirection ». Option retenue par l'utilisateur :
+  formulaire HTML dans l'email (AMP for Email et notes cliquables écartés, voir ADR-012).
+- **Modifications :** gabarit `sondage.html` : les 3 questions (boutons radio), le commentaire et « Envoyer mon
+  avis » dans la carte, bloc `<!--[if mso]>` avec l'ancien bouton pour Outlook, lien « Répondez en ligne » en
+  secours. Nouvelle route `POST /api/public/sondages/<jeton>/reponse/` (`SondageReponseEmailView`, formulaire
+  urlencodé, sans authentification, limite `sondage`) → `sondages.repondre` puis 303 vers la page du sondage ;
+  question manquante → 303 avec `incomplet=1` et les notes valides, reprises par `SondagePage` (`noteRecue`).
+  Réponses par l'email non soumises à l'unicité par appareil (tirage aléatoire, anonymat préservé).
+- **Fichiers concernés :** `backend/templates/emails/sondage.html`, `backend/apps/noyau/vues_sondage.py`,
+  `backend/apps/noyau/urls.py`, `backend/apps/noyau/emails.py`, `backend/config/settings.py` (commentaire),
+  `backend/apps/noyau/tests/test_sondage.py`, `frontend/src/features/invite/SondagePage.jsx`,
+  `frontend/tests/sondage.test.jsx` ; wiki : `features/sondage-satisfaction.md`, ADR-012, `api/endpoints.md`,
+  `features/authentification.md`, `features/emails.md`, `architecture/system-overview.md`,
+  `specifications/functional-requirements.md` (EF-26), `project/risques-et-dette.md` (R23 atténué),
+  `testing/test-cases.md`, `testing/test-strategy.md`.
+- **Revue de code (même jour), corrigée avant commit :** commentaire perdu sans message si refusé (CRLF compté
+  double face à `maxlength`, caractère de contrôle) → nettoyé comme sur la page ; notes reprises au retour prises
+  dans les valeurs converties ; paramètres effacés de l'adresse après lecture ; refus inattendus journalisés (code
+  seul) ; libellés des notes partagés (`emails.LIBELLES_NOTES`, miroir commenté côté page) ; bloc Outlook non
+  dupliqué ; texte de secours « … ou le bouton ne réagit pas ». Demande de l'utilisateur « attention aux injections
+  SQL et aux mails piratés » : jeton vérifié par sa forme avant la base, aucun SQL brut, champs en trop ignorés,
+  test `test_formulaire_de_l_email_falsifie` ; un email piraté donne au plus une réponse anonyme ; SPF/DKIM/DMARC
+  hors du code.
+- **Validation :** ruff OK ; `pytest --create-db` **273 passed** (270 avant la revue ; MySQL Docker ; avec `--reuse-db`,
+  `test_seed_demo_sans_date_future` échoue, base de test périmée, sans lien avec ce changement) ; `npm run lint`
+  OK ; Vitest **69/69** ; build OK ; Playwright **3/3** ; rendu de l'aperçu de l'email capturé à 375 et 640 px.
+- **Décision :** [ADR-012](decisions/ADR-012-sondage-satisfaction.md) (mise à jour du 2026-10-27).
+- **Risques ou limites :** l'envoi du formulaire ouvre tout de même un onglet « merci » dans le navigateur
+  (aucune messagerie n'envoie un formulaire sans cela, hors AMP) ; Outlook Windows n'affiche pas le formulaire
+  (bouton conservé) ; non testé sur de vraies boîtes (Gmail mobile, Outlook.com, Yahoo) ; commentaire non repris si une
+  question manque ; Postgres non relancé ; non déployé.

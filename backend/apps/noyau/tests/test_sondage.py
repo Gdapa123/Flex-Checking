@@ -1,6 +1,7 @@
 """Sondage de satisfaction (email n°3) : envoi le lendemain à 8 h, lien 24 h, une réponse par lien et par appareil."""
 
 from datetime import time, timedelta
+from urllib.parse import urlencode
 
 import pytest
 from django.core import mail
@@ -202,6 +203,83 @@ def test_validation_des_notes_et_appareil(lien):
     assert c.post(url(lien), {**REPONSE, "commentaire": "x" * 1001}, format="json").status_code == 400
     assert c.post(url(lien), {**REPONSE, "commentaire": "Bravo\x1b[2J\x00"}, format="json").status_code == 400
     assert public().post(url(lien), REPONSE, format="json").status_code == 400  # ni cookie ni identifiant
+
+
+# ---------------------------------------------------------------- formulaire intégré à l'email n°3
+FORMULAIRE = {"note_globale": "5", "note_accueil": "4", "recommandation": "9", "commentaire": "Bravo"}
+
+
+def envoyer_formulaire(j, donnees):
+    """Envoi tel que le fait une messagerie : formulaire HTML classique, sans cookie."""
+    return public().post(
+        f"/api/public/sondages/{j}/reponse/", urlencode(donnees), content_type="application/x-www-form-urlencoded"
+    )
+
+
+def test_formulaire_dans_l_email(ceremonie_hier, settings):
+    settings.APP_PUBLIC_URL = "https://flex.exemple.ci"
+    p = present(ceremonie_hier, email="p@exemple.ci")
+    mail.outbox.clear()
+    planifier_sondages(lendemain(ceremonie_hier))
+    html = mail.outbox[0].alternatives[0][0]
+    assert f'<form action="https://flex.exemple.ci/api/public/sondages/{jeton(p)}/reponse/" method="post"' in html
+    for nom in ("note_globale", "note_accueil", "recommandation"):
+        assert f'name="{nom}"' in html
+    assert html.count('name="recommandation"') == 11 and 'name="commentaire"' in html
+    assert f"/sondage/{jeton(p)}" in mail.outbox[0].body  # version texte : lien vers la page
+
+
+def test_reponse_depuis_l_email(lien, settings):
+    settings.APP_PUBLIC_URL = "https://flex.exemple.ci"
+    r = envoyer_formulaire(lien, FORMULAIRE)  # formulaire classique, sans cookie ni identifiant d'appareil
+    assert r.status_code == 303 and r["Location"] == f"https://flex.exemple.ci/sondage/{lien}"
+    rep = ReponseSondage.objects.get()
+    assert (rep.note_globale, rep.note_accueil, rep.recommandation, rep.commentaire) == (5, 4, 9, "Bravo")
+    assert len(rep.appareil) == 64
+    assert InvitationSondage.objects.get().repondu
+    # second envoi : rien de plus, la page affichera « déjà répondu »
+    assert envoyer_formulaire(lien, FORMULAIRE).status_code == 303
+    assert ReponseSondage.objects.count() == 1
+
+
+def test_formulaire_de_l_email_incomplet_ou_clos(lien, settings):
+    settings.APP_PUBLIC_URL = "https://flex.exemple.ci"
+    r = envoyer_formulaire(lien, {"note_globale": "4", "note_accueil": "9", "recommandation": ""})
+    assert r.status_code == 303
+    assert r["Location"] == f"https://flex.exemple.ci/sondage/{lien}?incomplet=1&globale=4"
+    assert not ReponseSondage.objects.exists()
+    InvitationSondage.objects.update(expire_le=timezone.now() - timedelta(minutes=1))
+    assert envoyer_formulaire(lien, FORMULAIRE)["Location"] == f"https://flex.exemple.ci/sondage/{lien}"
+    assert not ReponseSondage.objects.exists()
+    r = envoyer_formulaire("inconnu", FORMULAIRE)  # lien inconnu : la page affiche « lien non valide »
+    assert r.status_code == 303 and r["Location"] == "https://flex.exemple.ci/sondage/inconnu"
+    assert public().get(f"/api/public/sondages/{lien}/reponse/").status_code == 303
+
+
+def test_formulaire_de_l_email_commentaire_nettoye(lien):
+    # sauts de ligne CRLF du formulaire, caractère de contrôle, longueur au-delà de maxlength : réponse gardée
+    texte = "Belle\r\nsoirée\x1b" + "x" * 1200
+    assert envoyer_formulaire(lien, {**FORMULAIRE, "commentaire": texte})["Location"].endswith(f"/sondage/{lien}")
+    rep = ReponseSondage.objects.get()
+    assert rep.commentaire.startswith("Belle\nsoirée") and "\x1b" not in rep.commentaire
+    assert len(rep.commentaire) == 1000
+
+
+def test_formulaire_de_l_email_notes_converties_au_retour(lien):
+    r = envoyer_formulaire(lien, {"note_globale": " 4", "note_accueil": "", "recommandation": "7"})
+    assert r["Location"].endswith(f"/sondage/{lien}?incomplet=1&globale=4&reco=7")
+
+
+def test_formulaire_de_l_email_falsifie(lien, ceremonie_hier):
+    # injections dans le jeton et les champs, champs en trop : rien n'est enregistré ni modifié
+    for j in ("' OR '1'='1", "x" * 300, f"{lien}' --"):
+        assert envoyer_formulaire(j, FORMULAIRE).status_code in (303, 404)
+    assert not ReponseSondage.objects.exists()
+    r = envoyer_formulaire(lien, {**FORMULAIRE, "note_globale": "5; DROP TABLE noyau_invite"})
+    assert "incomplet=1" in r["Location"] and not ReponseSondage.objects.exists()
+    envoyer_formulaire(lien, {**FORMULAIRE, "evenement": "999", "appareil": "imposé-0123456789", "repondu": "0"})
+    rep = ReponseSondage.objects.get()
+    assert rep.evenement_id == ceremonie_hier.pk and len(rep.appareil) == 64
 
 
 # ---------------------------------------------------------------- résultats

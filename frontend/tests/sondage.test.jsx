@@ -17,11 +17,11 @@ const lien = (etat = 'OUVERT') => ({
   evenement: { nomAffiche: 'Graduation PMD 2026', programme: 'PMD', annee: 2026, date: '2026-10-13', tokens: {} },
 });
 
-function afficher(donnees) {
+function afficher(donnees, adresse = '/sondage/jeton-de-test') {
   api.get.mockResolvedValue(donnees);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter initialEntries={['/sondage/jeton-de-test']}>
+      <MemoryRouter initialEntries={[adresse]}>
         <Routes>
           <Route path="/sondage/:jeton" element={<SondagePage />} />
         </Routes>
@@ -54,6 +54,22 @@ describe('sondage public', () => {
     expect(url).toBe('/public/sondages/jeton-de-test/');
     expect(corps).toMatchObject({ noteGlobale: 5, noteAccueil: 4, recommandation: 9, commentaire: 'Merci !' });
     expect(corps.appareil).toMatch(/^[\w-]{16,64}$/);
+  });
+
+  it('retour du formulaire de l’email incomplet : notes reprises, question manquante signalée', async () => {
+    afficher(lien(), '/sondage/jeton-de-test?incomplet=1&globale=4&reco=12');
+    await screen.findByText(/Bonjour Aya/);
+    expect(screen.getByText('Répondez aux trois questions pour envoyer votre avis.')).toBeInTheDocument();
+    expect(screen.getAllByRole('radio', { name: /4 sur 5/ })[0]).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen
+        .getAllByRole('radio', { name: /sur 5/ })
+        .slice(5)
+        .some((r) => r.getAttribute('aria-checked') === 'true'),
+    ).toBe(false);
+    expect(
+      screen.getAllByRole('radio', { name: /sur 10/ }).some((r) => r.getAttribute('aria-checked') === 'true'),
+    ).toBe(false); // 12 hors bornes
   });
 
   it('lien expiré : fenêtre « le temps du sondage est passé », avec remerciements', async () => {

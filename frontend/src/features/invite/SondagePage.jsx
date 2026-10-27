@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { dateLongue, heure } from '../../lib/format';
@@ -14,6 +14,7 @@ import { EnteteInvite } from './commun';
 import { CONTROLE_MULTILIGNE_RE } from '../../lib/schemas';
 
 const CLE_APPAREIL = 'fc-appareil';
+// miroir de `LIBELLES_NOTES` (backend/apps/noyau/emails.py, formulaire de l'email n°3)
 const NOTES = ['Décevante', 'Moyenne', 'Bien', 'Très bien', 'Excellente'];
 const MAX_COMMENTAIRE = 1000;
 
@@ -29,6 +30,14 @@ function identifiantAppareil() {
   } catch {
     return '';
   }
+}
+
+/** Note reprise de l'adresse (formulaire de l'email incomplet), `null` si absente ou hors bornes. */
+function noteRecue(params, cle, min, max) {
+  const brut = params.get(cle);
+  if (!brut || !/^\d{1,2}$/.test(brut)) return null;
+  const n = Number(brut);
+  return n >= min && n <= max ? n : null;
 }
 
 /** Sondage de satisfaction (lien personnel de l'email n°3, valable 24 h). */
@@ -89,13 +98,19 @@ export default function SondagePage() {
 
 /* ------------------------------------------------------------------ formulaire */
 function Formulaire({ jeton, donnees, onTermine }) {
-  const [globale, setGlobale] = useState(null);
-  const [accueil, setAccueil] = useState(null);
-  const [reco, setReco] = useState(null);
+  // retour du formulaire de l'email n°3 avec une question manquante : notes déjà choisies et erreur affichée
+  const [params, setParams] = useSearchParams();
+  const [globale, setGlobale] = useState(() => noteRecue(params, 'globale', 1, 5));
+  const [accueil, setAccueil] = useState(() => noteRecue(params, 'accueil', 1, 5));
+  const [reco, setReco] = useState(() => noteRecue(params, 'reco', 0, 10));
   const [commentaire, setCommentaire] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [tente, setTente] = useState(false);
+  const [tente, setTente] = useState(() => params.has('incomplet'));
+  // lus une seule fois : un rechargement ou un retour plus tard repart d'un formulaire neutre
+  useEffect(() => {
+    if (params.toString()) setParams({}, { replace: true });
+  }, [params, setParams]);
   const complet = globale && accueil && reco !== null;
 
   const envoyer = async (e) => {

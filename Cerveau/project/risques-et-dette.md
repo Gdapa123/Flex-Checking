@@ -188,7 +188,8 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 ## R23 — Un avis par appareil : deux invités sur un même téléphone (fonctionnel, faible — choix ADR-012)
 - L'unicité du sondage par appareil (cookie + identifiant local, `sondages.repondre`) refuse le second invité qui
   répond depuis le même téléphone. Choix assumé de [ADR-012](../decisions/ADR-012-sondage-satisfaction.md) ;
-  complète R9.
+  complète R9. Atténué depuis le 2026-10-27 : une réponse envoyée depuis le formulaire de l'email n'est pas
+  soumise à la règle par appareil, donc le second invité peut répondre depuis son email.
 - Corollaire (`7e0e071`, `suivi_emails.renvoyer_echecs` et renvoi individuel) : pour ne pas révéler qui a répondu,
   un renvoi du n°3 traite de la même façon tous les liens encore ouverts ; un invité qui a déjà répondu peut donc
   recevoir de nouveau son lien (il ne peut pas répondre une seconde fois). Accepté pour l'anonymat.

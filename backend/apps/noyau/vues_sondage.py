@@ -1,12 +1,16 @@
 """Sondage de satisfaction : page publique (lien personnel), déclencheur du cron et résultats."""
 
 import hmac
+import logging
+import re
 import secrets
+from urllib.parse import quote, urlencode
 
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
+from rest_framework.parsers import FormParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,8 +20,11 @@ from apps.comptes.throttles import LimiteIpPartagee
 
 from . import sondages
 from .donnees_personnelles import anonymiser_donnees_expirees
+from .exceptions import ErreurMetier
 from .serializers import tokens_programme
-from .validation import sans_controle_multiligne
+from .validation import CONTROLE_MULTILIGNE_RE, sans_controle_multiligne
+
+logger = logging.getLogger(__name__)
 
 COOKIE_APPAREIL = "fc_appareil"
 LONGUEUR_MIN_SECRET = 32
@@ -110,6 +117,79 @@ class SondagePublicView(APIView):
         reponse = Response({"etat": "REPONDU"}, status=status.HTTP_201_CREATED)
         _poser_cookie(request, reponse)
         return reponse
+
+
+# champs du formulaire de l'email n°3 et noms repris dans l'adresse de la page (questions manquantes)
+CHAMPS_EMAIL = ("note_globale", "note_accueil", "recommandation", "commentaire")
+RETOUR_NOTES = {"note_globale": "globale", "note_accueil": "accueil", "recommandation": "reco"}
+MAX_COMMENTAIRE = 1000
+# forme d'un jeton (`secrets.token_urlsafe(24)`) : tout autre texte est écarté avant la base
+JETON_RE = re.compile(r"[A-Za-z0-9_-]{16,64}")
+# refus attendus, affichés par la page du sondage d'après l'état du lien
+REFUS_AFFICHES = {"DEJA_REPONDU", "SONDAGE_EXPIRE"}
+
+
+def _commentaire_email(valeur):
+    """Comme la page (`SondagePage`) : caractères de contrôle retirés. Le formulaire envoie les sauts de ligne en
+    CRLF (deux caractères, alors que `maxlength` en compte un) : ramenés à LF, puis longueur bornée si la messagerie
+    ignore `maxlength`."""
+    texte = valeur.replace("\r\n", "\n").replace("\r", "\n")
+    return CONTROLE_MULTILIGNE_RE.sub("", texte)[:MAX_COMMENTAIRE]
+
+
+def _notes_valides(ser, donnees):
+    """Notes acceptées par le sérialiseur (valeur convertie, pas le texte reçu), reprises par la page."""
+    return {
+        cle: ser.fields[champ].run_validation(donnees[champ])
+        for champ, cle in RETOUR_NOTES.items()
+        if champ not in ser.errors
+    }
+
+
+def _vers_page(jeton, **parametres):
+    """Retour sur la page du sondage, qui affiche l'état du lien (merci, clos, lien inconnu…)."""
+    suite = f"?{urlencode(parametres)}" if parametres else ""
+    return HttpResponseRedirect(f"{settings.APP_PUBLIC_URL}/sondage/{quote(jeton, safe='')}{suite}", status=303)
+
+
+class SondageReponseEmailView(APIView):
+    """Formulaire intégré à l'email n°3 : envoi classique (POST de formulaire) depuis la messagerie.
+
+    Pas de jeton CSRF ni d'identifiant d'appareil possibles dans un email : le jeton du lien suffit (une réponse par
+    lien). L'appareil enregistré est un tirage aléatoire, sans lien avec l'invité (réponses anonymes).
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [SondageThrottle]
+    parser_classes = [FormParser]
+
+    @extend_schema(exclude=True)
+    def get(self, request, jeton):
+        return _vers_page(jeton)
+
+    @extend_schema(exclude=True)
+    def post(self, request, jeton):
+        invitation = sondages.invitation_par_jeton(jeton) if JETON_RE.fullmatch(jeton) else None
+        if invitation is None:
+            return _vers_page(jeton)  # la page affiche « lien non valide »
+        donnees = {k: request.data.get(k, "") for k in CHAMPS_EMAIL}
+        donnees["commentaire"] = _commentaire_email(donnees["commentaire"])
+        ser = ReponseSondageSerializer(data=donnees)
+        if not ser.is_valid():
+            # le commentaire étant nettoyé, seules des notes peuvent manquer : la page reprend les autres
+            return _vers_page(jeton, incomplet=1, **_notes_valides(ser, donnees))
+        try:
+            sondages.repondre(
+                invitation,
+                {"commentaire": "", **ser.validated_data},
+                appareil_cookie=secrets.token_urlsafe(24),
+                appareil_local="",
+            )
+        except ErreurMetier as exc:
+            if exc.code not in REFUS_AFFICHES:
+                logger.warning("Réponse au sondage depuis l'email refusée : %s", exc.code)
+        return _vers_page(jeton)
 
 
 class CronSondagesView(APIView):

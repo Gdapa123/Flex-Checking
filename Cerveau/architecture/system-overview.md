@@ -59,7 +59,7 @@ Détail : [components](components.md).
 - **Aucune donnée personnelle** dans le journal, les logs, les messages WebSocket, les QR codes. Les logs masquent
   aussi la recherche `?q=` et le jeton du sondage (`logs.masquer_jetons`, filtre `regexp` de `infra/Caddyfile.prod`).
 - **En-têtes** : `Referrer-Policy: same-origin` (Django, Caddy prod, `frontend/vercel.json`), `X-Frame-Options: DENY`
-  côté Django (`SAMEORIGIN` côté Caddy prod) ; API en JSON uniquement (parseur multipart retiré).
+  côté Django (`SAMEORIGIN` côté Caddy prod) ; API en JSON uniquement (parseur multipart retiré) ; seule exception, `POST public/sondages/<jeton>/reponse/` (formulaire de l'email n°3, sans authentification).
 
 ## Environnements
 | Environnement | Base | Redis / Celery | Fichier |

@@ -119,6 +119,15 @@ def lien_sondage(jeton):
     return f"{settings.APP_PUBLIC_URL}/sondage/{jeton}"
 
 
+# échelle des deux premières questions du formulaire de l'email n°3 (miroir de `NOTES` dans `SondagePage.jsx`)
+LIBELLES_NOTES = ("Décevante", "Moyenne", "Bien", "Très bien", "Excellente")
+
+
+def action_sondage(jeton):
+    """Adresse du formulaire intégré à l'email n°3 : la réponse part directement de la messagerie."""
+    return f"{settings.APP_PUBLIC_URL}/api/public/sondages/{jeton}/reponse/"
+
+
 def _valeurs(source):
     ev, prog = source.evenement, source.evenement.programme
     return {
@@ -201,6 +210,9 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "lien_public": lien_public,
         "lien_magazine": prog.lien_magazine,
         "lien_sondage": valeurs["lien_sondage"],
+        "action_sondage": action_sondage(source.jeton_sondage) if source.jeton_sondage else "",
+        "notes_sondage": LIBELLES_NOTES,
+        "echelle_recommandation": range(11),
         "expire_texte": (
             f"{dates.date_longue(timezone.localtime(source.sondage_expire_le).date())} à "
             f"{dates.heure_dt(source.sondage_expire_le)}"

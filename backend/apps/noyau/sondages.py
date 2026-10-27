@@ -4,7 +4,8 @@
   envoi par invité (`InvitationSondage` unique par invité), y compris si la tâche planifiée tourne plusieurs fois.
 - Lien personnel valable 24 h après sa création ; au-delà, la page publique affiche « sondage clos ».
 - Une réponse par invité (lien) et une par appareil pour une même cérémonie (cookie posé par le serveur et
-  identifiant du navigateur, conservés sous forme d'empreintes).
+  identifiant du navigateur, conservés sous forme d'empreintes). La règle par appareil ne vaut que pour la page :
+  une réponse envoyée depuis le formulaire de l'email n'a ni cookie ni stockage (`SondageReponseEmailView`).
 """
 
 import hashlib

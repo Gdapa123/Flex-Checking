@@ -151,7 +151,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["apps.comptes.permissions.CompteUtilisable"],
     "DEFAULT_RENDERER_CLASSES": ["djangorestframework_camel_case.render.CamelCaseJSONRenderer"],
     # JSON uniquement : aucun envoi de formulaire ou de fichier n'est attendu, et un formulaire multipart posté depuis
-    # un autre site ne doit jamais atteindre les vues (connexion forcée, CSRF).
+    # un autre site ne doit jamais atteindre les vues (connexion forcée, CSRF). Seule exception : la réponse au
+    # sondage depuis l'email n°3 (`vues_sondage.SondageReponseEmailView`, sans authentification, le jeton suffit).
     "DEFAULT_PARSER_CLASSES": ["djangorestframework_camel_case.parser.CamelCaseJSONParser"],
     # « objetEmail1 » → « objet_email_1 » (nom des champs des modèles d'email) : avec no_underscore_before_number,
     # le parseur produisait « objet_email1 », champ inconnu ignoré en silence (modèles jamais enregistrés)

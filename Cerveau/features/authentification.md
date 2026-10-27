@@ -18,7 +18,7 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
 ## Connexion (`POST /api/auth/connexion/`)
 - Email + mot de passe (Argon2) ; compte inactif = identifiants invalides (401, message unique).
 - **CSRF exigé** (`verifier_csrf` au début de la vue, qui n'a pas d'authentification DRF) : pas de connexion forcée
-  depuis un autre site. API en **JSON uniquement** (plus de `MultiPartParser`) : un formulaire posté d'ailleurs → 415.
+  depuis un autre site. API en **JSON uniquement** (plus de `MultiPartParser`) : un formulaire posté d'ailleurs → 415 ; seule exception, `POST public/sondages/<jeton>/reponse/` (formulaire de l'email n°3, sans authentification).
 - **Email ASCII uniquement** : la collation MySQL `utf8mb4_unicode_ci` confond « mdé.ci » et « mde.ci » ; sans ce
   refus, chaque variante accentuée aurait eu ses propres compteurs (force brute illimitée).
 - Pose `fc_access` (15 min, path `/`) et `fc_refresh` (12 h, path `/api/auth/`), httpOnly, Secure, SameSite=Lax,

@@ -47,6 +47,15 @@ identique que l'invité ait répondu ou non (réponse, journal, envoi réel, sta
 un invité qui a déjà répondu peut recevoir de nouveau son lien, qui affiche « déjà répondu ». Commentaire :
 caractères de contrôle refusés (`validation.sans_controle_multiligne`).
 
+Mise à jour du 2026-10-27 (demande de l'utilisateur : questionnaire dans le corps de l'email, sans redirection) :
+l'email n°3 contient un formulaire HTML qui envoie la réponse directement (`SondageReponseEmailView`, `POST
+public/sondages/<jeton>/reponse/`). Options écartées : AMP for Email (seul vrai envoi sans quitter la messagerie,
+mais Gmail et Yahoo seulement, enregistrement de l'expéditeur auprès de Google) et notes cliquables (une page web
+reste nécessaire). Conséquences : la décision 3 (unicité par appareil) ne s'applique pas aux réponses envoyées depuis
+l'email (aucun cookie ni stockage possible) : seule l'unicité par lien vaut, et l'appareil enregistré est un tirage
+aléatoire (décision 6 préservée) ; l'envoi ouvre malgré tout un onglet « merci » dans le navigateur ; Outlook
+(Windows) garde le bouton vers la page.
+
 ## Limites assumées
 - Navigation privée + nouvel appareil = un nouvel avis possible pour une autre personne ; mais un **lien** ne
   sert qu'une fois, donc au plus une réponse par invité présent.

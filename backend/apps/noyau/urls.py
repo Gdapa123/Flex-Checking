@@ -36,6 +36,7 @@ urlpatterns = [
     path("public/evenements/<slug:slug>/renvoi-qr/", vues_public.RenvoiQrView.as_view()),
     path("public/evenements/<slug:slug>/agenda.ics", vues_public.AgendaView.as_view()),
     path("public/sondages/<str:jeton>/", vues_sondage.SondagePublicView.as_view()),
+    path("public/sondages/<str:jeton>/reponse/", vues_sondage.SondageReponseEmailView.as_view()),
     path("public/confidentialite/", vues_public.ConfidentialiteView.as_view()),
     # Tâches planifiées appelées par le cron de la plateforme (sans Celery Beat)
     path("taches-planifiees/sondages/", vues_sondage.CronSondagesView.as_view()),

@@ -18,7 +18,7 @@ Demande de l'utilisateur du 2026-10-14. Décision : [ADR-012](../decisions/ADR-0
 | Un seul envoi par invité | `InvitationSondage` (unique par invité, `OneToOne`, jeton `secrets.token_urlsafe(24)`) ; tâche idempotente (`IntegrityError` ignorée), verrou de cache `sondages-envoi` (10 min) |
 | Lien **valable 24 h** | `expire_le = cree_le + 24 h` ; page publique « clos » au-delà, réponse refusée (410 `SONDAGE_EXPIRE`) |
 | **Une réponse par email** | `ReponseSondage` unique par lien (409 `DEJA_REPONDU`) |
-| **Une réponse par appareil** et par cérémonie | cookie `fc_appareil` (httpOnly, `SameSite=Lax`, chemin `/api/public/sondages/`, 30 jours, posé par le serveur à la lecture) **et** identifiant du navigateur (`localStorage` `fc-appareil`, 16 à 64 caractères `[A-Za-z0-9_-]`) ; empreintes SHA-256 `evenement:identifiant` comparées aux deux colonnes `appareil` / `appareil_local` ; contrainte unique `(evenement, appareil)` ; 409 `APPAREIL_DEJA_UTILISE` ; 400 si aucun des deux identifiants |
+| **Une réponse par appareil** et par cérémonie (page web seulement ; pas pour une réponse envoyée depuis l'email, voir plus bas) | cookie `fc_appareil` (httpOnly, `SameSite=Lax`, chemin `/api/public/sondages/`, 30 jours, posé par le serveur à la lecture) **et** identifiant du navigateur (`localStorage` `fc-appareil`, 16 à 64 caractères `[A-Za-z0-9_-]`) ; empreintes SHA-256 `evenement:identifiant` comparées aux deux colonnes `appareil` / `appareil_local` ; contrainte unique `(evenement, appareil)` ; 409 `APPAREIL_DEJA_UTILISE` ; 400 si aucun des deux identifiants |
 | Analyses pour admins et super admin | `GET /api/evenements/<id>/sondage/` (`EstAdmin`, cérémonies visibles), `GET /api/analytique/sondages/` (`EstSuperAdmin`) |
 
 Points d’accès publics : `GET` / `POST /api/public/sondages/<jeton>/` (`SondagePublicView`, sans authentification,
@@ -55,8 +55,46 @@ Au moment de l'envoi, `tasks._envoyer` passe l'email n°3 en ECHEC sans l'envoye
 présence a été annulée entre-temps (`_sondage_perime`).
 
 ## Email n°3
-Gabarit `templates/emails/sondage.html` / `.txt` : carte « Votre avis en 3 questions », bouton « Donner mon avis »,
-date de clôture. Objet et contenu modifiables (Paramètres, onglet « Email n°3 · sondage », variable
+Gabarit `templates/emails/sondage.html` / `.txt` : carte « Votre avis en 3 questions » qui contient **le
+questionnaire lui-même** (depuis le 2026-10-27, demande de l'utilisateur : « pas de redirection »), date de clôture,
+puis « Le formulaire ne s'affiche pas ? Répondez en ligne : <lien> ».
+
+### Formulaire dans le corps de l'email (2026-10-27)
+- Formulaire HTML classique (`<form method="post">`, boutons radio `note_globale` 1-5, `note_accueil` 1-5,
+  `recommandation` 0-10, `textarea commentaire` ≤ 1 000, bouton « Envoyer mon avis ») ; adresse
+  `emails.action_sondage` = `{APP_PUBLIC_URL}/api/public/sondages/<jeton>/reponse/` (même domaine que le site :
+  Caddy en production, réécriture `/api` de `frontend/vercel.json` sur Vercel).
+- Réception : `vues_sondage.SondageReponseEmailView` (formulaire `x-www-form-urlencoded`, seule vue qui accepte autre
+  chose que du JSON, voir le commentaire de `REST_FRAMEWORK` dans `settings.py` ; sans authentification ; même limite
+  de 60/h par IP) → validation par `ReponseSondageSerializer` → `sondages.repondre` → **303** vers
+  `{APP_PUBLIC_URL}/sondage/<jeton>`, qui affiche l'état (merci, déjà répondu, clos, lien non valide).
+- Commentaire nettoyé comme sur la page (`_commentaire_email`) : sauts de ligne CRLF ramenés à LF, caractères de
+  contrôle retirés, longueur bornée à 1 000 (messagerie qui ignore `maxlength`) ; il ne fait donc jamais échouer
+  l'envoi.
+- Question manquante ou note invalide : rien n'est enregistré, 303 vers `/sondage/<jeton>?incomplet=1&globale=…&accueil=…&reco=…`
+  (notes acceptées par le sérialiseur, converties en entiers) ; `SondagePage` (`noteRecue`) reprend ces notes,
+  affiche « Répondez aux trois questions », puis efface ces paramètres de l'adresse ; le commentaire saisi dans
+  l'email n'est **pas** repris (jamais dans une adresse).
+- Sécurité (revue du 2026-10-27) : jeton vérifié par sa forme (`JETON_RE`, 16-64 caractères `[A-Za-z0-9_-]`)
+  avant toute requête, recherche par l'ORM (requête paramétrée, aucun SQL brut dans `backend/apps`) ; seuls les
+  4 champs du formulaire sont lus (événement, appareil ou `repondu` envoyés en plus sont ignorés) ; redirection
+  toujours vers `APP_PUBLIC_URL` (jeton encodé, pas de redirection ouverte) ; `GET` sans effet (les analyseurs de
+  liens des messageries ne peuvent pas répondre) ; un email transféré ou piraté permet au plus **une** réponse
+  anonyme, comme le lien ; jeton masqué dans les journaux (`logs.JETON_SONDAGE_RE`, Caddy) ; refus inattendus de
+  `sondages.repondre` journalisés par leur code seul. Tests : `test_formulaire_de_l_email_falsifie`.
+- Usurpation de l'expéditeur (faux email de sondage) : relève de SPF, DKIM et DMARC du domaine d'envoi, hors du
+  code ; ❓ à vérifier sur le domaine de production.
+- Unicité : une réponse par lien (inchangé). La règle « une réponse par appareil » ne peut pas s'appliquer (ni
+  cookie ni stockage dans une messagerie) : l'appareil enregistré est un tirage aléatoire (`secrets`), sans lien
+  avec l'invité ([ADR-012](../decisions/ADR-012-sondage-satisfaction.md), mise à jour du 2026-10-27).
+- Messageries : Apple Mail / iOS et Gmail web affichent et envoient le formulaire (Gmail avec un avertissement) ;
+  l'envoi ouvre ensuite un onglet du navigateur sur la page « merci ». Outlook (Windows) n'affiche pas de formulaire :
+  bloc conditionnel `<!--[if mso]>` avec le bouton « Donner mon avis » (même bloc que sans formulaire). Texte de
+  secours sous le formulaire : « Le formulaire ne s'affiche pas ou le bouton ne réagit pas ? Répondez en ligne ». ❓ À confirmer sur de vraies boîtes
+  (Gmail Android / iOS, Outlook.com, Yahoo) : non testé, seul le rendu HTML a été vérifié (capture locale).
+- Version texte (`sondage.txt`) : lien vers la page, inchangée.
+
+ Objet et contenu modifiables (Paramètres, onglet « Email n°3 · sondage », variable
 `{lien_sondage}`). Suivi dans l'écran A7 (compteurs, échecs, renvoi groupé, email de test).
 Renvoi **individuel** (`POST /api/invites/<id>/renvoi-email/`, 2026-10-22) : seulement si le dernier envoi n°3 est en
 échec et le lien encore ouvert (`sondages.sondage_renvoyable`), **indépendamment de la réponse**. Depuis `7e0e071`
@@ -80,11 +118,11 @@ lien est ouvert est renvoyé et compté, qu'il ait répondu ou non.
 - NPS = % de notes 9-10 − % de notes 0-6.
 
 ## Tests
-`backend/apps/noyau/tests/test_sondage.py` (18 : envoi le lendemain aux présents, programme désactivé, rattrapage,
+`backend/apps/noyau/tests/test_sondage.py` (24 : envoi le lendemain aux présents, programme désactivé, rattrapage,
 budget sans file puis reprise, pas d'envoi après clôture ou annulation, cron protégé, lecture, unicité par lien et par
 appareil, expiration, validation, résultats et droits, suivi / renvoi, email de test et aperçu, anonymat, rapport
-PDF ; caractères de contrôle du commentaire refusés) ; `test_durcissement.py`
-(`test_renvoi_du_sondage_ne_revele_pas_qui_a_repondu`) ; `frontend/tests/sondage.test.jsx` (7) ; `suiviEmails.test.jsx`.
+PDF ; caractères de contrôle du commentaire refusés ; formulaire présent dans l'email, réponse depuis l'email, formulaire incomplet, clos ou lien inconnu, commentaire nettoyé, notes converties au retour, formulaire falsifié ou injection) ; `test_durcissement.py`
+(`test_renvoi_du_sondage_ne_revele_pas_qui_a_repondu`) ; `frontend/tests/sondage.test.jsx` (8, dont le retour d'un formulaire d'email incomplet) ; `suiviEmails.test.jsx`.
 
 ## Limites
 - Un même appareil ne donne qu'un avis par cérémonie : deux invités sur un même téléphone, le second est refusé

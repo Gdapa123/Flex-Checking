@@ -12,15 +12,35 @@
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
   <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;">
     <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:#1B1D20;">Votre avis en 3 questions</p>
+    {% if action_sondage %}
+    <!--[if !mso]><!-->
+    <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#5F666C;">Répondez directement dans cet email : moins de deux minutes.</p>
+    <form action="{{ action_sondage }}" method="post" target="_blank" style="margin:0;">
+    <p style="margin:20px 0 10px 0;font-size:15px;line-height:1.45;font-weight:600;color:#1B1D20;">1. Dans l’ensemble, comment avez-vous trouvé la cérémonie ?</p>
+    <div>{% for libelle in notes_sondage %}<label style="display:inline-block;margin:0 6px 6px 0;padding:8px 12px;border:1px solid #D5D9DD;border-radius:8px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;color:#1B1D20;white-space:nowrap;cursor:pointer;"><input type="radio" name="note_globale" value="{{ forloop.counter }}" required style="margin:0 6px 0 0;vertical-align:-2px;accent-color:{{ t.primary }};">{{ forloop.counter }} · {{ libelle }}</label>{% endfor %}</div>
+    <p style="margin:20px 0 10px 0;font-size:15px;line-height:1.45;font-weight:600;color:#1B1D20;">2. Et l’accueil à votre arrivée ?</p>
+    <div>{% for libelle in notes_sondage %}<label style="display:inline-block;margin:0 6px 6px 0;padding:8px 12px;border:1px solid #D5D9DD;border-radius:8px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;color:#1B1D20;white-space:nowrap;cursor:pointer;"><input type="radio" name="note_accueil" value="{{ forloop.counter }}" required style="margin:0 6px 0 0;vertical-align:-2px;accent-color:{{ t.primary }};">{{ forloop.counter }} · {{ libelle }}</label>{% endfor %}</div>
+    <p style="margin:20px 0 10px 0;font-size:15px;line-height:1.45;font-weight:600;color:#1B1D20;">3. Recommanderiez-vous MDE Business School à un proche ?</p>
+    <div>{% for n in echelle_recommandation %}<label style="display:inline-block;margin:0 6px 6px 0;padding:8px 10px;min-width:22px;text-align:center;border:1px solid #D5D9DD;border-radius:8px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:20px;color:#1B1D20;white-space:nowrap;cursor:pointer;"><input type="radio" name="recommandation" value="{{ n }}" required style="margin:0 6px 0 0;vertical-align:-2px;accent-color:{{ t.primary }};">{{ n }}</label>{% endfor %}</div>
+    <p style="margin:2px 0 0 0;font-size:13px;line-height:1.4;color:#5F666C;">0 = pas du tout · 10 = tout à fait</p>
+    <p style="margin:20px 0 10px 0;font-size:15px;line-height:1.45;font-weight:600;color:#1B1D20;">Un mot à ajouter ? <span style="font-weight:400;color:#5F666C;">(facultatif)</span></p>
+    <textarea name="commentaire" rows="4" maxlength="1000" placeholder="Ce que vous avez aimé, ce que nous pourrions améliorer…" style="display:block;width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #D5D9DD;border-radius:10px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1B1D20;background:#FFFFFF;"></textarea>
+    <input type="submit" value="Envoyer mon avis" style="margin-top:18px;padding:13px 22px;border:0;border-radius:10px;background:{{ t.primary }};color:{{ t.on_primary }};font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;cursor:pointer;-webkit-appearance:none;">
+    </form>
+    <!--<![endif]-->
+    {% endif %}
+    {# sans formulaire (aperçu sans lien) ou dans Outlook pour Windows, qui n'affiche pas les formulaires : bouton vers la page #}
+    {% if action_sondage %}<!--[if mso]>{% endif %}
     <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#5F666C;">Votre impression générale, l’accueil, et si vous recommanderiez MDE Business School. Un commentaire est possible.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-collapse:separate;"><tr>
       <td align="center" bgcolor="{{ t.primary }}" style="background:{{ t.primary }};border-radius:10px;">
         <a href="{{ lien_sondage }}" style="display:block;padding:13px 20px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:22px;color:{{ t.on_primary }};text-decoration:none;border-radius:10px;">Donner mon avis<img src="{{ ic.external }}" width="18" height="18" alt="" style="vertical-align:-3px;margin-left:8px;"></a>
       </td></tr></table>
+    {% if action_sondage %}<![endif]-->{% endif %}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;border-collapse:separate;"><tr>
       <td style="font-size:14px;line-height:20px;color:#5F666C;"><img src="{{ ic.clock }}" width="14" height="14" alt="" style="vertical-align:-2px;margin-right:6px;">Ouvert jusqu’au {{ expire_texte }}</td>
     </tr></table>
-    <p style="margin:12px 0 0 0;font-size:13px;line-height:1.5;color:#5F666C;word-break:break-all;">Lien direct : <a href="{{ lien_sondage }}" style="color:{{ t.primary }};">{{ lien_sondage }}</a></p>
+    <p style="margin:12px 0 0 0;font-size:13px;line-height:1.5;color:#5F666C;word-break:break-all;">{% if action_sondage %}Le formulaire ne s’affiche pas ou le bouton ne réagit pas ? Répondez en ligne : {% else %}Lien direct : {% endif %}<a href="{{ lien_sondage }}" style="color:{{ t.primary }};">{{ lien_sondage }}</a></p>
   </td></tr>
 </table>
 

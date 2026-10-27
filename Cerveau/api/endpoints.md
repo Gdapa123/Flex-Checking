@@ -14,7 +14,7 @@ défaut) ; 429 → `TROP_DE_TENTATIVES` ; 500 → `ERREUR_SERVEUR` (message neut
 
 Légende droits : **P** public · **A** admin ou super admin (périmètre limité aux cérémonies affectées) · **S** super admin ·
 **(borne)** accessible aussi à une session borne libre-service ; toute autre route lui est refusée (403). Corps de requête
-en JSON uniquement (415 sinon).
+en JSON uniquement (415 sinon) ; seule exception, `POST public/sondages/<jeton>/reponse/` (formulaire de l'email n°3, sans authentification).
 `/api/sante/` (GET/HEAD) est servi par un middleware, avant tout contrôle.
 
 ## Authentification (`apps/comptes/views.py`)
@@ -39,6 +39,7 @@ en JSON uniquement (415 sinon).
 | GET | `public/sondages/<jeton>/` (`vues_sondage.py`) | `{etat: OUVERT/EXPIRE/REPONDU, prenom, civilite, expireLe, evenement:{nomAffiche, programme, annee, date, tokens}}` (`prenom` et `civilite` vides si le lien n’est plus ouvert) ; `Cache-Control: no-store` ; pose le cookie httpOnly `fc_appareil` (30 jours, chemin `/api/public/sondages/`) ; 404 lien inconnu ; 60/h par IP |
 | POST | `public/sondages/<jeton>/` | `{noteGlobale 1-5, noteAccueil 1-5, recommandation 0-10, commentaire? (≤ 1 000, caractères de contrôle refusés sauf sauts de ligne et tabulation), appareil? (16-64 car. `[A-Za-z0-9_-]`)}` → 201 `{etat: REPONDU}` ; 410 `SONDAGE_EXPIRE` ; 409 `DEJA_REPONDU` / `APPAREIL_DEJA_UTILISE` ; 400 (dont cookie et `appareil` tous deux absents) |
 | GET | `public/confidentialite/` (`vues_public.ConfidentialiteView`) | `{contact, dureeConservationMois}` pour la page `/confidentialite` ; public, limite anonyme par défaut (voir [donnees-personnelles](../features/donnees-personnelles.md)) |
+| POST | `public/sondages/<jeton>/reponse/` (`SondageReponseEmailView`) | formulaire intégré à l'email n°3, `application/x-www-form-urlencoded` (`note_globale`, `note_accueil`, `recommandation`, `commentaire`), sans cookie ni identifiant d'appareil → toujours **303** vers `{APP_PUBLIC_URL}/sondage/<jeton>` (réponse enregistrée, ou déjà répondu / clos / lien inconnu : la page affiche l'état) ; questions manquantes ou invalides → 303 vers `…?incomplet=1` + notes valides (`globale`, `accueil`, `reco`), rien enregistré ; `GET` → 303 vers la page ; 60/h par IP |
 | GET | `taches-planifiees/sondages/` | cron Vercel (`backend/vercel.json` : `?passage=8h` à 8 h et `?passage=12h` à 12 h ; le paramètre n’est pas lu par la vue, il distingue seulement les deux chemins), en-tête `Authorization: Bearer <CRON_SECRET>` → `{programmes, envoyes, anonymisation: {evenements, invites}}` (`sondages.planifier_sondages` puis `donnees_personnelles.anonymiser_donnees_expirees`) ; 404 si secret absent, de moins de 32 caractères ou différent ; aucune limite de débit |
 | POST | `erreurs/` | signalement d’erreur navigateur → 204 |
 

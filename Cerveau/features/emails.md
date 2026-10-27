@@ -64,7 +64,7 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   générées par Pillow (`icones_email.py`) ; logo blanc ou rouge selon le contraste.
 - Structure MIME : `mixed[ related[ alternative(texte, html), images CID ], pièces jointes ]`.
 - Pièces jointes n°1 : `qr-code.png` et `graduation.ics` (aucune pièce jointe pour n°2 et n°3).
-- Gabarits par type : `invitation`, `magazine`, `sondage` (`.html` + `.txt`, sur `base.html`).
+- Gabarits par type : `invitation`, `magazine`, `sondage` (`.html` + `.txt`, sur `base.html`). Le gabarit `sondage.html` contient le questionnaire (formulaire HTML, voir [sondage-satisfaction](sondage-satisfaction.md)).
 - Boutons de l’email → page publique `/i/<lien>/pratique#agenda` ou `#itineraire`.
 - Expéditeur : `Parametres.expediteur` (défaut « Flex’Checking · MDE Business School ») `<DEFAULT_FROM_EMAIL>`
   (`DEFAULT_FROM_EMAIL` doit donc être une adresse seule) ;
