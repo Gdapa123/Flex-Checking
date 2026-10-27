@@ -2,7 +2,7 @@
 type: testing
 statut: implémenté
 verifie: 2026-10-26
-commit: d220011
+commit: 2523cbb
 sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/.nvmrc, frontend/.npmrc, frontend/tests/fileHorsLigne.test.js, backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/, frontend/vite.config.js, frontend/package.json, frontend/playwright.config.js, frontend/tests/, .github/workflows/ci.yml]
 ---
 
@@ -11,7 +11,7 @@ sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/test
 ## Niveaux
 | Niveau | Outil | Emplacement | Volume |
 |---|---|---|---|
-| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 19 fichiers, **266 tests exécutés** le 2026-10-22 après la revue de code (264 avant, 257 lors de l'audit du matin ; paramétrages compris ; 242 collectés le 2026-10-21) et le 2026-10-23, dont `test_donnees_personnelles.py`, `test_durcissement.py`, `test_audit_securite.py`, `test_dates_inscription.py`, `test_suivi_emails.py` et `test_sondage.py` ; `backend/apps/comptes/tests/` ne contient aucun test |
+| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 19 fichiers, **267 tests exécutés** le 2026-10-26 sur MySQL et sur Postgres (`test_pool_postgres_garde_le_chiffrement` ajouté) ; 266 le 2026-10-22 après la revue de code (264 avant, 257 lors de l'audit du matin ; paramétrages compris ; 242 collectés le 2026-10-21) et le 2026-10-23, dont `test_donnees_personnelles.py`, `test_durcissement.py`, `test_audit_securite.py`, `test_dates_inscription.py`, `test_suivi_emails.py` et `test_sondage.py` ; `backend/apps/comptes/tests/` ne contient aucun test |
 | Utilitaires et composants | Vitest + Testing Library (jsdom) | `frontend/tests/` | 16 fichiers, **68 tests** exécutés le 2026-10-22 et le 2026-10-23 (dont `confidentialite.test.jsx` 2, `fileHorsLigne.test.js` 2) |
 | Parcours complet + accessibilité | Playwright + axe-core | `frontend/e2e/` | 3 tests (2 fichiers : `parcours.spec.js` 2, `accessibilite.spec.js` 1) |
 | Lint / format | ruff · ESLint (jsx-a11y, react-hooks) + Prettier | — | — |
@@ -36,6 +36,7 @@ qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertiss
 ## Dernière exécution locale connue
 | Date | Contrôle | Résultat |
 |---|---|---|
+| 2026-10-26 | Pool Postgres + correction du rafraîchissement (`43f99c5`) : `ruff check` + `ruff format --check`, `pytest --create-db` sur MySQL 8 (Docker) et sur un Postgres local (Homebrew, pool actif), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **267 passed** (MySQL) et **267 passed** (Postgres ; 6 échecs sur Postgres avant la correction de `RafraichirView`) ; lint OK ; Vitest **68/68** ; build OK ; Playwright **3/3**. Avec `--reuse-db`, `test_seed_demo_sans_date_future` échoue (base de test périmée), OK avec `--create-db` |
 | 2026-10-26 | Vérification complète sur le poste (Node 24.22.1, MySQL + Redis Docker, `seed_demo`) : `ruff check` + `ruff format --check`, `pytest`, `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **266 passed** ; lint OK ; Vitest **68/68** ; build OK ; Playwright **3/3** (accessibilité axe comprise) — base `44eceb5` + mise à niveau Node.js (commitée ensuite dans `d220011`) |
 | 2026-10-23 | `npm ci`, `npm run lint`, `npm test`, `npm run build` dans `node:24-alpine` (Node 24.22.1) | ✅ Vitest **68/68**, lint et build OK (mise à niveau Node.js, modifications non commitées) |
 | 2026-10-23 | `npm ci` dans `node:24.13.0-alpine` (garde-fou `engines`) | ✅ refusé comme attendu (`EBADENGINE`, `Required: ^24.22.1`) |

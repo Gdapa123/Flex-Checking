@@ -2,7 +2,7 @@
 type: api
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/serializers.py, backend/apps/comptes/views.py, backend/apps/comptes/throttles.py, backend/config/settings.py, backend/vercel.json]
 ---
 
@@ -22,7 +22,7 @@ en JSON uniquement (415 sinon).
 |---|---|---|---|
 | GET | `auth/csrf/` | P | pose le cookie CSRF (204) |
 | POST | `auth/connexion/` | P (CSRF exigé) | `{email, motDePasse}` (email ASCII) → profil + cookies ; limites 5/min par IP et email, 30/min par IP (`LIMITE_CONNEXION_IP`), 20 échecs/h par compte ; un **poste connu** (cookie signé `fc_poste`, 90 jours, posé à chaque connexion réussie) a son propre compteur de 20 échecs/h (`cle + ":poste-connu"`, 2026-10-22) |
-| POST | `auth/rafraichir/` | P (cookie refresh, CSRF exigé) | rotation sous verrou (`select_for_update` sur le jeton : deux rafraîchissements simultanés n’ouvrent pas deux sessions), 204 ou 401 `SESSION_EXPIREE` (cookies effacés) ; **409 `SESSION_DEJA_RENOUVELEE`** sans effacer les cookies si le jeton, authentique, a été révoqué il y a moins de 30 s par une rotation (autre onglet, `_renouvele_par_un_autre_onglet` : un jeton plus récent du compte émis dans la fenêtre de cette rotation, de 2 s avant à 5 s après la révocation ; une connexion sur un autre appareil ne compte pas) |
+| POST | `auth/rafraichir/` | P (cookie refresh, CSRF exigé) | rotation sous verrou (`select_for_update` sur le jeton, trié par `pk` pour éviter la jointure externe que Postgres refuse de verrouiller : deux rafraîchissements simultanés n’ouvrent pas deux sessions), 204 ou 401 `SESSION_EXPIREE` (cookies effacés) ; **409 `SESSION_DEJA_RENOUVELEE`** sans effacer les cookies si le jeton, authentique, a été révoqué il y a moins de 30 s par une rotation (autre onglet, `_renouvele_par_un_autre_onglet` : un jeton plus récent du compte émis dans la fenêtre de cette rotation, de 2 s avant à 5 s après la révocation ; une connexion sur un autre appareil ne compte pas) |
 | POST | `auth/deconnexion/` | P | liste noire du refresh, jeton d’accès révoqué, message `session_fermee` (jti du jeton) au groupe du compte : seule la connexion temps réel ouverte avec ce jeton est fermée en 4001, les autres appareils ne sont pas sollicités ; cookies effacés |
 | GET | `auth/moi/` | connecté | `{id, nom, email, role, initiales, doitChangerMotDePasse}` |
 | POST | `auth/mot-de-passe/` | connecté (pas en borne) | `{actuel, nouveau}` (≤ 256 caractères, nouveau ≥ 10) → nouvelles sessions ; 5/min, 30/h par compte |

@@ -2,7 +2,7 @@
 type: decision
 statut: acceptée
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 
@@ -32,6 +32,9 @@ Besoin d’une URL de test accessible sans serveur dédié.
 ## Conséquences
 - ➕ démonstration en ligne sans infrastructure.
 - ➖ pas de temps réel (interrogation 5 s), pas de relance d’email ; emails écrits dans les journaux (pas d’envoi réel).
-- ➖ deux moteurs de base à supporter (MySQL et Postgres) : le verrou de `emarger` a été écrit pour les deux.
+- ➖ deux moteurs de base à supporter (MySQL et Postgres) : le verrou de `emarger` a été écrit pour les deux. La CI
+  ne teste que MySQL : le verrou du rafraîchissement de session échouait sur Postgres (500 à chaque rafraîchissement
+  sur Vercel), corrigé dans `43f99c5` après une passe pytest manuelle sur Postgres (R25). Connexions Postgres
+  réutilisées par un pool depuis `43f99c5` ([ADR-009](ADR-009-file-attente-concurrence.md)).
 - ➖ sondage : deux passages par jour seulement (au lieu de chaque heure de 8 h à 20 h avec Beat) ; un secret de
   plus à gérer sur le projet `flex-checking-api`.

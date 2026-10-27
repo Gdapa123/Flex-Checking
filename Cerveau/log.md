@@ -701,3 +701,20 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Risques ou limites :** 404 de `public/evenements/<slug>/` à 1,04 s en ligne (4 ms en local), cause non
   identifiée ; démarrage à froid de la fonction (≈ 5 s) inchangé ; rafraîchissement de session non testé en ligne
   avec un vrai compte (couvert par pytest sur Postgres).
+
+## [2026-10-26] documentation | /wiki-maj : pages alignées sur `2523cbb`
+
+- **Contexte :** 27 pages signalées par `lint_wiki.py` après `43f99c5` (pool Postgres, `RafraichirView`,
+  préchargement des espaces protégés), car leurs sources comprennent `settings.py`, `comptes/views.py`, `App.jsx`,
+  `RequireRole.jsx` ou `apps/noyau/tests/`.
+- **Modifications :** diff de `43f99c5` relu. Contenu mis à jour : `architecture/integrations.md` (pool Neon),
+  `api/endpoints.md` (verrou du rafraîchissement trié par `pk`), `architecture/system-overview.md` (préchargement),
+  `features/authentification.md` (`precharger`, renvoi vers R26), ADR-007 (Postgres non testé en CI, R25, pool),
+  `specifications/non-functional-requirements.md` (pool et mesures en ligne), `testing/test-strategy.md` (267 tests
+  sur MySQL et Postgres, nouvelle ligne « Dernière exécution »), `testing/test-cases.md` (nouveau test de
+  `test_deploiement.py`). Les 20 autres pages ne décrivent aucun passage modifié : seuls `verifie`/`commit` ont
+  été mis à jour. `index.md` : mention de la vérification. Aucun risque ajouté ni retiré (R25 résolu et R26 ouvert,
+  déjà consignés).
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` relancé : 50 pages, 0 erreur, 0 page à revérifier,
+  0 avertissement. Aucun code modifié, contrôles backend et frontend non relancés.
+- **Risques ou limites :** `Cerveau/.obsidian/graph.json` modifié par Obsidian, non touché.

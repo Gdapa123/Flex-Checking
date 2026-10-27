@@ -2,14 +2,14 @@
 type: testing
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx, frontend/e2e/accessibilite.spec.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
 ---
 
 # Cas de test par domaine
 
 Correspondance entre les fichiers de test et les fonctionnalités. Les noms de tests décrivent le comportement attendu.
-Volumes : voir [test-strategy](test-strategy.md) (266 tests backend exécutés, 68 Vitest dans 16 fichiers, 3 Playwright au 2026-10-22, confirmés le 2026-10-23 sauf Playwright).
+Volumes : voir [test-strategy](test-strategy.md) (267 tests backend exécutés le 2026-10-26 sur MySQL et Postgres, 68 Vitest dans 16 fichiers, 3 Playwright).
 
 ## Backend (`backend/apps/noyau/tests/`)
 | Fichier | Couvre | Page |
@@ -25,7 +25,7 @@ Volumes : voir [test-strategy](test-strategy.md) (266 tests backend exécutés, 
 | `test_suppressions.py` | confirmation par le nom, cascade programme, compte supprimé et historique, garde-fous, dernier super admin, suppression d’invités réservée | [super admin](../features/configuration-super-admin.md) |
 | `test_analytique.py` | rapports PDF et droits, analyses (taux limités aux cérémonies terminées), caches exacts, page publique en cache et ancien lien coupé, places restantes, santé, limite de connexion si Redis tombe, file indisponible, relance, docs API, limite des rapports | [exports-rapports](../features/exports-rapports.md) |
 | `test_erreurs.py` | regroupement et masquage, signalement invalide, 500 neutre, échec email, réouverture, droits | [erreurs-techniques](../features/erreurs-techniques.md) |
-| `test_deploiement.py` | options Postgres conservées, chiffrement par défaut, MySQL, limites partagées entre instances, envoi sans file, compteur de codes partagé | [ADR-007](../decisions/ADR-007-environnement-test-vercel.md) |
+| `test_deploiement.py` | options Postgres conservées, chiffrement par défaut, MySQL, pool Postgres sans changement de chiffrement (`test_pool_postgres_garde_le_chiffrement`), limites partagées entre instances, envoi sans file, compteur de codes partagé | [ADR-007](../decisions/ADR-007-environnement-test-vercel.md) |
 | `test_audit_securite.py` | emails non ASCII refusés (connexion, inscription, renvoi), seuls les échecs comptent par compte, limite par IP, CSRF de la connexion, multipart refusé, jeton d'accès révoqué à la déconnexion, poste connu infalsifiable, compteur en base avec fenêtre, IPv6 regroupé par /64, CSRF du rafraîchissement, session borne (routes refusées / autorisées, recherche réduite, rafraîchissement, élévation, « C’est moi » limité aux noms proposés, ni hôtes ni lien d'inscription), renvois d'email limités, jetons et traces masqués dans les journaux, poste connu limité à son propre compteur, rafraîchissements simultanés sans déconnexion (409) | [authentification](../features/authentification.md), [scan](../features/scan-emargement.md) |
 | `test_dates_inscription.py` | inscription jamais datée dans le futur (modèle), `seed_demo --force` sans date future, migration 0008 supprimant les inscriptions futures | [inscription](../features/inscription.md) |
 | `test_sondage.py` | envoi le lendemain aux seuls présents, programme désactivé, rattrapage, envoi sans file dans un budget puis reprise, jamais après clôture ni annulation, cron protégé par `CRON_SECRET`, lecture du lien, réponse unique par lien et par appareil, lien expiré, validation, résultats et droits, suivi et renvoi, email de test et aperçu, anonymat en base, section du rapport PDF, caractères de contrôle du commentaire refusés | [sondage-satisfaction](../features/sondage-satisfaction.md) |

@@ -2,7 +2,7 @@
 type: feature
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/features/invite/LienInvalide.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/invite/Presentation.jsx, frontend/src/features/invite/ConfirmationPage.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/PratiquePage.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_dates_inscription.py, frontend/tests/schemas.test.js]
 ---
 

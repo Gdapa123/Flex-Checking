@@ -2,7 +2,7 @@
 type: project
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [README.md, PLAN.md, frontend/src/App.jsx, backend/apps/noyau/donnees_personnelles.py, backend/apps/noyau/urls.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py]
 ---
 

@@ -2,8 +2,8 @@
 type: feature
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
-sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py]
+commit: 2523cbb
+sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx]
 ---
 
 # Authentification, sessions et droits
@@ -94,6 +94,10 @@ validateurs Django), avec une sortie « Ce n’est pas mon compte · Se déconne
 ## Garde de route frontend (`RequireRole`)
 Seul un 401 déconnecte ; une panne réseau ou serveur affiche « Connexion au serveur impossible · Réessayer », et
 sur `/scan` garde le dernier compte connu ([hors-ligne](hors-ligne.md)).
+Prop `precharger` (depuis `43f99c5`) : le code de l'espace (admin, scan, super admin) est téléchargé en parallèle de
+`/auth/moi/` ; ce code est public et ne contient aucune donnée, un échec est ignoré (le chargement normal réessaie).
+❓ `/auth/moi/` n'est pas suivi d'une tentative de rafraîchissement sur 401 (`lib/api.js` exclut `/api/auth/*`) :
+voir R26 dans [risques-et-dette](../project/risques-et-dette.md).
 
 ## Tests
 `backend/apps/noyau/tests/test_permissions.py`, `test_securite.py`, `test_audit_securite.py` (poste connu

@@ -2,7 +2,7 @@
 type: architecture
 statut: implémenté
 verifie: 2026-10-26
-commit: d220011
+commit: 2523cbb
 sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, frontend/src/App.jsx, backend/Dockerfile]
 ---
 
@@ -44,7 +44,7 @@ Détail : [components](components.md).
 ## Couches frontend (`frontend/src/`)
 | Couche | Où |
 |---|---|
-| Entrée et routes | `main.jsx` (QueryClient, `FiletErreur`, signalement), `App.jsx` (routes paresseuses, `RequireRole`) |
+| Entrée et routes | `main.jsx` (QueryClient, `FiletErreur`, signalement), `App.jsx` (routes paresseuses, `RequireRole` ; code des espaces protégés préchargé pendant `/auth/moi/` : `chargerAdmin`, `chargerScan`, `chargerSuper`) |
 | Bibliothèque | `lib/` : `api.js`, `tempsReel.js`, `format.js`, `schemas.js`, `agenda.js`, `telechargement.js`, `useUrlState.js`, `useTitre.js`, `signalement.js` |
 | Thème | `theme/tokens.js`, `theme/ThemeScope.jsx`, `styles/tokens.css` (seul fichier de couleurs) |
 | Primitives UI | `components/ui/` (Bouton, Champ, Segmente, Dialogue, PanneauLateral, Toasts…) |

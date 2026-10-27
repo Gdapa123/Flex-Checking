@@ -2,7 +2,7 @@
 type: feature
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [backend/config/settings.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/super/SuperApp.jsx, frontend/src/features/super/VueGlobale.jsx, frontend/src/features/super/Analyses.jsx, frontend/src/features/super/Programmes.jsx, frontend/src/features/super/Evenements.jsx, frontend/src/features/super/Comptes.jsx, frontend/src/features/super/Parametres.jsx, frontend/src/features/super/Journal.jsx, backend/apps/noyau/journal.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/serializers.py, backend/apps/noyau/urls.py]
 ---
 

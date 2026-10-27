@@ -2,7 +2,7 @@
 type: specification
 statut: implémenté
 verifie: 2026-10-26
-commit: d220011
+commit: 2523cbb
 sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, backend/apps/noyau/tasks.py, backend/apps/noyau/emails.py, backend/apps/noyau/donnees_personnelles.py, .gitignore, .github/workflows/ci.yml, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/config/settings.py, backend/config/bases.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/logs.py, infra/Caddyfile.prod, frontend/vercel.json, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
 ---
 
@@ -63,6 +63,9 @@ Les limites sensibles (connexion, renvoi, codes, mot de passe) et les limites pa
   de bord 100 %, mixte 1 500 requêtes 100 %, 500 WebSocket notifiés en 0,09 s.
 - File d’attente par processus (`config/concurrence.py`, `DB_CONCURRENCE` = 24, attente max 20 s puis 503 +
   `Retry-After: 5`) : borne les connexions MySQL.
+- Postgres (Vercel + Neon) : pool de connexions (`config/bases.py`, depuis `43f99c5`). Mesuré en ligne le
+  2026-10-26 : `/api/sante/` médiane 0,17 s au lieu de 0,6 à 1,1 s quand chaque requête ouvrait sa connexion TLS ;
+  démarrage à froid de la fonction ≈ 5 s, non traité.
 - Caches 30 s invalidés à chaque changement : statistiques, page publique, analyses.
 - Émargement : ~50 ms (README) ; email n°2 en arrière-plan.
 

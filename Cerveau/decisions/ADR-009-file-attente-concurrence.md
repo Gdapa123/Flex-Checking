@@ -2,7 +2,7 @@
 type: decision
 statut: acceptée
 verifie: 2026-10-26
-commit: d220011
+commit: 2523cbb
 sources: [backend/config/bases.py, backend/config/settings.py, backend/config/concurrence.py, backend/config/asgi.py, backend/apps/noyau/consumers.py, docker-compose.prod.yml, infra/charge/README.md]
 ---
 

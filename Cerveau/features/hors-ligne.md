@@ -2,7 +2,7 @@
 type: feature
 statut: implémenté
 verifie: 2026-10-26
-commit: 44eceb5
+commit: 2523cbb
 sources: [frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/scan/fileHorsLigne.js, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/useEvenementsScan.js, frontend/src/features/auth/RequireRole.jsx, frontend/src/features/auth/useMoi.js, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/tests/test_emargement.py]
 ---
 

@@ -2,8 +2,8 @@
 type: architecture
 statut: implémenté
 verifie: 2026-10-26
-commit: d220011
-sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, frontend/src/lib/agenda.js, frontend/src/features/scan/useCamera.js, frontend/vercel.json, backend/vercel.json, docker-compose.yml]
+commit: 2523cbb
+sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, frontend/src/lib/agenda.js, frontend/src/features/scan/useCamera.js, frontend/vercel.json, backend/vercel.json, docker-compose.yml, backend/config/bases.py, backend/requirements.txt]
 ---
 
 # Intégrations externes
@@ -20,7 +20,7 @@ sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps
 | **Caméra (getUserMedia) + ZXing** | lecture des QR | `scan/useCamera.js` | HTTPS obligatoire hors localhost |
 | **Vercel** | environnement de test | projets `flex-checking` (frontend) et `flex-checking-api` (backend, région `fra1`) | `frontend/vercel.json` relaie `/api` vers le backend |
 | **Vercel Cron** | envoi du sondage sans Celery Beat | `backend/vercel.json` : `/api/taches-planifiees/sondages/?passage=8h` (`0 8 * * *`) et `?passage=12h` (`0 12 * * *`) ; variable `CRON_SECRET` (≥ 32 caractères, sinon route désactivée) | `vues_sondage.CronSondagesView` : sondage puis anonymisation des données expirées (pas de Beat sur Vercel) ; horaires des crons en UTC = heure d’Abidjan (UTC+0) |
-| **Neon Postgres** | base de l’environnement Vercel | `DATABASE_URL`, `DB_SSLMODE` (défaut `require`) | `config/bases.py` conserve les options de l’URL |
+| **Neon Postgres** | base de l’environnement Vercel | `DATABASE_URL`, `DB_SSLMODE` (défaut `require`) | `config/bases.py` conserve les options de l’URL ; pool de connexions natif de Django (`psycopg-pool`, `DB_POOL`, au plus `DB_CONCURRENCE + 2` par processus, `CONN_HEALTH_CHECKS`) depuis `43f99c5`, voir [ADR-009](../decisions/ADR-009-file-attente-concurrence.md) |
 | **mkcert** | HTTPS local (caméra sur téléphone) | `infra/certs.sh` | voir [setup](../operations/setup.md) |
 
 Aucune autre API tierce (pas de paiement, pas de SMS, pas d’analytics externe).
