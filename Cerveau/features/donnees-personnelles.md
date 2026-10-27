@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-10-27
+commit: 2365b1f
 sources: [backend/apps/noyau/donnees_personnelles.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/tasks.py, backend/config/settings.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/serializers.py, backend/apps/noyau/journal.py, backend/apps/noyau/journal_texte.py, backend/apps/noyau/emails.py, backend/templates/emails/base.html, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/super/Parametres.jsx, frontend/src/features/super/Journal.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx]
 ---
 
