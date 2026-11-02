@@ -809,3 +809,12 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   `lint_wiki.py` : 0 erreur.
 - **Risques ou limites :** aucun changement de code applicatif. `Cerveau/.obsidian/graph.json` (zoom du graphe,
   modification locale) laissé tel quel. Risques R2–R26 non traités dans cette session (décisions en attente).
+
+## [2026-11-02] deploy | Correction de la fixture de tests et index du wiki en ligne (Vercel)
+
+- **Contexte :** « commit, push deploy ».
+- **Modifications :** commit `3616dd9` poussé sur `main` ; frontend `flex-checking` redéployé automatiquement au push
+  (Production, « Ready »). Backend `flex-checking-api` non redéployé : aucun code exécuté en ligne n'a changé (seuls
+  une fixture de tests, `.gitignore` et le wiki). Aucune migration.
+- **Validation :** `https://flex-checking.vercel.app/` 200 ; `/api/sante/` 200.
+- **Risques ou limites :** aucun.
