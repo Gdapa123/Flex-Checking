@@ -870,3 +870,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   directement) ; `/api/taches-planifiees/sondages/` sans secret → 404 (attendu).
 - **Risques ou limites :** job CI `backend-postgres` à surveiller sur GitHub ; R3 et R26 non testés en ligne avec un
   compte admin.
+
+## [2026-11-02] tests | Vérification en navigateur de R3 et R26, CI Postgres
+
+- **Contexte :** « test et corrige » après le déploiement de `115df80`.
+- **Modifications :** aucune correction de code nécessaire. Page [risques-et-dette](project/risques-et-dette.md) :
+  preuves en navigateur ajoutées à R3 et R26.
+- **Fichiers concernés :** `Cerveau/project/risques-et-dette.md`.
+- **Validation :** CI GitHub de `115df80` et `913c7c4` : 4 jobs verts, dont le nouveau `backend-postgres` (R5 / R25).
+  Spécification Playwright temporaire (supprimée après exécution) sur le backend local : R26 — cookie `fc_access`
+  supprimé après connexion, rechargement → `/auth/moi/` 401, `/auth/rafraichir/` 204, `/auth/moi/` 200, pas de
+  retour à `/connexion` ; R3 — modification avec entreprise vide et fonction en espaces → messages d'erreur, aucun
+  `PATCH` ; `PATCH` direct `fonction: ""` → 400. 2/2 passed.
+- **Risques ou limites :** vérifié en local, pas sur Vercel (pas de compte admin utilisé en ligne). La limite de
+  5 connexions par minute s'est déclenchée pendant les essais, comme prévu.

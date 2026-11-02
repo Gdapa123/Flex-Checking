@@ -2,7 +2,7 @@
 type: project
 statut: implémenté
 verifie: 2026-11-02
-commit: d467e40
+commit: 913c7c4
 sources: [backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
 ---
 
@@ -45,7 +45,9 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   règle de l'inscription ; un champ non envoyé reste facultatif, modification partielle) ; `PanneauInvite.jsx` valide
   avec `schemaInviteComplet` et libelle « Entreprise * » / « Fonction * ». Une fiche ancienne sans ces champs doit
   être complétée pour être enregistrée. Preuves : `test_invites.py::test_modification_entreprise_et_fonction_obligatoires`,
-  `frontend/tests/schemas.test.js`.
+  `frontend/tests/schemas.test.js`. ✅ Vérifié dans Chromium (Playwright, local) le 2026-11-02 : entreprise vide et
+  fonction en espaces → « Indiquez votre entreprise. » / « Indiquez votre fonction. », aucun `PATCH` envoyé ; `PATCH`
+  direct avec `fonction` vide → 400.
 
 ## R4 — README en retard (documentation, faible) — ✅ RÉSOLU le 2026-11-02
 - Annonce toujours « 79 tests » pytest (`README.md` §5) ; au 2026-10-21 le dépôt contient 200 fonctions `test_*`
@@ -258,8 +260,9 @@ Revérifiés le 2026-10-26 sur `44eceb5`, sans changement : R5, R6, R7, R9, R10,
 Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
 - **Résolution** : `lib/api.js` tente `/auth/rafraichir/` sur un 401 de toute route, `/auth/moi/` comprise, sauf
   connexion, rafraîchissement, CSRF et déconnexion (`SANS_RAFRAICHISSEMENT`) ; l'évènement `fc:session-expiree` reste
-  réservé aux routes hors `/api/auth/`. Preuve : `frontend/tests/api.test.js` (3 tests). Non reproduit dans un vrai
-  navigateur après 15 min.
+  réservé aux routes hors `/api/auth/`. Preuve : `frontend/tests/api.test.js` (3 tests). ✅ Vérifié dans Chromium
+  (Playwright, local) le 2026-11-02 en supprimant le cookie `fc_access` après connexion : `/auth/moi/` 401 →
+  `/auth/rafraichir/` 204 → `/auth/moi/` 200, tableau de bord affiché sans passer par `/connexion`.
 
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface
