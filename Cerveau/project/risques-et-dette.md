@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
-sources: [backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
+verifie: 2026-11-02
+commit: d467e40
+sources: [backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
 ---
 
 # Risques, limitations et dette technique
@@ -22,7 +22,7 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   restreinte côté serveur** ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md)) : même en tapant une adresse,
   le public n'obtient ni la liste des invités ni l'espace admin.
 
-## R2 — Écran I7 « Cette adresse est déjà inscrite » inaccessible (dette, faible)
+## R2 — Écran I7 « Cette adresse est déjà inscrite » inaccessible (dette, faible) — ✅ RÉSOLU le 2026-11-02
 - **Constat** : `InscriptionView.post` intercepte `DEJA_INSCRIT` et renvoie la même réponse 201 qu’un succès
   (voir [ADR-005](../decisions/ADR-005-anti-enumeration-inscription.md)). Le frontend ne reçoit donc jamais ce
   code ; la branche `DEJA_INSCRIT` de `EtatCarte.jsx` n’est plus atteinte depuis le formulaire public.
@@ -30,35 +30,48 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - **Statut** : ouvert (décider : supprimer la branche ou la conserver documentée). Revérifié le 2026-10-21 : inchangé
   (`vues_public.InscriptionView.post`, `EtatCarte.jsx` ; README « L’écran … est conservé (exigé) », `PLAN.md` I7 / C8).
   Revérifié le 2026-10-26 (`44eceb5`) : inchangé.
+- **Résolution** : branche `DEJA_INSCRIT` retirée de `EtatCarte.jsx` (I4 à I6 seulement) et des propriétés passées
+  par `InscriptionPage.jsx` ; README aligné sur ADR-005. `PLAN.md` (source brute) garde l'ancien texte. L'ajout manuel
+  (`PanneauAjout.jsx`) continue d'afficher `DEJA_INSCRIT` sous le champ email.
 
-## R3 — Règle « tous les champs obligatoires » non appliquée à la modification (cohérence, faible)
+## R3 — Règle « tous les champs obligatoires » non appliquée à la modification (cohérence, faible) — ✅ RÉSOLU le 2026-11-02
 - **Constat** : inscription et ajout manuel exigent entreprise et fonction (`ChampsProfessionnelsObligatoires`,
   `schemaInviteComplet`). La modification d’une fiche (`ModificationInviteSerializer`, `schemaInvite`) les
   accepte vides, et l’interface les libelle « facultatif » (`PanneauInvite.jsx`).
 - **Statut** : ouvert — à confirmer si c’est voulu. Revérifié le 2026-10-21 : inchangé (`ModificationInviteSerializer`
   rend tous les champs facultatifs, libellés « Entreprise · facultatif » / « Fonction · facultatif »). Revérifié le
   2026-10-26 : inchangé.
+- **Résolution** : `ModificationInviteSerializer` hérite de `ChampsProfessionnelsObligatoires` (tout champ envoyé suit la
+  règle de l'inscription ; un champ non envoyé reste facultatif, modification partielle) ; `PanneauInvite.jsx` valide
+  avec `schemaInviteComplet` et libelle « Entreprise * » / « Fonction * ». Une fiche ancienne sans ces champs doit
+  être complétée pour être enregistrée. Preuves : `test_invites.py::test_modification_entreprise_et_fonction_obligatoires`,
+  `frontend/tests/schemas.test.js`.
 
-## R4 — README en retard (documentation, faible)
+## R4 — README en retard (documentation, faible) — ✅ RÉSOLU le 2026-11-02
 - Annonce toujours « 79 tests » pytest (`README.md` §5) ; au 2026-10-21 le dépôt contient 200 fonctions `test_*`
   dans 17 fichiers, soit **242 tests collectés** (`pytest --collect-only`). Décrit encore l’écran I7 comme exigé.
 - N’indique pas `CRON_SECRET` parmi les variables (lue par `backend/config/settings.py`, absente de `.env.example`).
 - **Statut** : ouvert (le wiki ne modifie pas le README). Revérifié le 2026-10-26 : README toujours à « 79 tests »,
   I7 « conservé (exigé) », sans `CRON_SECRET` ; 266 tests exécutés au 2026-10-23.
+- **Résolution** : README §4 (`CRON_SECRET`), §5 (« ~275 tests ») et décisions (adresse déjà inscrite = ADR-005,
+  écran I7 retiré). `.env.example` documente `CRON_SECRET`.
 
-## R5 — Tests backend dépendants de MySQL (outillage)
+## R5 — Tests backend dépendants de MySQL (outillage) — 🟡 atténué le 2026-11-02
 - `pytest` exige un MySQL joignable (`config/settings_test.py` ne redéfinit pas `DATABASES`). Sans Docker, aucun
   test backend ne s’exécute (constaté le 2026-10-13, de nouveau MySQL et Redis arrêtés le 2026-10-21). Pas de repli
   SQLite dans le dépôt (le passage SQLite du 2026-10-14 utilisait des réglages temporaires hors dépôt).
 - **Atténuation** : la CI (`.github/workflows/ci.yml`) lance `pytest --create-db` sur un service MySQL 8 à chaque
   push sur `main` et chaque pull request. **Statut** : ouvert (localement).
+- **Complément (2026-11-02)** : `pytest` fonctionne aussi sur Postgres en définissant `DATABASE_URL` (et
+  `DB_SSLMODE=disable` en local) : 275/275 sur un conteneur `postgres:17-alpine`. Un serveur de base (MySQL ou
+  Postgres) reste nécessaire ; pas de repli SQLite (verrous `select_for_update` entre threads).
 
 ## R6 — Environnement Vercel : temps de réponse du renvoi du QR (faible, test uniquement)
 - Sans file d'attente, l'email est envoyé pendant la requête quand l'adresse est inscrite : le temps de réponse
   peut révéler l'inscription malgré le message identique. Sans incidence en production (envoi par Celery).
 - Revérifié le 2026-10-21 : inchangé (`RenvoiQrView` appelle `emails.planifier`, Celery en mode eager sans Redis).
 
-## R7 — Sondage sur Vercel : heure et durée d'exécution (faible, test uniquement) — 🟡 atténué le 2026-10-14
+## R7 — Sondage sur Vercel : heure et durée d'exécution (faible, test uniquement) — 🟡 atténué le 2026-10-14 et le 2026-11-02
 - **Constat d'origine** : un seul cron par jour, tous les emails du sondage envoyés pendant la requête du cron
   (coupure de la plateforme à 300 s).
 - **Atténuation** (commits `bd4f807`, `be899ff`) : deux crons par jour dans `backend/vercel.json` (`?passage=8h` à
@@ -70,6 +83,9 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   (à confirmer en volume réel) ; ❓ imprécision horaire du cron sur le plan Hobby (jusqu'à une heure, d'après la
   documentation Vercel, non vérifiable dans le dépôt). Exige `CRON_SECRET` (≥ 32 caractères) sur `flex-checking-api`.
 - En production, Celery Beat + worker : envoi à 8 h et rattrapages horaires jusqu'à 20 h, sans cette limite.
+- **Complément (2026-11-02)** : quatre passages par jour dans `backend/vercel.json` (8 h, 12 h, 16 h, 20 h, comme la
+  fenêtre de Beat) : jusqu'à 4 × 200 s d'envoi. ❓ Limite du nombre de crons sur le plan Vercel du projet à confirmer
+  au prochain déploiement du backend (un dépassement ferait échouer le déploiement, sans effet sur la version en ligne).
 
 ## R8 — Texte de consentement de l'inscription muet sur les emails (conformité, à trancher) — 🟡 atténué le 2026-10-22
 - Le texte du consentement (`InscriptionPage.jsx`) ne mentionne ni l'email n°2 ni le sondage de satisfaction
@@ -110,6 +126,10 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - `requirements.txt` sans hachages (`pip-compile --generate-hashes` proposé) ; `pip-audit` : Pillow passé en 13.0.0
   le 2026-10-22 à la suite d'un avis ; CI limitée à `permissions: contents: read`.
 - HSTS `preload` non activé (engagement définitif du domaine, à décider par MDE).
+- **2026-11-02** : `npm audit --omit=dev` signalait une vulnérabilité **haute** dans Zod 3 (GHSA-mrhx-c7xc-m3w5,
+  épuisement mémoire sur des collections contraintes, sans correctif 3.x) : passage à **Zod 4** (`^4.6.7`), `errorMap`
+  / `invalid_type_error` remplacés par `error`, messages en français pour les champs absents. `npm audit --omit=dev` :
+  0. Restent en outillage de développement : Tailwind 3 (`glob`, `minimatch`…), `fast-uri`, `deepmerge`.
 
 ## R13 — Passage « C'est moi » hors ligne pouvant bloquer la file (fiabilité, faible) — ✅ RÉSOLU le 2026-10-22
 - **Constat d'origine** : rejoué après l'expiration de son jeton `choixBorne` (5 min), un « C'est moi » recevait 403
@@ -127,7 +147,7 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   répond `MAGAZINE_INDISPONIBLE` si le magazine est désactivé. Preuve : `test_invites.py`
   (`test_renvoi_magazine_refuse_si_desactive`).
 
-## R15 — Petits écarts d'affichage et d'en-têtes (faible)
+## R15 — Petits écarts d'affichage et d'en-têtes (faible) — 🟡 partiellement résolu le 2026-11-02
 - Renvoi groupé d'invitations : la réponse contient `ignores`, mais le frontend ne l'affiche pas (« renvoyée à 0
   invité » quand tous sont ignorés).
 - Email n°3 : absent de la liste des invités (`serializers.invites_annotes` n'annote que n°1 et n°2) et de son
@@ -137,10 +157,16 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   2026-10-26 : tous ces points inchangés (`vues_invites` renvoie `ignores`, aucun usage dans `frontend/src` ;
   `invites_annotes` : `email1`, `email2` seulement).
 - `.env.example` ne mentionne pas `CRON_SECRET`, lu par `settings.py` (utile seulement sur Vercel).
+- **Traité le 2026-11-02** : le renvoi groupé affiche les invités ignorés (« N ignoré(s), déjà envoyée il y a moins
+  d'une heure ») ou « Aucune invitation renvoyée… » (`GestionInvites.jsx`) ; `CRON_SECRET` ajouté à `.env.example`.
+- **Reste** : email n°3 hors liste et export (choix produit à confirmer) ; `X-Frame-Options` laissé tel quel (Caddy
+  `SAMEORIGIN` + CSP `frame-ancestors 'self'`, Django `DENY` pour l'API ; la CSP prime dans les navigateurs actuels).
 
-## R16 — Sondage sur Vercel : présences validées tard (faible, test uniquement — à confirmer)
+## R16 — Sondage sur Vercel : présences validées tard (faible, test uniquement) — 🟡 atténué le 2026-11-02
 - Deux crons (8 h et 12 h) au lieu des passages horaires de Beat jusqu'à 20 h : un sondage non parti à 12 h attend
   le lendemain, alors que le lien n'est valable que 24 h. Complète R7.
+- **Atténuation** : passages à 16 h et 20 h ajoutés (voir R7) ; une présence validée après 20 h attend le lendemain,
+  comme avec Beat en production.
 
 ## R17 — Exports lourds introuvables en production Docker (fonctionnel, moyen) — ✅ RÉSOLU le 2026-10-22
 - **Constat d'origine (2026-10-21)** : un export de plus de 50 invités est écrit par Celery dans `/app/media/exports`
@@ -167,13 +193,15 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   modification comparée) ; deux admins qui modifient en même temps perdent la première saisie sans avertissement.
   **Statut** : accepté (usage peu concurrent), à revoir si besoin.
 
-## R21 — Migrations sans stratégie expand/contract (exploitation, moyen)
+## R21 — Migrations sans stratégie expand/contract (exploitation, moyen) — ✅ RÉSOLU le 2026-11-02 (convention)
 - Des colonnes NOT NULL sont ajoutées sans `db_default` et `0008_inscriptions_pas_dans_le_futur.py` supprime des
   données : un déploiement sans interruption (ancien et nouveau code en parallèle) n'est pas garanti.
 - **Proposition** : adopter une convention (ajouter nullable ou avec `db_default`, migrer, puis contraindre ;
   sauvegarde avant toute migration destructive). **Statut** : ouvert. Constat du 2026-10-26 : les migrations
   récentes `0010_donnees_personnelles` et `0011_derniere_tentative` respectent déjà ce schéma (colonnes nullables ou
   avec `db_default`), appliquées sur Neon avant le déploiement du code le 2026-10-22 ; aucune convention écrite.
+- **Résolution** : convention écrite dans [ADR-014](../decisions/ADR-014-migrations-expand-contract.md) et rappelée au
+  [CLAUDE.md](../CLAUDE.md) §5. Contrôle humain (relecture), pas de vérification automatique en CI.
 
 ## R22 — Infrastructure Docker : images non épinglées, Redis sans mot de passe (faible)
 - `docker-compose.prod.yml` référence `mysql:8.0`, `redis:7-alpine`, `caddy:2-alpine` par étiquette, sans empreinte
@@ -194,10 +222,13 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   un renvoi du n°3 traite de la même façon tous les liens encore ouverts ; un invité qui a déjà répondu peut donc
   recevoir de nouveau son lien (il ne peut pas répondre une seconde fois). Accepté pour l'anonymat.
 
-## R24 — Journaux du serveur de développement : recherche en clair (confidentialité, faible)
+## R24 — Journaux du serveur de développement : recherche en clair (confidentialité, faible) — ✅ RÉSOLU le 2026-11-02
 - `runserver` (développement, `docker-compose.yml`) journalise l'URL complète, dont `?q=` (souvent un email). En
   production, `backend/gunicorn.conf.py` applique `MasquerParametresUrl` / `MasquerDonneesPersonnelles`
   aux journaux d'accès. **Statut** : accepté (poste de développement).
+- **Résolution** : `logs.MasquerParametresUrl` accepte aussi les arguments en dictionnaire du runserver de Daphne ;
+  branché sur le logger `django.channels.server` par `LOGGING` (`settings.py`). Preuve :
+  `test_securite.py::test_journal_du_serveur_de_developpement_sans_recherche`.
 
 ## R25 — Rafraîchissement de session en erreur 500 sur Postgres (fiabilité, moyen) — ✅ RÉSOLU le 2026-10-26
 - **Constat** : `RafraichirView` verrouillait `OutstandingToken` avec le tri par défaut du modèle (`user`, clé
@@ -206,8 +237,9 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   la CI ne teste que MySQL.
 - **Résolution** : `.order_by("pk")` (`backend/apps/comptes/views.py`) ; verrou identique. Suite pytest passée sur
   Postgres (267/267). 📋 Proposition : ajouter une passe Postgres à la CI.
+- **Complément (2026-11-02)** : la CI rejoue la suite pytest sur Postgres (`backend-postgres`, `postgres:17-alpine`).
 
-## R26 — Réouverture de l'application après 15 min : écran de connexion malgré une session valide (UX, à confirmer)
+## R26 — Réouverture de l'application après 15 min : écran de connexion malgré une session valide (UX) — ✅ RÉSOLU le 2026-11-02
 - **Constat** : `lib/api.js` ne tente pas `/auth/rafraichir/` pour les URL `/api/auth/*`, dont `/api/auth/moi/`
   (lu par `RequireRole` au chargement). Le cookie `fc_access` expire après `JWT_ACCESS_MINUTES` (15) alors que
   `fc_refresh` vaut 12 h : rouvrir l'onglet après 15 min d'inactivité mène à `/connexion` au lieu de renouveler
@@ -216,8 +248,18 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 
 Rappel : le temps de réponse du renvoi du QR sur Vercel (R6) est inchangé au 2026-10-22.
 
+**Bilan du 2026-11-02** — restent ouverts parce qu'ils demandent une décision de MDE ou un service externe, sans
+changement de code : R8 (texte du consentement, formalités ARTCI), R11 / R18 (CAPTCHA : compte Cloudflare Turnstile),
+R19 (codes de la borne : limite plus stricte ou QR seulement), R20 (verrou optimiste), R12 (HSTS `preload`, hachages
+de `requirements.txt`, Tailwind 4), R10 (IP vue sur Vercel : à mesurer en ligne avant toute lecture d'en-tête).
+Acceptés par choix documenté : R6, R9, R22, R23.
+
 Revérifiés le 2026-10-26 sur `44eceb5`, sans changement : R5, R6, R7, R9, R10, R11, R12 (Tailwind `^3.4.17`,
 Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
+- **Résolution** : `lib/api.js` tente `/auth/rafraichir/` sur un 401 de toute route, `/auth/moi/` comprise, sauf
+  connexion, rafraîchissement, CSRF et déconnexion (`SANS_RAFRAICHISSEMENT`) ; l'évènement `fc:session-expiree` reste
+  réservé aux routes hors `/api/auth/`. Preuve : `frontend/tests/api.test.js` (3 tests). Non reproduit dans un vrai
+  navigateur après 15 min.
 
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface

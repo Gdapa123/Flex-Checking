@@ -1,7 +1,7 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-10-21
+verifie: 2026-11-02
 commit: be899ff
 sources: [PLAN.md, git log]
 ---
@@ -24,7 +24,9 @@ Toutes les phases prévues par `PLAN.md` §10 sont livrées. Le travail en cours
 Issues des points relevés dans [risques-et-dette](risques-et-dette.md) :
 
 1. ~~Protéger l’accès hôte de la borne — R1~~ : fait le 2026-10-13 (ADR-010).
-2. Aligner la modification d’un invité sur la règle « entreprise et fonction obligatoires » — R3.
-3. Retirer ou réaffecter l’écran I7 « adresse déjà inscrite », devenu inaccessible — R2.
-4. Mettre à jour le README (nombre de tests, changement de C8).
+2. ~~Aligner la modification d’un invité sur la règle « entreprise et fonction obligatoires » — R3~~ : fait le 2026-11-02.
+3. ~~Retirer ou réaffecter l’écran I7 « adresse déjà inscrite », devenu inaccessible — R2~~ : retiré le 2026-11-02.
+4. ~~Mettre à jour le README (nombre de tests, changement de C8)~~ : fait le 2026-11-02 (R4).
+6. Décisions MDE en attente : CAPTCHA (R11, R18), codes de la borne (R19), verrou optimiste (R20), texte du
+   consentement (R8), HSTS `preload` (R12) ; mesure de l'IP vue sur Vercel (R10).
 5. ~~Suivi Git du coffre `Cerveau/`~~ : suivi depuis le 2026-10-13, `workspace*.json` ignoré.

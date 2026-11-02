@@ -27,7 +27,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R26 (R1, R13, R14, R17, R25 résolus ; R7, R8 atténués) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R26 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels) et limitations assumées |
 
 ## Architecture
 | Page | Description |
@@ -81,6 +81,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [decisions/ADR-011-annulation-reservee-super-admin.md](decisions/ADR-011-annulation-reservee-super-admin.md) | acceptée | Annuler un émargement ou une présence : super admin uniquement |
 | [decisions/ADR-012-sondage-satisfaction.md](decisions/ADR-012-sondage-satisfaction.md) | acceptée | Sondage : lien personnel 24 h, une réponse par email et par appareil, Beat ou cron |
 | [decisions/ADR-013-conservation-limitee-anonymisation.md](decisions/ADR-013-conservation-limitee-anonymisation.md) | acceptée | Données personnelles : anonymisation automatique après une durée réglable |
+| [decisions/ADR-014-migrations-expand-contract.md](decisions/ADR-014-migrations-expand-contract.md) | acceptée | Migrations : étendre (nullable / `db_default`) puis contracter ; sauvegarde avant destruction |
 
 ## Tests
 | Page | Description |

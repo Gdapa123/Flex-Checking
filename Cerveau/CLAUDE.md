@@ -122,6 +122,9 @@ Même sans commande explicite, après tout développement significatif, l’agen
   « qui semble inutilisé » sans vérification.
 - Pas de nouvelle dépendance sans justification ; pas de modification d’interface publique (routes API, format
   JSON, schéma de base) sans analyser l’impact frontend, tests et migrations.
+- Migrations : convention « étendre puis contracter » ([ADR-014](decisions/ADR-014-migrations-expand-contract.md)) —
+  colonne ajoutée nullable ou avec `db_default`, contrainte posée dans une version ultérieure, sauvegarde avant
+  toute migration destructive.
 - Toute nouvelle action d’admin : ajouter son code dans `journal.CATEGORIES` et son libellé dans
   `journal_texte.decrire`.
 - Toute nouvelle donnée modifiable affichée en temps réel : vérifier les signaux de `temps_reel.py` et

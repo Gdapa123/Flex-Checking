@@ -1,7 +1,7 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, frontend/src/App.jsx, backend/Dockerfile]
 ---
@@ -66,7 +66,7 @@ Détail : [components](components.md).
 |---|---|---|---|
 | Dev Docker | MySQL (port hôte 3307, lié à `127.0.0.1`) | oui (6380, `127.0.0.1`) + Mailpit ; frontend `node:24-alpine` re-téléchargé à chaque démarrage (`pull_policy: always`, minimum 24.22.1 imposé par `frontend/package.json`), port 5173 sur `127.0.0.1` ; journaux des conteneurs plafonnés (3 × 10 Mo) | `docker-compose.yml` |
 | Dev sans Docker | MySQL/Redis du compose | Celery eager possible | README §2 |
-| Test en ligne | Postgres Neon (`DATABASE_URL`) | **non** ; sondage puis anonymisation déclenchés par deux crons Vercel (8 h et 12 h, `backend/vercel.json`, secret `CRON_SECRET`) | Vercel, `backend/Dockerfile.vercel` |
+| Test en ligne | Postgres Neon (`DATABASE_URL`) | **non** ; sondage puis anonymisation déclenchés par quatre crons Vercel (8 h, 12 h, 16 h et 20 h, `backend/vercel.json`, secret `CRON_SECRET`) | Vercel, `backend/Dockerfile.vercel` |
 | Production | MySQL (journaux binaires 7 jours) | oui ; image backend en plusieurs étapes, sans compilateur (`backend/Dockerfile`, cible `prod`) ; journaux des conteneurs plafonnés | `docker-compose.prod.yml` |
 
 Voir [deployment](../operations/deployment.md).

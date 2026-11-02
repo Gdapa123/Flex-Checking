@@ -1,7 +1,7 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/config/bases.py, .gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
@@ -51,8 +51,10 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
 ## Données de démonstration (`seed_demo`, idempotent, jamais en production)
 - Refusé hors développement (`DEBUG` faux) sauf avec `--force` (environnement de test seulement), depuis le
   2026-10-22.
-- Les journaux de `runserver` contiennent l’URL complète, dont la recherche `?q=` (souvent un email) : ne pas les
-  partager (R24 de [risques-et-dette](../project/risques-et-dette.md) ; Gunicorn masque en production).
+- Les journaux d'accès de `runserver` masquent la chaîne de requête (`?[masqué]`, depuis le 2026-11-02, R24 de
+  [risques-et-dette](../project/risques-et-dette.md)) ; les autres messages restent à ne pas diffuser.
+- Tests backend sur Postgres plutôt que MySQL : `DATABASE_URL=postgres://… DB_SSLMODE=disable .venv/bin/pytest --create-db`.
+- `CRON_SECRET` (dans `.env.example`) : uniquement pour l'environnement de test Vercel.
 - Comptes : super admin `direction.evenements@mde.ci` ; admins `mariam.kone@`, `kouame.brou@`, `ines.toure@mde.ci`.
   Mots de passe : variables `DEMO_MOT_DE_PASSE_SUPER_ADMIN` / `DEMO_MOT_DE_PASSE_ADMIN`, sinon tirés au hasard
   et affichés une fois ; `--reinitialiser-mots-de-passe` pour les réappliquer.

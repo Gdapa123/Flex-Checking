@@ -281,7 +281,7 @@ class InviteEcritureSerializer(serializers.Serializer):
 
 
 class ChampsProfessionnelsObligatoires(serializers.Serializer):
-    """Entreprise et fonction obligatoires (inscription publique et ajout manuel)."""
+    """Entreprise et fonction obligatoires (inscription publique, ajout manuel et modification)."""
 
     entreprise = serializers.CharField(
         max_length=120,
@@ -311,7 +311,9 @@ class AjoutInviteSerializer(ChampsProfessionnelsObligatoires, InviteEcritureSeri
     envoyer_invitation = serializers.BooleanField(default=True)
 
 
-class ModificationInviteSerializer(InviteEcritureSerializer):
+class ModificationInviteSerializer(ChampsProfessionnelsObligatoires, InviteEcritureSerializer):
+    """Modification partielle : chaque champ envoyé suit la règle de l'inscription, entreprise et fonction comprises."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for champ in self.fields.values():

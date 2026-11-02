@@ -1,7 +1,7 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, backend/apps/noyau/donnees_personnelles.py]
 ---
@@ -21,8 +21,8 @@ Besoin d’une URL de test accessible sans serveur dédié.
 - Sans Redis (`REDIS_URL` vide) : cache local, limites anti-abus partagées en base (`createcachetable`), pas de
   relais temps réel, Celery en mode eager, emails en une tentative, exports toujours dans la requête.
 - Sans Celery Beat (complément du 2026-10-14, commits `bd4f807` et `be899ff`) : l’envoi planifié du sondage de
-  satisfaction est déclenché par les **crons Vercel** de `backend/vercel.json` (8 h et 12 h UTC, chemins distincts
-  `?passage=8h` / `?passage=12h` pour que Vercel ne les fusionne pas) vers `GET /api/taches-planifiees/sondages/`
+  satisfaction est déclenché par les **crons Vercel** de `backend/vercel.json` (8 h et 12 h UTC, puis aussi 16 h et 20 h depuis le 2026-11-02, chemins distincts
+  `?passage=8h` / `?passage=12h`… pour que Vercel ne les fusionne pas) vers `GET /api/taches-planifiees/sondages/`
   (`vues_sondage.CronSondagesView`), protégé par la variable `CRON_SECRET` (≥ 32 caractères, sinon route en 404).
   Voir [ADR-012](ADR-012-sondage-satisfaction.md). Depuis le 2026-10-22 (`d91d426`), le même cron lance aussi
   l'anonymisation des données personnelles expirées (`donnees_personnelles.anonymiser_donnees_expirees`, clé

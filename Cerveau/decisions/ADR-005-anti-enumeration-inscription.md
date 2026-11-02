@@ -1,7 +1,7 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
+verifie: 2026-11-02
 commit: 44eceb5
 sources: [PLAN.md, README.md, backend/apps/noyau/vues_public.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/features/invite/EtatCarte.jsx]
 ---
@@ -30,7 +30,6 @@ le renvoi du QR répondant toujours de la même façon. Cela permettait de véri
 
 ## Conséquences
 - ➕ aucune énumération des inscrits par le formulaire public.
-- ➖ l’écran I7 de `EtatCarte.jsx` n’est plus atteignable ([R2](../project/risques-et-dette.md)) ;
-  `PLAN.md` (I7, C8) et le README (« L’écran … déjà inscrite est conservé ») décrivent encore l’ancien
-  comportement (constaté le 2026-10-21, revérifié le 2026-10-26).
+- ➖ l’écran I7 n’était plus atteignable ([R2](../project/risques-et-dette.md)) : retiré de `EtatCarte.jsx` et du
+  README le 2026-11-02 ; seul `PLAN.md` (source brute : I7, C8) décrit encore l’ancien comportement.
 - ❓ à confirmer avec le responsable fonctionnel : le cahier des charges exigeait I7.

@@ -168,16 +168,7 @@ function Formulaire({ ev, slug }) {
     return (
       <>
         <EnteteInvite ev={ev} />
-        <EtatCarte
-          ev={ev}
-          etat={etat}
-          email={v.email}
-          onAutreAdresse={() => {
-            setEtat(null);
-            maj('email', '');
-            setSoumis(false);
-          }}
-        />
+        <EtatCarte ev={ev} etat={etat} />
       </>
     );
   }

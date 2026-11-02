@@ -1,7 +1,7 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/features/invites/PanneauAjout.jsx, backend/apps/noyau/vues_invites.py, backend/apps/noyau/filtres.py, backend/apps/noyau/taches.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/test_invites.py]
 ---
@@ -47,10 +47,12 @@ Fiche, QR code (PNG servi par l’API, `Cache-Control: private`) et code de seco
 - Modification : entreprise et fonction facultatives ([R3](../project/risques-et-dette.md)).
 - Pas de verrou optimiste : deux admins qui modifient la même fiche en même temps → le dernier enregistrement
   l’emporte sans avertissement (R20).
-- Serveur de développement (`runserver`) : la recherche `?q=` (souvent un email) apparaît en clair dans ses
-  journaux ; en production, Gunicorn la masque (R24).
-- Renvoi groupé : le toast n’affiche que `traites` (« Invitation renvoyée à 0 invité » si tous sont ignorés) ; le
-  nombre d’`ignores` n’est pas montré à l’utilisateur.
+- Recherche `?q=` masquée dans les journaux d'accès, en production (Gunicorn) comme en développement (runserver de
+  Daphne, `logs.MasquerParametresUrl` branché sur `django.channels.server`) depuis le 2026-11-02 (R24 résolu).
+- Renvoi groupé : le toast indique les invitations renvoyées et les invités ignorés (déjà invités il y a moins d'une
+  heure), ou « Aucune invitation renvoyée… » si tous sont ignorés (`GestionInvites.jsx`, 2026-11-02).
+- Modification d'une fiche : entreprise et fonction obligatoires comme à l'inscription (`ModificationInviteSerializer`
+  + `schemaInviteComplet`, libellés « Entreprise * » / « Fonction * », 2026-11-02, R3 résolu).
 
 ## Tests
 `test_invites.py` (compteurs, recherche, filtres et tris, ajout, modification et historique, actions groupées,

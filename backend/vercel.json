@@ -3,6 +3,8 @@
   "regions": ["fra1"],
   "crons": [
     { "path": "/api/taches-planifiees/sondages/?passage=8h", "schedule": "0 8 * * *" },
-    { "path": "/api/taches-planifiees/sondages/?passage=12h", "schedule": "0 12 * * *" }
+    { "path": "/api/taches-planifiees/sondages/?passage=12h", "schedule": "0 12 * * *" },
+    { "path": "/api/taches-planifiees/sondages/?passage=16h", "schedule": "0 16 * * *" },
+    { "path": "/api/taches-planifiees/sondages/?passage=20h", "schedule": "0 20 * * *" }
   ]
 }

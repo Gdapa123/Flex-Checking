@@ -1,7 +1,7 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/suivi_emails.py, backend/config/settings.py, backend/vercel.json]
 ---
@@ -27,7 +27,7 @@ sondage qu'une seule fois ».
    Mise en œuvre (`be899ff`) : deux crons Vercel, 8 h et 12 h, sur des chemins distincts
    (`/api/taches-planifiees/sondages/?passage=8h` et `?passage=12h`) car Vercel fusionne deux crons d'un même chemin ;
    le paramètre `passage` n'est pas lu par le serveur. Sans file, les liens et emails « en attente » sont créés
-   d'abord puis envoyés dans un budget de 200 s ; le cron de 12 h reprend le reste.
+   d'abord puis envoyés dans un budget de 200 s ; le cron de 12 h reprend le reste. Depuis le 2026-11-02 : quatre passages (8 h, 12 h, 16 h, 20 h).
 5. Questionnaire fixe (3 notes + commentaire) ; texte de l'email modifiable par le super admin.
 6. **Anonymat réel** (audit du 2026-10-14) : réponse sans lien vers l'invité, indicateur `repondu` sans heure sur le
    lien, heure de réponse arrondie ; cookie d'appareil limité à 30 jours ; aucun email de sondage envoyé après la

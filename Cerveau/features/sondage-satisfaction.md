@@ -1,7 +1,7 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/apps/noyau/vues_invites.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/rapports.py, backend/apps/noyau/logs.py, backend/apps/noyau/temps_reel.py, backend/config/settings.py, backend/vercel.json, backend/templates/emails/sondage.html, backend/templates/emails/sondage.txt, backend/apps/noyau/tests/test_sondage.py, frontend/src/App.jsx, frontend/src/lib/signalement.js, frontend/src/lib/tempsReel.js, infra/Caddyfile.prod, frontend/src/features/invite/SondagePage.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/features/super/Analyses.jsx]
 ---
@@ -48,7 +48,7 @@ appareil déjà utilisé (remerciement), lien inconnu (`LienInvalide` avec titre
 | Environnement | Déclencheur |
 |---|---|
 | Production (Docker) | Celery Beat `envoyer-sondages` : `crontab(minute=0, hour="8-20")` — 8 h, puis rattrapage horaire jusqu'à 20 h (présence validée tard, Beat indisponible à 8 h) ; l'email part par le worker Celery (3 relances) |
-| Test Vercel (sans Redis) | crons Vercel `0 8 * * *` et `0 12 * * *` (`backend/vercel.json`, chemins distincts `?passage=8h` / `?passage=12h` : Vercel fusionne deux crons d'un même chemin) → `GET /api/taches-planifiees/sondages/` (`CronSondagesView`, sans limite de débit) avec `Authorization: Bearer <CRON_SECRET>` (≥ 32 caractères, comparaison à temps constant, sinon 404 ; le paramètre `passage` est ignoré par le serveur) ; liens et emails « en attente » créés d'abord, puis envoyés dans un budget de 200 s ; le cron de 12 h reprend le reste et les présences tardives |
+| Test Vercel (sans Redis) | crons Vercel `0 8 * * *`, `0 12 * * *`, `0 16 * * *` et `0 20 * * *` (`backend/vercel.json`, chemins distincts `?passage=8h` / `12h` / `16h` / `20h` depuis le 2026-11-02 : Vercel fusionne deux crons d'un même chemin) → `GET /api/taches-planifiees/sondages/` (`CronSondagesView`, sans limite de débit) avec `Authorization: Bearer <CRON_SECRET>` (≥ 32 caractères, comparaison à temps constant, sinon 404 ; le paramètre `passage` est ignoré par le serveur) ; liens et emails « en attente » créés d'abord, puis envoyés dans un budget de 200 s ; les crons suivants reprennent le reste et les présences tardives |
 
 Une cérémonie dont le lendemain est passé sans déclenchement n'est **pas** rattrapée ensuite (règle « le lendemain »).
 Au moment de l'envoi, `tasks._envoyer` passe l'email n°3 en ECHEC sans l'envoyer si le lien est clos ou si la

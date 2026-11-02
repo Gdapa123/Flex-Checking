@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { jourHeure, MODES } from '../../lib/format';
 import { useSecours } from '../../lib/tempsReel';
-import { erreursParChamp, formaterTelephone, schemaInvite } from '../../lib/schemas';
+import { erreursParChamp, formaterTelephone, schemaInviteComplet } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
 import DialogueSuppression from '../../components/ui/DialogueSuppression';
 import { useMoi } from '../auth/useMoi';
@@ -75,7 +75,7 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
   };
 
   const enregistrer = async () => {
-    const r = schemaInvite.safeParse(edition);
+    const r = schemaInviteComplet.safeParse(edition);
     const er = erreursParChamp(r);
     setErreurs(er);
     if (Object.keys(er).length) return;
@@ -290,8 +290,8 @@ export default function PanneauInvite({ id, onFermer, basculerPresence, invalide
               ['prenom', 'Prénom *'],
               ['email', 'Email *'],
               ['telephone', 'Téléphone (+225) *'],
-              ['entreprise', 'Entreprise · facultatif'],
-              ['fonction', 'Fonction · facultatif'],
+              ['entreprise', 'Entreprise *'],
+              ['fonction', 'Fonction *'],
             ].map(([k, l]) => (
               <Champ
                 key={k}

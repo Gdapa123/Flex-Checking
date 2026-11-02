@@ -1,7 +1,7 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx]
 ---
@@ -96,8 +96,10 @@ Seul un 401 déconnecte ; une panne réseau ou serveur affiche « Connexion au s
 sur `/scan` garde le dernier compte connu ([hors-ligne](hors-ligne.md)).
 Prop `precharger` (depuis `43f99c5`) : le code de l'espace (admin, scan, super admin) est téléchargé en parallèle de
 `/auth/moi/` ; ce code est public et ne contient aucune donnée, un échec est ignoré (le chargement normal réessaie).
-❓ `/auth/moi/` n'est pas suivi d'une tentative de rafraîchissement sur 401 (`lib/api.js` exclut `/api/auth/*`) :
-voir R26 dans [risques-et-dette](../project/risques-et-dette.md).
+Depuis le 2026-11-02, un 401 de `/auth/moi/` (comme de toute route hors connexion, rafraîchissement, CSRF et
+déconnexion : `SANS_RAFRAICHISSEMENT` de `lib/api.js`) déclenche une tentative de `/auth/rafraichir/` : rouvrir
+l'application après l'expiration du cookie d'accès (15 min) renouvelle la session tant que `fc_refresh` est valide
+(R26 résolu, `frontend/tests/api.test.js`).
 
 ## Tests
 `backend/apps/noyau/tests/test_permissions.py`, `test_securite.py`, `test_audit_securite.py` (poste connu

@@ -818,3 +818,41 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   une fixture de tests, `.gitignore` et le wiki). Aucune migration.
 - **Validation :** `https://flex-checking.vercel.app/` 200 ; `/api/sante/` 200.
 - **Risques ou limites :** aucun.
+
+## [2026-11-02] sécurité | Traitement des risques R2–R5, R7, R12, R15, R16, R21, R24–R26
+
+- **Contexte :** « traite les risques ». Traitement des risques réglables sans décision de MDE ; les autres sont
+  listés comme décisions en attente.
+- **Modifications :**
+  - R3 : entreprise et fonction obligatoires à la modification d'un invité (`ModificationInviteSerializer` hérite de
+    `ChampsProfessionnelsObligatoires` ; `PanneauInvite.jsx` valide avec `schemaInviteComplet`, libellés « * »).
+  - R26 : `lib/api.js` tente le rafraîchissement sur un 401 de `/auth/moi/` (liste `SANS_RAFRAICHISSEMENT` :
+    connexion, rafraîchissement, CSRF, déconnexion).
+  - R2 : branche morte `DEJA_INSCRIT` retirée de `EtatCarte.jsx`. R4 : README à jour (tests, I7, `CRON_SECRET`).
+  - R15 : renvoi groupé — invités ignorés affichés ; `CRON_SECRET` dans `.env.example`.
+  - R24 : journaux d'accès du runserver de développement masqués (`MasquerParametresUrl` accepte les arguments en
+    dictionnaire, branché sur `django.channels.server`).
+  - R7 / R16 : crons du sondage sur Vercel à 8 h, 12 h, 16 h et 20 h.
+  - R5 / R25 : job CI `backend-postgres` (pytest sur Postgres 17).
+  - R12 : **Zod 3 → 4** (vulnérabilité haute GHSA-mrhx-c7xc-m3w5 dans les dépendances livrées) ; `errorMap` /
+    `invalid_type_error` → `error`, messages en français pour les champs absents.
+  - R21 : convention de migration écrite ([ADR-014](decisions/ADR-014-migrations-expand-contract.md)), rappel au
+    `CLAUDE.md` §5.
+- **Fichiers concernés :** `backend/apps/noyau/serializers.py`, `backend/apps/noyau/logs.py`,
+  `backend/config/settings.py`, `backend/vercel.json`, `backend/apps/noyau/tests/test_invites.py`,
+  `backend/apps/noyau/tests/test_securite.py`, `frontend/src/lib/api.js`, `frontend/src/lib/schemas.js`,
+  `frontend/src/features/invites/PanneauInvite.jsx`, `frontend/src/features/invites/GestionInvites.jsx`,
+  `frontend/src/features/invite/EtatCarte.jsx`, `frontend/src/features/invite/InscriptionPage.jsx`,
+  `frontend/tests/api.test.js`, `frontend/tests/schemas.test.js`, `frontend/package.json`,
+  `frontend/package-lock.json`, `.github/workflows/ci.yml`, `.env.example`, `README.md` ; wiki : risques, ADR-014,
+  CLAUDE.md, index, pages sondage, authentification, gestion des invités, inscription, ADR-005/007/012,
+  déploiement, installation, intégrations, API, vue système, feuille de route, stratégie de test.
+- **Validation :** `ruff check` + `ruff format --check` OK ; `pytest` **275 passed** sur MySQL 8 et **275 passed** sur
+  Postgres 17 (conteneur temporaire) ; `npm run lint` OK ; `npm test` **73/73** ; `npm run build` OK ;
+  `npm run e2e` **3/3** ; `npm audit --omit=dev` : 0 ; `lint_wiki.py` : 0 erreur (pages « à revérifier » dues aux
+  modifications non commitées).
+- **Décision :** [ADR-014](decisions/ADR-014-migrations-expand-contract.md).
+- **Risques ou limites :** R26 non reproduit dans un vrai navigateur après 15 min ; quatre crons Vercel : limite du
+  plan à confirmer au prochain déploiement du backend ; job CI Postgres non encore exécuté sur GitHub. Restent ouverts
+  (décision MDE ou service externe) : R8, R10, R11, R18, R19, R20, R12 (HSTS preload, hachages, Tailwind 4) ;
+  acceptés : R6, R9, R22, R23. Rien n'est commité.

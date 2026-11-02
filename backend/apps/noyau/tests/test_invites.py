@@ -127,6 +127,15 @@ def test_modification_et_historique(client_admin, client_sa, evenement, peuple):
     assert {"EMAIL_ENVOYE", "EMARGEMENT", "ANNULATION", "MODIFICATION"} <= set(types)
 
 
+def test_modification_entreprise_et_fonction_obligatoires(client_admin, peuple):
+    inv = peuple[0]
+    for champ in ("entreprise", "fonction"):
+        r = client_admin.patch(f"/api/invites/{inv.pk}/", {champ: "  "}, format="json")
+        assert r.status_code == 400 and champ in r.json()
+    # modification partielle : un champ non envoyé n'est pas exigé
+    assert client_admin.patch(f"/api/invites/{inv.pk}/", {"nom": "Kouamé"}, format="json").status_code == 200
+
+
 def test_renvoi_individuel(client_admin, peuple):
     mail.outbox.clear()
     r = client_admin.post(f"/api/invites/{peuple[0].pk}/renvoi-email/", {}, format="json")

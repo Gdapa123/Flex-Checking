@@ -33,16 +33,27 @@ class MasquerDonneesPersonnelles(logging.Filter):
         return True
 
 
+def _masquer_chemin(chemin):
+    chemin = masquer_jetons(chemin)
+    if "?" in chemin:
+        chemin = chemin.split("?", 1)[0] + "?[masqué]"
+    return chemin
+
+
 class MasquerParametresUrl(logging.Filter):
-    """Journal d'accès du serveur (Uvicorn) : retire la chaîne de requête des URL. Les recherches du
-    tableau des invités (`?q=` nom, email, téléphone) ne doivent jamais apparaître dans les logs."""
+    """Journal d'accès du serveur : retire la chaîne de requête des URL. Les recherches du tableau des
+    invités (`?q=` nom, email, téléphone) ne doivent jamais apparaître dans les logs.
+    Uvicorn (production) passe le chemin en 3e argument ; le runserver de Daphne (développement) passe un
+    dictionnaire avec la clé `path`."""
 
     def filter(self, record):
         args = record.args
         if isinstance(args, tuple) and len(args) >= 3 and isinstance(args[2], str):
-            chemin = masquer_jetons(args[2])
-            if "?" in chemin:
-                chemin = chemin.split("?", 1)[0] + "?[masqué]"
+            chemin = _masquer_chemin(args[2])
             if chemin != args[2]:
                 record.args = (*args[:2], chemin, *args[3:])
+        elif isinstance(args, dict) and isinstance(args.get("path"), str):
+            chemin = _masquer_chemin(args["path"])
+            if chemin != args["path"]:
+                record.args = {**args, "path": chemin}
         return True

@@ -1,7 +1,7 @@
 ---
 type: api
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/serializers.py, backend/apps/comptes/views.py, backend/apps/comptes/throttles.py, backend/config/settings.py, backend/vercel.json]
 ---
@@ -40,7 +40,7 @@ en JSON uniquement (415 sinon) ; seule exception, `POST public/sondages/<jeton>/
 | POST | `public/sondages/<jeton>/` | `{noteGlobale 1-5, noteAccueil 1-5, recommandation 0-10, commentaire? (≤ 1 000, caractères de contrôle refusés sauf sauts de ligne et tabulation), appareil? (16-64 car. `[A-Za-z0-9_-]`)}` → 201 `{etat: REPONDU}` ; 410 `SONDAGE_EXPIRE` ; 409 `DEJA_REPONDU` / `APPAREIL_DEJA_UTILISE` ; 400 (dont cookie et `appareil` tous deux absents) |
 | GET | `public/confidentialite/` (`vues_public.ConfidentialiteView`) | `{contact, dureeConservationMois}` pour la page `/confidentialite` ; public, limite anonyme par défaut (voir [donnees-personnelles](../features/donnees-personnelles.md)) |
 | POST | `public/sondages/<jeton>/reponse/` (`SondageReponseEmailView`) | formulaire intégré à l'email n°3, `application/x-www-form-urlencoded` (`note_globale`, `note_accueil`, `recommandation`, `commentaire`), sans cookie ni identifiant d'appareil → toujours **303** vers `{APP_PUBLIC_URL}/sondage/<jeton>` (réponse enregistrée, ou déjà répondu / clos / lien inconnu : la page affiche l'état) ; questions manquantes ou invalides → 303 vers `…?incomplet=1` + notes valides (`globale`, `accueil`, `reco`), rien enregistré ; `GET` → 303 vers la page ; 60/h par IP |
-| GET | `taches-planifiees/sondages/` | cron Vercel (`backend/vercel.json` : `?passage=8h` à 8 h et `?passage=12h` à 12 h ; le paramètre n’est pas lu par la vue, il distingue seulement les deux chemins), en-tête `Authorization: Bearer <CRON_SECRET>` → `{programmes, envoyes, anonymisation: {evenements, invites}}` (`sondages.planifier_sondages` puis `donnees_personnelles.anonymiser_donnees_expirees`) ; 404 si secret absent, de moins de 32 caractères ou différent ; aucune limite de débit |
+| GET | `taches-planifiees/sondages/` | cron Vercel (`backend/vercel.json` : `?passage=8h`, `12h`, `16h` et `20h` ; le paramètre n’est pas lu par la vue, il distingue seulement les chemins), en-tête `Authorization: Bearer <CRON_SECRET>` → `{programmes, envoyes, anonymisation: {evenements, invites}}` (`sondages.planifier_sondages` puis `donnees_personnelles.anonymiser_donnees_expirees`) ; 404 si secret absent, de moins de 32 caractères ou différent ; aucune limite de débit |
 | POST | `erreurs/` | signalement d’erreur navigateur → 204 |
 
 ## Scan (`vues_scan.py`)

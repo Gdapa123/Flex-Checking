@@ -51,6 +51,13 @@ async function rafraichir() {
 export const rafraichirSession = () => rafraichir().catch(() => false);
 
 const ECRITURE = ['POST', 'PUT', 'PATCH', 'DELETE'];
+// un 401 de ces routes ne signifie pas « cookie d'accès expiré » : pas de rafraîchissement
+const SANS_RAFRAICHISSEMENT = [
+  '/api/auth/connexion/',
+  '/api/auth/rafraichir/',
+  '/api/auth/csrf/',
+  '/api/auth/deconnexion/',
+];
 
 export async function requete(url, { method = 'GET', body, params, brut = false, signal, reessai = true } = {}) {
   method = method.toUpperCase();
@@ -77,10 +84,12 @@ export async function requete(url, { method = 'GET', body, params, brut = false,
     body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     signal,
   });
-  const authUrl = cible.startsWith('/api/auth/');
-  if (reponse.status === 401 && !authUrl) {
-    if (reessai && (await rafraichir())) return requete(url, { method, body, params, brut, signal, reessai: false });
-    window.dispatchEvent(new CustomEvent('fc:session-expiree'));
+  if (reponse.status === 401) {
+    // /auth/moi/ compris : rouvrir l'application après l'expiration du cookie d'accès renouvelle la session
+    const rafraichissable = !SANS_RAFRAICHISSEMENT.some((p) => cible.startsWith(p));
+    if (reessai && rafraichissable && (await rafraichir()))
+      return requete(url, { method, body, params, brut, signal, reessai: false });
+    if (!cible.startsWith('/api/auth/')) window.dispatchEvent(new CustomEvent('fc:session-expiree'));
   }
   if (brut) {
     if (!reponse.ok && reponse.status !== 202) throw new ApiError(reponse.status, await lireJson(reponse));

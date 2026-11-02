@@ -195,6 +195,17 @@ def test_journal_d_acces_sans_recherche():
     assert "kouassi" not in message and "/api/invites/?[masqué]" in message
 
 
+def test_journal_du_serveur_de_developpement_sans_recherche():
+    """Runserver de Daphne : arguments passés en dictionnaire, filtre branché par LOGGING."""
+    details = {"method": "GET", "path": "/api/invites/?q=aya.kouassi%40sib.ci", "status": 200}
+    record = logging.LogRecord(
+        "django.channels.server", logging.INFO, "", 0, "HTTP %(method)s %(path)s %(status)s", (details,), None
+    )
+    logging.getLogger("django.channels.server").filter(record)
+    message = record.getMessage()
+    assert "kouassi" not in message and "/api/invites/?[masqué]" in message
+
+
 def test_sante_independante_de_l_en_tete_host(client):
     assert client.get("/api/sante/", HTTP_HOST="172.18.0.5:8000").status_code == 200
     assert client.get("/api/sante/", HTTP_HOST="10.0.0.7:8000").json() == {"statut": "ok"}

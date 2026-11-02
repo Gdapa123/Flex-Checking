@@ -1,7 +1,7 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/config/bases.py, backend/requirements.txt, docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
 ---
@@ -58,10 +58,10 @@ seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais
   (0010 et 0011 le 2026-10-22, avant le déploiement du code).
 - En-têtes de sécurité et cache des assets définis dans `frontend/vercel.json` (CSP avec `frame-src 'self' blob:`,
   `Referrer-Policy: same-origin`, identiques à `infra/Caddyfile.prod`).
-- Crons du sondage : `backend/vercel.json`, deux entrées vers la même vue avec des chemins distincts
-  (`/api/taches-planifiees/sondages/?passage=8h` à `0 8 * * *` et `?passage=12h` à `0 12 * * *`, heures UTC) ; le
+- Crons du sondage : `backend/vercel.json`, quatre entrées vers la même vue avec des chemins distincts
+  (`/api/taches-planifiees/sondages/?passage=8h` à `0 8 * * *`, `12h`, `16h` et `20h` depuis le 2026-11-02, heures UTC) ; le
   paramètre `passage` n'est pas lu par `vues_sondage.CronSondagesView`, il sert seulement à éviter que Vercel fusionne
-  les deux crons. **Exige la variable `CRON_SECRET`** (≥ 32 caractères, `LONGUEUR_MIN_SECRET`) sur `flex-checking-api` :
+  les crons. **Exige la variable `CRON_SECRET`** (≥ 32 caractères, `LONGUEUR_MIN_SECRET`) sur `flex-checking-api` :
   Vercel l'envoie en `Authorization: Bearer` ; sans secret valide la route répond 404. Voir
   [sondage-satisfaction](../features/sondage-satisfaction.md). Le même appel lance aussi l'anonymisation des
   données expirées (`donnees_personnelles.anonymiser_donnees_expirees`, voir

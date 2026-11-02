@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { erreurChamp, erreursParChamp, formaterTelephone, schemaInscription } from '../src/lib/schemas';
+import {
+  erreurChamp,
+  erreursParChamp,
+  formaterTelephone,
+  schemaInscription,
+  schemaInviteComplet,
+} from '../src/lib/schemas';
 
 const OK = {
   civilite: 'MME',
@@ -42,5 +48,10 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
 
   it('refuse les adresses non ASCII, comme le serveur', () => {
     expect(schemaInscription.safeParse({ ...OK, email: 'marie@mdé.ci' }).success).toBe(false);
+  });
+
+  it('modification : entreprise et fonction absentes refusées avec un message en français', () => {
+    const e = erreursParChamp(schemaInviteComplet.safeParse({ ...OK, entreprise: null, fonction: '  ' }));
+    expect(e).toEqual({ entreprise: 'Indiquez votre entreprise.', fonction: 'Indiquez votre fonction.' });
   });
 });

@@ -188,7 +188,17 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
         );
       else if (action === 'SUPPRIMER')
         toast(`${nombre(res.traites)} ${res.traites > 1 ? 'invités supprimés' : 'invité supprimé'}.`);
-      else toast(`Invitation renvoyée à ${nombre(res.traites)} ${res.traites > 1 ? 'invités' : 'invité'}.`);
+      else
+        toast(
+          res.traites
+            ? `Invitation renvoyée à ${nombre(res.traites)} ${res.traites > 1 ? 'invités' : 'invité'}.${
+                res.ignores
+                  ? ` ${nombre(res.ignores)} ignoré${res.ignores > 1 ? 's' : ''} (déjà envoyée il y a moins d’une heure).`
+                  : ''
+              }`
+            : 'Aucune invitation renvoyée : déjà envoyée il y a moins d’une heure à ces invités.',
+          res.traites ? 'ok' : 'info',
+        );
       setSelection(new Set());
       invalider();
     } catch (e) {

@@ -299,8 +299,15 @@ EMAIL_FILE_PATH = env("EMAIL_FILE_PATH", default=str(BASE_DIR / "emails-envoyes"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {"masquer_pii": {"()": "apps.noyau.logs.MasquerDonneesPersonnelles"}},
+    "filters": {
+        "masquer_pii": {"()": "apps.noyau.logs.MasquerDonneesPersonnelles"},
+        "masquer_url": {"()": "apps.noyau.logs.MasquerParametresUrl"},
+    },
     "handlers": {"console": {"class": "logging.StreamHandler", "filters": ["masquer_pii"]}},
     "root": {"handlers": ["console"], "level": "INFO"},
-    "loggers": {"django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False}},
+    "loggers": {
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        # journal d'accès du runserver de développement (Daphne) : recherches `?q=` masquées comme en production
+        "django.channels.server": {"filters": ["masquer_url"]},
+    },
 }

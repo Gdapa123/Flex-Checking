@@ -103,12 +103,13 @@ Les statuts (INSCRIT, PRESENT), les quatre programmes et les paramètres sont au
 | `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS` | durée des jetons |
 | `JWT_COOKIE_SECURE` | `1` (défaut) ; `0` seulement en HTTP local hors `localhost` |
 | `CELERY_TASK_ALWAYS_EAGER` | `1` pour exécuter les tâches sans worker (dev, tests) |
+| `CRON_SECRET` | environnement de test Vercel uniquement : secret (32 caractères minimum) attendu par le cron des sondages (`Authorization: Bearer …`) ; vide ailleurs |
 
 ## 5. Commandes
 
 ```bash
 # Backend (depuis backend/)
-.venv/bin/pytest                          # 79 tests (règles critiques, permissions, emails…)
+.venv/bin/pytest                          # ~275 tests (règles critiques, permissions, emails…)
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 .venv/bin/python manage.py seed_demo
 
@@ -244,7 +245,9 @@ Les contradictions entre le design et le cahier des charges sont listées dans `
 - **Rôles** : SUPER_ADMIN et ADMIN uniquement ; l’« Hôte scan » du design est un ADMIN affecté à l’événement.
 - **Badges** : « Inscrit·e » (confirmation) et « Présent·e » (email n°2), selon le cahier des charges.
 - **Renvoi du QR** : la réponse est toujours identique, qu’une adresse soit inscrite ou non ; 3 renvois par heure et par adresse.
-  L’écran « Cette adresse est déjà inscrite » est conservé (exigé), la limitation de débit réduit l’énumération.
+- **Adresse déjà inscrite** : le formulaire public répond comme pour une inscription réussie (pas de révélation de qui
+  est inscrit, ADR-005) ; la vraie personne reçoit de nouveau son invitation, au plus 3 fois par heure. L’écran I7
+  « Cette adresse est déjà inscrite » du design a été retiré.
 - **Modèles d’emails** : le texte avant `{qr_code}` va dans la carte message, `{qr_code}` devient la carte QR + code de
   secours, le texte après dans une carte suivante ; les infos pratiques et les boutons sont toujours ajoutés
   (même principe avec `{lien_magazine}` pour l’email n°2). Aperçu = HTML réel rendu par l’API.
