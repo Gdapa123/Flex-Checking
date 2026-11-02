@@ -856,3 +856,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   plan à confirmer au prochain déploiement du backend ; job CI Postgres non encore exécuté sur GitHub. Restent ouverts
   (décision MDE ou service externe) : R8, R10, R11, R18, R19, R20, R12 (HSTS preload, hachages, Tailwind 4) ;
   acceptés : R6, R9, R22, R23. Rien n'est commité.
+
+## [2026-11-02] deploy | Traitement des risques en ligne (Vercel)
+
+- **Contexte :** « commit push et deploy ».
+- **Modifications :** commit `115df80` poussé sur `main` (`.claude/agents/` et `.claude/skills/impeccable/`, non
+  suivis, laissés hors du commit) ; frontend `flex-checking` redéployé automatiquement au push (Production,
+  « Ready ») ; backend `flex-checking-api` déployé par `vercel deploy --prod` depuis `backend/` (« Ready », alias
+  `https://flex-checking-api.vercel.app`) : le déploiement a accepté les quatre crons (R7 / R16). `CRON_SECRET`
+  présent en Production. Aucune migration.
+- **Validation :** avant le commit : `ruff` OK, `pytest` 275 passed (MySQL 8), `npm run lint` OK, `npm test` 73/73,
+  `npm run build` OK. En ligne : `https://flex-checking.vercel.app/` 200, `/api/sante/` 200 (via le frontend et
+  directement) ; `/api/taches-planifiees/sondages/` sans secret → 404 (attendu).
+- **Risques ou limites :** job CI `backend-postgres` à surveiller sur GitHub ; R3 et R26 non testés en ligne avec un
+  compte admin.
