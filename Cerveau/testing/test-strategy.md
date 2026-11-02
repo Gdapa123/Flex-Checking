@@ -1,7 +1,7 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-10-27
+verifie: 2026-11-02
 commit: bed9942
 sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/.nvmrc, frontend/.npmrc, frontend/tests/fileHorsLigne.test.js, backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/, frontend/vite.config.js, frontend/package.json, frontend/playwright.config.js, frontend/tests/, .github/workflows/ci.yml]
 ---
@@ -36,6 +36,7 @@ qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertiss
 ## Dernière exécution locale connue
 | Date | Contrôle | Résultat |
 |---|---|---|
+| 2026-11-02 | Revue de code + correction de `donnees_reference` (`backend/apps/noyau/tests/conftest.py`) : `ruff check` + `ruff format --check`, `pytest` (`--reuse-db`) sur MySQL 8 (Docker), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **273 passed** (1 échec avant la correction) ; lint OK ; Vitest **69/69** ; build OK ; Playwright **3/3**. Cause réelle de l'échec de `test_seed_demo_sans_date_future` : un test transactionnel vide la base et `donnees_reference` ne recréait que AMP et PMD (et non Public-AMP / Public-ASD attendus par `seed_demo`) ; la fixture reprend désormais les listes de `0002_donnees_initiales`. Postgres non relancé |
 | 2026-10-27 | Sondage dans le corps de l'email n°3 : `ruff check` + `ruff format --check`, `pytest --create-db` sur MySQL 8 (Docker), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **273 passed** (après la revue de code ; 270 avant) ; lint OK ; Vitest **69/69** ; build OK ; Playwright **3/3**. Postgres non relancé. Avec `--reuse-db`, `test_seed_demo_sans_date_future` échoue toujours (base de test périmée) |
 | 2026-10-26 | Pool Postgres + correction du rafraîchissement (`43f99c5`) : `ruff check` + `ruff format --check`, `pytest --create-db` sur MySQL 8 (Docker) et sur un Postgres local (Homebrew, pool actif), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **267 passed** (MySQL) et **267 passed** (Postgres ; 6 échecs sur Postgres avant la correction de `RafraichirView`) ; lint OK ; Vitest **68/68** ; build OK ; Playwright **3/3**. Avec `--reuse-db`, `test_seed_demo_sans_date_future` échoue (base de test périmée), OK avec `--create-db` |
 | 2026-10-26 | Vérification complète sur le poste (Node 24.22.1, MySQL + Redis Docker, `seed_demo`) : `ruff check` + `ruff format --check`, `pytest`, `npm run lint`, `npm test`, `npm run build`, `npm run e2e` | ✅ ruff OK ; pytest **266 passed** ; lint OK ; Vitest **68/68** ; build OK ; Playwright **3/3** (accessibilité axe comprise) — base `44eceb5` + mise à niveau Node.js (commitée ensuite dans `d220011`) |

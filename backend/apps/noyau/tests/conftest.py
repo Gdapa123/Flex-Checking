@@ -1,3 +1,4 @@
+import importlib
 from datetime import time, timedelta
 
 import pytest
@@ -15,9 +16,11 @@ def donnees_reference():
     """Statuts et programmes (créés par data migration ; recréés si un test transactionnel a vidé la base)."""
     from apps.noyau.models import Statut
 
-    for code, libelle, ordre in [("INSCRIT", "Inscrit", 1), ("PRESENT", "Présent", 2)]:
+    # mêmes listes que la data migration : seed_demo attend aussi Public-AMP et Public-ASD
+    initiales = importlib.import_module("apps.noyau.migrations.0002_donnees_initiales")
+    for code, libelle, ordre in initiales.STATUTS:
         Statut.objects.get_or_create(code=code, defaults={"libelle": libelle, "ordre": ordre})
-    for nom, p, s in [("AMP", "#8F1C1F", "#F7941D"), ("PMD", "#1A5E36", "#FFF200")]:
+    for nom, p, s in initiales.PROGRAMMES:
         Programme.objects.get_or_create(nom=nom, defaults={"couleur_principale": p, "couleur_secondaire": s})
 
 

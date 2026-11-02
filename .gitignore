@@ -34,3 +34,6 @@ Cerveau/.obsidian/workspace*.json
 sauvegardes/
 # réglages locaux de Claude Code (propres au poste)
 .claude/settings.local.json
+# Impeccable : captures d'écran locales (peuvent montrer des invités) et binaire natif
+.impeccable/
+.claude/skills/impeccable/scripts/bin/

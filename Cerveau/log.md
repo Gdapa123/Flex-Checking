@@ -792,3 +792,20 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Risques ou limites :** rendu et envoi non testés dans de vraies messageries (envoyer l'email de test n°3
   depuis Paramètres : son lien est factice, la page affichera « lien non valide ») ; SPF/DKIM/DMARC du domaine
   d'envoi à vérifier.
+
+## [2026-11-02] tests | Revue de code : fixture `donnees_reference` complétée, index réaligné
+
+- **Contexte :** « corrige l'en-tête de l'index » puis « /code-review et corrige » ; contrôles complets du §7.
+- **Modifications :** en-tête de `index.md` aligné sur `bed9942` (frontmatter et phrase d'introduction : 30 pages
+  alignées par `3106714`, le champ `commit` de chaque page fait foi). `donnees_reference` (fixture des tests)
+  recrée désormais tous les statuts et programmes de la data migration `0002_donnees_initiales` au lieu de AMP et
+  PMD seulement : `test_seed_demo_sans_date_future` échouait quand un test transactionnel avait vidé la base avant
+  lui (`KeyError: 'Public-AMP'`), ce qui avait été attribué à tort à une base de test périmée. `.gitignore` :
+  `.impeccable/` (captures d'écran locales) et le binaire natif `.claude/skills/impeccable/scripts/bin/`.
+- **Fichiers concernés :** `Cerveau/index.md`, `backend/apps/noyau/tests/conftest.py`, `.gitignore`,
+  `Cerveau/testing/test-strategy.md`.
+- **Validation :** `ruff check` + `ruff format --check` OK ; `pytest` (MySQL 8 Docker, `--reuse-db`) **273 passed**
+  (1 échec avant) ; `npm run lint` OK ; `npm test` **69/69** ; `npm run build` OK ; `npm run e2e` **3/3** ;
+  `lint_wiki.py` : 0 erreur.
+- **Risques ou limites :** aucun changement de code applicatif. `Cerveau/.obsidian/graph.json` (zoom du graphe,
+  modification locale) laissé tel quel. Risques R2–R26 non traités dans cette session (décisions en attente).
