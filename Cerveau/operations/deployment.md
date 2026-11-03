@@ -39,7 +39,8 @@ de base non épinglées par empreinte (R22 de [risques-et-dette](../project/risq
 `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, mots de passe MySQL forts, SMTP, `DEFAULT_FROM_EMAIL` en adresse
 seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais lancer `seed_demo`** (refusé hors
 `DEBUG` sans `--force`). Seuls les ports 80/443 de Caddy sont publiés. Guide pas à pas :
-[deploiement-infomaniak](deploiement-infomaniak.md).
+[deploiement-infomaniak](deploiement-infomaniak.md) ; version simplifiée avec les scripts `infra/vps/` :
+[deploiement-vps-facile](deploiement-vps-facile.md).
 
 ## Test en ligne — Vercel ([ADR-007](../decisions/ADR-007-environnement-test-vercel.md))
 - Frontend https://flex-checking.vercel.app (projet `flex-checking`) ; `.vercelignore` n’envoie que `frontend/`.

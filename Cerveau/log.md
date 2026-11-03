@@ -884,3 +884,29 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
   `PATCH` ; `PATCH` direct `fonction: ""` → 400. 2/2 passed.
 - **Risques ou limites :** vérifié en local, pas sur Vercel (pas de compte admin utilisé en ligne). La limite de
   5 connexions par minute s'est déclenchée pendant les essais, comme prévu.
+
+## [2026-11-02] fonctionnalité | Scripts de déploiement VPS Lite et guide simplifié
+
+- **Contexte :** « prépare le projet pour un déploiement sur VPS Lite », puis « rend le guide facile » et « ne
+  remplace pas, crée un autre ». Le guide détaillé existant n'est pas modifié (seul un lien ajouté dans ses Liens).
+- **Modifications :** nouveaux scripts `infra/vps/` : `commun.sh`, `preparer-serveur.sh` (système, swap, Docker,
+  SSH par clé), `installer.sh` (`.env` en 4 questions avec secrets générés, construction du site, pile prod,
+  `createsuperuser`), `activer-sauvegardes.sh`, `sauvegarde.sh`, `restaurer.sh`, `mettre-a-jour.sh`. Nouveau guide
+  [deploiement-vps-facile](operations/deploiement-vps-facile.md) (8 étapes) ; dépôt public : `git clone` HTTPS,
+  sans deploy key. Liens : index, [deployment](operations/deployment.md), guide détaillé, README § 7.
+- **Fichiers concernés :** `infra/vps/*.sh`, `Cerveau/operations/deploiement-vps-facile.md`, `Cerveau/index.md`,
+  `Cerveau/operations/deployment.md`, `Cerveau/operations/deploiement-infomaniak.md`, `README.md`.
+- **Validation :** `bash -n` et `shellcheck -x` sans remarque. Copie isolée du dépôt (worktree, projet Compose
+  `flexvpstest`, domaine `localhost`) : `installer.sh` avec réponses fournies → `.env` en `-rw-------`, 22 variables,
+  mot de passe SMTP transmis sans apostrophes, pile démarrée, `migrate` `Exited (0)`, `/api/sante/` OK, en-têtes
+  HSTS et CSP ; `createsuperuser --noinput` puis connexion `POST /api/auth/connexion/` → 200 `SUPER_ADMIN`.
+  Dans Ubuntu 24.04 (conteneur, root) : `activer-sauvegardes.sh` (phrase, crontab unique après relance, première
+  sauvegarde), `restaurer.sh` (donnée modifiée puis restaurée, refus sans « RESTAURER », refus avec mauvaise
+  phrase). `mettre-a-jour.sh` (sans sauvegardes, réponse « o ») → reconstruction, santé OK. Pile et worktree de
+  test supprimés.
+- **Corrections trouvées par les tests :** `clear` faisait échouer `activer-sauvegardes.sh` hors terminal standard ;
+  noms de sauvegarde à la minute → la sauvegarde de sécurité de `restaurer.sh` pouvait écraser le fichier à
+  restaurer (secondes ajoutées, restauration depuis une copie temporaire) ; `sudo -n` dans `mettre-a-jour.sh`.
+- **Risques ou limites :** `preparer-serveur.sh` non testé (exige un vrai serveur avec systemd) ; aucun VPS réel
+  installé ; certificat Let's Encrypt et envoi SMTP réels non testés ; `mettre-a-jour.sh` testé sans nouvelle
+  version à récupérer. Rien n'est commité.

@@ -70,6 +70,10 @@ Ouvrez http://localhost:5173 (la caméra fonctionne sur `localhost` même en HTT
 
 Aucun mot de passe n’est écrit dans le dépôt. `seed_demo` lit `DEMO_MOT_DE_PASSE_SUPER_ADMIN` et `DEMO_MOT_DE_PASSE_ADMIN` dans `.env` ; si elles sont vides, il génère des mots de passe aléatoires et les affiche une seule fois dans le terminal. Pour appliquer de nouveaux mots de passe à des comptes existants : `python manage.py seed_demo --reinitialiser-mots-de-passe`. Ne lancez jamais `seed_demo` en production.
 
+**VPS (Infomaniak VPS Lite)** : scripts prêts à l’emploi dans `infra/vps/` — `preparer-serveur.sh` (sudo, une fois),
+`installer.sh` (écrit `.env` en 4 questions, démarre la pile, crée le super admin), `activer-sauvegardes.sh`,
+`sauvegarde.sh`, `restaurer.sh`, `mettre-a-jour.sh`. Guide : `Cerveau/operations/deploiement-vps-facile.md`.
+
 | Rôle | Email | Mot de passe | Événements |
 |---|---|---|---|
 | Super admin | direction.evenements@mde.ci | `DEMO_MOT_DE_PASSE_SUPER_ADMIN` | tous |

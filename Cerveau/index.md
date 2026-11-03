@@ -95,6 +95,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [operations/setup.md](operations/setup.md) | Docker Compose, développement sans Docker, données de démo, variables |
 | [operations/deployment.md](operations/deployment.md) | Production Docker, environnement Vercel, tests de charge |
 | [operations/deploiement-infomaniak.md](operations/deploiement-infomaniak.md) | Guide pas à pas : VPS Lite Infomaniak, toutes les fonctionnalités au moindre coût |
+| [operations/deploiement-vps-facile.md](operations/deploiement-vps-facile.md) | Guide simplifié VPS Lite en 8 étapes, avec les scripts `infra/vps/` (installation, sauvegardes, restauration, mise à jour) |
 
 ## Gabarits
 [feature](templates/feature-template.md) · [décision](templates/decision-template.md) ·

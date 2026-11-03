@@ -1092,6 +1092,7 @@ Dans le dépôt (le code fait foi) : `docker-compose.prod.yml`, `infra/Caddyfile
 
 ## Liens
 
+- Version simplifiée (scripts `infra/vps/`) : [deploiement-vps-facile](deploiement-vps-facile.md)
 - Exploitation générale : [deployment](deployment.md), [setup](setup.md)
 - Architecture : [system-overview](../architecture/system-overview.md), [integrations](../architecture/integrations.md)
 - Envoi du sondage par Celery beat : [ADR-012](../decisions/ADR-012-sondage-satisfaction.md)
