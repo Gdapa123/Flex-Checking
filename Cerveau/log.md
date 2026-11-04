@@ -948,3 +948,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** `bash -n infra/vps/installer.sh` OK ; `docker compose -f docker-compose.prod.yml config --quiet` sans erreur ; plus aucune occurrence de l'ancien domaine hors `design-source/` (maquette, source brute non modifiée).
 - **PDF :** `Cerveau/operations/deploiement-vps-facile.pdf` régénéré depuis la page Markdown (conversion HTML puis impression Chrome sans interface, A4) ; rendu vérifié visuellement.
 - **Risques ou limites :** le PDF reste non suivi par git ; à régénérer à chaque modification du guide.
+
+## [2026-11-04] documentation | /wiki-maj : 13 pages revérifiées sur `e3dd153`
+
+- **Contexte :** pages signalées par `lint_wiki.py` après le commit `e3dd153` (sources `docker-compose.yml`, `docker-compose.prod.yml`, `infra/Caddyfile.prod`, `infra/vps/installer.sh`).
+- **Modifications :** diff du commit relu (options MySQL / Celery, domaine). Écarts corrigés : [deploiement-infomaniak](operations/deploiement-infomaniak.md) (enregistrements DNS A et AAAA : sous-domaine `inscription`, oublié le matin) ; [setup](operations/setup.md) (MySQL de développement sans `performance_schema`, options du worker Celery) ; [scope](project/scope.md) (`docker-compose.prod.yml` et `infra/Caddyfile.prod` ajoutés aux sources). Les 10 autres pages ne décrivaient rien de modifié : `verifie` / `commit` → 2026-11-04 / `e3dd153` pour les 13 ; phrase d'en-tête de l'index complétée.
+- **Fichiers concernés :** `Cerveau/` uniquement (13 pages, `index.md`, `log.md`).
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` → 0 erreur, 0 page à revérifier, 0 avertissement. Aucun test de code lancé (aucun code modifié).
+- **Risques ou limites :** `Cerveau/operations/deploiement-vps-facile.pdf` inchangé (la page Markdown correspondante n'a changé que dans son frontmatter).

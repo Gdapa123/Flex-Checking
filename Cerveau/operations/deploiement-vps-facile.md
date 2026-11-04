@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: partiel
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-04
+commit: e3dd153
 sources: [infra/vps/commun.sh, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/activer-sauvegardes.sh, infra/vps/sauvegarde.sh, infra/vps/restaurer.sh, infra/vps/mettre-a-jour.sh, docker-compose.prod.yml, infra/Caddyfile.prod, backend/apps/comptes/models.py]
 ---
 

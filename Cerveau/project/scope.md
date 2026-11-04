@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-03
-commit: 107d1f8
-sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/vps/installer.sh]
+verifie: 2026-11-04
+commit: e3dd153
+sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/vps/installer.sh, docker-compose.prod.yml, infra/Caddyfile.prod]
 ---
 
 # Périmètre

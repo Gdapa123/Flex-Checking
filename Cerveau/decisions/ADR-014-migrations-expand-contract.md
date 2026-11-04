@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-02
-commit: d467e40
+verifie: 2026-11-04
+commit: e3dd153
 sources: [backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, docker-compose.prod.yml]
 ---
 

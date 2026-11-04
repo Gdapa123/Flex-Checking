@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-04
+commit: e3dd153
 sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
 ---
 
@@ -440,10 +440,10 @@ le certificat HTTPS dès son lancement, et la demande échoue si l’adresse ne 
   `mde.ci` › zone DNS (le menu peut s’appeler « Zone DNS » ou « Gestion DNS »).
 - **Quoi :** ajoutez un enregistrement :
   - type **A** ;
-  - nom / sous-domaine : `emargement` (la partie avant `.mde.ci`) ;
+  - nom / sous-domaine : `inscription` (la partie avant `.mde.ci`) ;
   - valeur / cible : `<IP_DU_VPS>` ;
   - TTL : la valeur par défaut.
-  - Si le VPS a une IPv6 : ajoutez aussi un enregistrement **AAAA** `emargement` → l’IPv6.
+  - Si le VPS a une IPv6 : ajoutez aussi un enregistrement **AAAA** `inscription` → l’IPv6.
 - ⚠️ Ne modifiez **aucun** autre enregistrement (notamment MX, SPF, DKIM : ils font marcher la messagerie).
 
 ### 7.2 Vérifier la propagation

@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-04
+commit: e3dd153
 sources: [backend/config/bases.py, .gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
 
@@ -34,6 +34,9 @@ docker compose exec django python manage.py seed_demo
   (≈ 1 Go avant), `dev` 617 Mo ; aucun compilateur dans l'image livrée ; utilisateur `flex` ; 264 tests passés dans
   l'image `dev`, contrôle de santé 200 avec l'image `prod`.
 - Développement : une seule image `flex-checking-backend:dev` pour django, celery et celery-beat.
+- Mémoire (2026-11-03) : MySQL de développement lancé avec `--performance-schema=OFF` (≈ 450 → 127 Mo, plus de
+  diagnostic fin des requêtes ; la production garde `performance_schema`) ; worker Celery
+  `--concurrency 2 --without-gossip --without-mingle --without-heartbeat`. Pile mesurée à ≈ 1,6 Go avant ces réglages.
 - Journaux des conteneurs plafonnés (`x-journaux` : 3 × 10 Mo par service) dans les deux fichiers compose ; journaux
   binaires MySQL gardés 7 jours (`--binlog-expire-logs-seconds=604800`, dev et prod ; 3 jours envisagés puis portés à
   7 par la revue de code du 2026-10-22, tant que les sauvegardes ne sont pas automatisées dans le dépôt).
