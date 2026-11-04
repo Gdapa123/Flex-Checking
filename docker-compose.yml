@@ -40,7 +40,8 @@ services:
   mysql:
     image: mysql:8.0
     logging: *journaux
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00", "--max-connections=300", "--binlog-expire-logs-seconds=604800"]
+    # performance-schema désactivé : instrumentation de diagnostic inutile en développement (≈ 200 Mo)
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00", "--max-connections=300", "--binlog-expire-logs-seconds=604800", "--performance-schema=OFF"]
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -77,7 +78,7 @@ services:
 
   celery:
     <<: *backend
-    command: celery -A config worker -l info --concurrency 2
+    command: celery -A config worker -l info --concurrency 2 --without-gossip --without-mingle --without-heartbeat
 
   # tâches planifiées : relance des emails restés en attente, purge des exports et des erreurs anciennes
   celery-beat:

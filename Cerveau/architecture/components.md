@@ -1,8 +1,8 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [backend/apps, frontend/src, backend/Dockerfile]
 ---
 
@@ -40,7 +40,7 @@ sources: [backend/apps, frontend/src, backend/Dockerfile]
 | `journal.py`, `journal_texte.py` | `journaliser` (actions listées dans `CATEGORIES`), libellés reconstitués à l’affichage |
 | `erreurs.py`, `mesures.py` | erreurs techniques groupées par signature ; métriques par minute dans Redis |
 | `ics.py`, `qr.py`, `icones_email.py`, `theme.py`, `dates.py` | .ics, QR PNG, icônes PNG des emails, dérivation des couleurs, formats français |
-| `middleware.py`, `logs.py`, `exceptions.py` | santé `/api/sante/`, CSP et en-têtes, masquage PII et des jetons du sondage (`masquer_jetons`), gestionnaire d’erreurs (`ErreurMetier`) |
+| `middleware.py`, `logs.py`, `exceptions.py` | santé `/api/sante/`, CSP et en-têtes, masquage PII et des jetons du sondage (`masquer_jetons`), chaîne de requête masquée dans les journaux d’accès (`MasquerParametresUrl` : Uvicorn en production, runserver de Daphne via le logger `django.channels.server`), gestionnaire d’erreurs (`ErreurMetier`) |
 | `management/commands/seed_demo.py` | données de démonstration idempotentes |
 
 ## Backend — `backend/apps/comptes/`

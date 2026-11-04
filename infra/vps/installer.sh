@@ -30,7 +30,7 @@ else
   etape "Configuration (4 questions)"
   echo "Les réponses sont enregistrées dans le fichier .env du serveur, lisible par vous seul."
   echo
-  demander "1. Adresse du site, sans https:// (ex. emargement.mde.ci)" DOMAINE
+  demander "1. Adresse du site, sans https:// (ex. inscription.mde.ci)" DOMAINE
   DOMAINE="${DOMAINE#https://}"
   DOMAINE="${DOMAINE#http://}"
   DOMAINE="${DOMAINE%%/*}"

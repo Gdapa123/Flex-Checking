@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-02
-commit: 913c7c4
-sources: [backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md]
+verifie: 2026-11-03
+commit: 107d1f8
+sources: [backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
 ---
 
 # Risques, limitations et dette technique
@@ -245,8 +245,23 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - **Constat** : `lib/api.js` ne tente pas `/auth/rafraichir/` pour les URL `/api/auth/*`, dont `/api/auth/moi/`
   (lu par `RequireRole` au chargement). Le cookie `fc_access` expire après `JWT_ACCESS_MINUTES` (15) alors que
   `fc_refresh` vaut 12 h : rouvrir l'onglet après 15 min d'inactivité mène à `/connexion` au lieu de renouveler
-  la session. Observé dans le code le 2026-10-26, non reproduit dans un navigateur. **Statut** : ouvert (toucher au
+  la session. Observé dans le code le 2026-10-26, non reproduit dans un navigateur. **Statut** alors : ouvert (toucher au
   flux d'authentification : à décider).
+- **Résolution** : `lib/api.js` tente `/auth/rafraichir/` sur un 401 de toute route, `/auth/moi/` comprise, sauf
+  connexion, rafraîchissement, CSRF et déconnexion (`SANS_RAFRAICHISSEMENT`) ; l'évènement `fc:session-expiree` reste
+  réservé aux routes hors `/api/auth/`. Preuve : `frontend/tests/api.test.js` (3 tests). ✅ Vérifié dans Chromium
+  (Playwright, local) le 2026-11-02 en supprimant le cookie `fc_access` après connexion : `/auth/moi/` 401 →
+  `/auth/rafraichir/` 204 → `/auth/moi/` 200, tableau de bord affiché sans passer par `/connexion`.
+
+## R27 — Scripts de déploiement VPS non éprouvés sur un vrai serveur (exploitation, moyen)
+- **Constat** (commit `107d1f8`) : les scripts `infra/vps/` (`preparer-serveur.sh`, `installer.sh`,
+  `activer-sauvegardes.sh`, `sauvegarde.sh`, `restaurer.sh`, `mettre-a-jour.sh`) ont été testés dans une copie isolée
+  du dépôt et dans un conteneur Ubuntu 24.04 (voir [log](../log.md), 2026-11-02). `preparer-serveur.sh` n'a jamais été
+  exécuté (il exige un vrai serveur avec systemd) ; aucun VPS réel installé ; certificat Let's Encrypt, envoi SMTP
+  réel et `mettre-a-jour.sh` avec une nouvelle version à récupérer non testés.
+- **Conséquence** : la première installation réelle peut révéler des écarts (pare-feu, SSH, DNS, certificat).
+- **Proposition** 📋 : première installation sur un VPS de recette, guide [deploiement-vps-facile](../operations/deploiement-vps-facile.md)
+  suivi pas à pas, puis restauration d'une sauvegarde pour valider la procédure. **Statut** : ouvert.
 
 Rappel : le temps de réponse du renvoi du QR sur Vercel (R6) est inchangé au 2026-10-22.
 
@@ -258,12 +273,6 @@ Acceptés par choix documenté : R6, R9, R22, R23.
 
 Revérifiés le 2026-10-26 sur `44eceb5`, sans changement : R5, R6, R7, R9, R10, R11, R12 (Tailwind `^3.4.17`,
 Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
-- **Résolution** : `lib/api.js` tente `/auth/rafraichir/` sur un 401 de toute route, `/auth/moi/` comprise, sauf
-  connexion, rafraîchissement, CSRF et déconnexion (`SANS_RAFRAICHISSEMENT`) ; l'évènement `fc:session-expiree` reste
-  réservé aux routes hors `/api/auth/`. Preuve : `frontend/tests/api.test.js` (3 tests). ✅ Vérifié dans Chromium
-  (Playwright, local) le 2026-11-02 en supprimant le cookie `fc_access` après connexion : `/auth/moi/` 401 →
-  `/auth/rafraichir/` 204 → `/auth/moi/` 200, tableau de bord affiché sans passer par `/connexion`.
-
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface
   (`Parametres.jsx`, dialogue « Raccourcir la durée de conservation ? ») ; l'API (`vues_admin`, paramètres globaux)

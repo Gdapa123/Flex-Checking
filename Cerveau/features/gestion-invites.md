@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-02
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/features/invites/PanneauAjout.jsx, backend/apps/noyau/vues_invites.py, backend/apps/noyau/filtres.py, backend/apps/noyau/taches.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/test_invites.py]
 ---
 

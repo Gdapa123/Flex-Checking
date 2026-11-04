@@ -1,9 +1,9 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
-sources: [backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx, frontend/e2e/accessibilite.spec.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
+verifie: 2026-11-03
+commit: 107d1f8
+sources: [frontend/tests/api.test.js, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx, frontend/e2e/accessibilite.spec.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
 ---
 
 # Cas de test par domaine
@@ -17,9 +17,9 @@ Volumes : voir [test-strategy](test-strategy.md) (273 tests backend exécutés l
 | `test_inscription.py` | infos publiques, lien invalide, inscription + email 1, refus par état et date limite, doublon (même réponse + renvoi), renvois automatiques limités, consentement, validation, renvoi du QR, unicité des codes, .ics, agenda, entreprise/fonction obligatoires | [inscription](../features/inscription.md) |
 | `test_emargement.py` | premier passage + magazine, idempotence, invalide / autre événement, un seul champ, annulation réservée au super admin et sans second magazine, magazine inactif, hors ligne (date client, rejeu), limitation des codes (non contournable par le poste, codes valides jamais bloqués), récents, **concurrence**, droits | [scan](../features/scan-emargement.md), [hors-ligne](../features/hors-ligne.md) |
 | `test_emails.py` | échec après 3 relances, variables et échappement, lien magazine en clair, envoi, boutons vers infos pratiques | [emails](../features/emails.md) |
-| `test_invites.py` | compteurs et pagination, recherche (dont code), filtres et tris, ajout manuel, modification + historique, renvoi, actions groupées (synchrones, Celery > 50), exports CSV/XLSX, export async, QR, statistiques (tranche en cours calculée par le serveur), renvois groupés limités par heure, formules neutralisées, purge, renvoi du magazine refusé s'il est désactivé | [gestion-invites](../features/gestion-invites.md) |
+| `test_invites.py` | compteurs et pagination, recherche (dont code), filtres et tris, ajout manuel, modification + historique, entreprise et fonction obligatoires à la modification (`test_modification_entreprise_et_fonction_obligatoires`, 2026-11-02), renvoi, actions groupées (synchrones, Celery > 50), exports CSV/XLSX, export async, QR, statistiques (tranche en cours calculée par le serveur), renvois groupés limités par heure, formules neutralisées, purge, renvoi du magazine refusé s'il est désactivé | [gestion-invites](../features/gestion-invites.md) |
 | `test_permissions.py` | non connecté, cookies httpOnly, mauvais mot de passe + limite, CSRF, compte désactivé, rafraîchir/déconnexion, périmètre admin, X-Forwarded-For falsifié, limite par compte | [authentification](../features/authentification.md) |
-| `test_securite.py` | révocation des sessions (réinitialisation, changement, WebSocket), mot de passe temporaire bloquant, identifiants non numériques, corps non-objet, caractères de contrôle, .ics, formules, journal d’accès sans recherche, santé, vérification et changement du mot de passe limités par compte (dont mot de passe de l'hôte) | [non-functional](../specifications/non-functional-requirements.md) |
+| `test_securite.py` | révocation des sessions (réinitialisation, changement, WebSocket), mot de passe temporaire bloquant, identifiants non numériques, corps non-objet, caractères de contrôle, .ics, formules, journal d’accès sans recherche (production et runserver de Daphne, `test_journal_du_serveur_de_developpement_sans_recherche`, 2026-11-02), santé, vérification et changement du mot de passe limités par compte (dont mot de passe de l'hôte) | [non-functional](../specifications/non-functional-requirements.md) |
 | `test_temps_reel.py` | fermetures 4001/4003/4004 (sans relais temps réel), origine, périmètre des notifications, désactivation en cours, affectation, déconnexion qui ferme le WebSocket de la session | [temps-reel](../features/temps-reel.md) |
 | `test_super_admin.py` | programmes, couleurs, cérémonies (slug, QR), dates incohérentes, comptes, paramètres et aperçu, journal, exports globaux, tous les invités, mot de passe, schéma OpenAPI, ancien lien lisible | [super admin](../features/configuration-super-admin.md) |
 | `test_suppressions.py` | confirmation par le nom, cascade programme, compte supprimé et historique, garde-fous, dernier super admin, suppression d’invités réservée | [super admin](../features/configuration-super-admin.md) |
@@ -35,7 +35,7 @@ Volumes : voir [test-strategy](test-strategy.md) (273 tests backend exécutés l
 | `test_theme.py` | tokens de référence, contrastes, couleur de texte, Argon2 en production | — |
 
 ## Frontend (`frontend/tests/`)
-`tokens`, `schemas`, `format`, `agenda`, `connexion` (chemin interne), `garde` (401, 503, hors ligne),
+`tokens`, `schemas` (dont entreprise et fonction exigées à la modification, `schemaInviteComplet`), `api` (2026-11-02 : rafraîchissement de session sur un 401 de `/auth/moi/` puis requête rejouée, pas de rafraîchissement sur un échec de connexion, 401 rendu si le rafraîchissement échoue), `format`, `agenda`, `connexion` (chemin interne), `garde` (401, 503, hors ligne),
 `confirmation` (scrollTo renvoyant une promesse), `tableauDeBord` (abréviations PAMP/PASD, graphique des arrivées vide ou rempli), `resultat` (résultat de scan), `signalement`, `tempsReel`, `analyses`,
 `sondage` (trois questions obligatoires, lien expiré, délai dépassé pendant la saisie, appareil déjà utilisé, déjà
 répondu, indicateurs et commentaires, jeton jamais transmis aux signalements), `suiviEmails` (compteurs, échecs et

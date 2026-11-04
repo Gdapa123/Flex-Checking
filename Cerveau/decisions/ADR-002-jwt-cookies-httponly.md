@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [PLAN.md, backend/apps/comptes/authentication.py, backend/apps/comptes/views.py, backend/apps/comptes/permissions.py, backend/apps/noyau/consumers.py, backend/config/settings.py, frontend/src/lib/api.js]
 ---
 

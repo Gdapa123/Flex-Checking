@@ -1,8 +1,8 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [PLAN.md, backend/apps/noyau/donnees_personnelles.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/, frontend/src/features/scan/reglages.js, frontend/src/features/scan/ScanPoste.jsx, frontend/tests/]
 ---
 
@@ -26,7 +26,7 @@ le code. Colonne « Preuve » : test automatisé ou fichier qui implémente la r
 | EF-11 | Email n°2 (magazine) au premier passage, une seule fois, si activé pour le programme | ✅ | `test_premier_passage_present_et_magazine`, `test_magazine_inactif` |
 | EF-12 | Scan hors ligne : mise en file, synchronisation, heure réelle conservée | ✅ | `test_scan_hors_ligne_garde_date_client`, `test_scan_hors_ligne_rejoue_apres_annulation` (`ANNULE_DEPUIS`), `test_c_est_moi_touche_hors_ligne_puis_synchronise` |
 | EF-13 | Tableau de bord temps réel par cérémonie (indicateurs, arrivées par 15 min, modes, emails, comparaison annuelle) | ✅ | `statistiques.py`, `test_statistiques` |
-| EF-14 | Gestion des invités : recherche, filtres, tri, pagination 25/50/100, fiche avec QR et historique, ajout, modification | ✅ | `test_invites.py` |
+| EF-14 | Gestion des invités : recherche, filtres, tri, pagination 25/50/100, fiche avec QR et historique, ajout, modification (entreprise et fonction obligatoires depuis le 2026-11-02) | ✅ | `test_invites.py` (dont `test_modification_entreprise_et_fonction_obligatoires`) |
 | EF-15 | Actions groupées (valider, renvoyer, exporter ; supprimer pour le super admin) | ✅ | `test_actions_groupees_*`, `test_suppression_d_invites_reservee_au_super_admin` |
 | EF-16 | Exports CSV et Excel ; rapports PDF | ✅ | `test_export_csv_bom_et_xlsx`, `test_rapport_*` |
 | EF-17 | Admin limité à ses cérémonies affectées ; super admin voit tout | ✅ | `test_admin_limite_a_ses_evenements`, `test_super_admin_voit_tout` |

@@ -1,14 +1,14 @@
 ---
 type: index
-verifie: 2026-11-02
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 ---
 
 # Flex’Checking — index du wiki
 
 Point d’entrée de la documentation. L’agent lit cette page en premier pour répondre à une question, puis les
 pages pertinentes, puis vérifie dans le code. Toutes les pages ont été revérifiées le 2026-10-26 sur le commit `44eceb5` (commits `d91d426` et `7e0e071` du
-2026-10-22 compris) ; les pages touchées par la mise à niveau de Node.js (commit `d220011`) ont été revérifiées sur ce commit. Les pages touchées par le pool de connexions Postgres et la correction du rafraîchissement de session (`43f99c5`) ont été revérifiées sur `2523cbb`. Les pages d’inscription (placeholders, `2365b1f`) et du sondage (questionnaire dans l’email n°3) ont été revérifiées sur `bed9942`, et 30 pages (fonctionnalités, architecture, API, ADR, opérations, spécifications, tests) ont été alignées sur ce commit (`3106714`) ; le champ `commit` de chaque page fait foi.
+2026-10-22 compris) ; les pages touchées par la mise à niveau de Node.js (commit `d220011`) ont été revérifiées sur ce commit. Les pages touchées par le pool de connexions Postgres et la correction du rafraîchissement de session (`43f99c5`) ont été revérifiées sur `2523cbb`. Les pages d’inscription (placeholders, `2365b1f`) et du sondage (questionnaire dans l’email n°3) ont été revérifiées sur `bed9942`, et 30 pages (fonctionnalités, architecture, API, ADR, opérations, spécifications, tests) ont été alignées sur ce commit (`3106714`) ; les 31 pages signalées après `115df80` et `107d1f8` ont été revérifiées le 2026-11-03 sur `107d1f8` ; le champ `commit` de chaque page fait foi.
 
 ## Règles
 | Page | Description |
@@ -27,7 +27,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R26 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R27 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels ; R27 scripts VPS non éprouvés sur un vrai serveur) et limitations assumées |
 
 ## Architecture
 | Page | Description |

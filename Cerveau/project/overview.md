@@ -1,8 +1,8 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [README.md, PLAN.md, frontend/src/App.jsx, backend/apps/noyau/donnees_personnelles.py, backend/apps/noyau/urls.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py]
 ---
 

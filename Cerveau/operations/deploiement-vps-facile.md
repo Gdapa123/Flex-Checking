@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: partiel
-verifie: 2026-11-02
-commit: 5a9f3c9
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [infra/vps/commun.sh, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/activer-sauvegardes.sh, infra/vps/sauvegarde.sh, infra/vps/restaurer.sh, infra/vps/mettre-a-jour.sh, docker-compose.prod.yml, infra/Caddyfile.prod, backend/apps/comptes/models.py]
 ---
 
@@ -28,10 +28,9 @@ Le guide détaillé, avec chaque commande expliquée et tous les cas d’erreur,
 - Un accès à la **zone DNS** de `mde.ci` (ou le service informatique de MDE).
 - Le **compte email d’envoi** : adresse (ex. `evenements@mde.ci`), son **mot de passe**, et le nom du
   **serveur SMTP** (ex. `mail.infomaniak.com`, demandez au service informatique).
-- L’**adresse du site** choisie, par exemple `emargement.mde.ci`.
+- L’**adresse du site** retenue : `inscription.mde.ci` (décision du 2026-11-04).
 
-Dans ce guide, remplacez `IP_DU_VPS` par l’adresse IP du serveur (étape 2) et `emargement.mde.ci` par votre
-adresse si elle est différente.
+Dans ce guide, remplacez `IP_DU_VPS` par l’adresse IP du serveur (étape 2).
 
 ---
 
@@ -79,13 +78,13 @@ N’ouvrez **rien d’autre**.
 
 Dans la zone DNS de `mde.ci`, ajoutez **un seul** enregistrement :
 
-- type **A**, nom **`emargement`**, valeur **`IP_DU_VPS`**.
+- type **A**, nom **`inscription`**, valeur **`IP_DU_VPS`**.
 
 Ne touchez à aucun autre enregistrement. Vérifiez depuis le Terminal du Mac (recommencez toutes les
 15 minutes jusqu’à voir l’IP du serveur) :
 
 ```bash
-dig +short emargement.mde.ci
+dig +short inscription.mde.ci
 ```
 
 ⚠️ Attendez que cette commande affiche `IP_DU_VPS` **avant l’étape 6** (sinon le cadenas HTTPS ne peut pas
@@ -133,7 +132,7 @@ Le script pose **4 questions** :
 
 | Question | Exemple |
 |---|---|
-| 1. Adresse du site | `emargement.mde.ci` |
+| 1. Adresse du site | `inscription.mde.ci` |
 | 2. Adresse email d’envoi | `evenements@mde.ci` |
 | 3. Serveur d’envoi SMTP | `mail.infomaniak.com` |
 | 4. Mot de passe du compte email (ne s’affiche pas pendant la frappe) | — |
@@ -164,12 +163,12 @@ sauvegarde est faite immédiatement.
 
 ## Étape 8 — Vérifier (navigateur, 30 min)
 
-1. Ouvrez `https://emargement.mde.ci/super/connexion` : le **cadenas** est affiché ; connectez-vous avec le
+1. Ouvrez `https://inscription.mde.ci/super/connexion` : le **cadenas** est affiché ; connectez-vous avec le
    super admin.
 2. Créez les comptes **admins** depuis l’interface.
 3. Créez une **cérémonie de test**, inscrivez-vous avec votre propre email : l’email n°1 avec le QR code
    arrive (regardez aussi les indésirables).
-4. Sur un téléphone, ouvrez `https://emargement.mde.ci/scan` et scannez le QR : l’email n°2 arrive.
+4. Sur un téléphone, ouvrez `https://inscription.mde.ci/scan` et scannez le QR : l’email n°2 arrive.
 5. Super admin › **Paramètres** › **Données personnelles** : réglez la durée de conservation et l’adresse
    de contact.
 

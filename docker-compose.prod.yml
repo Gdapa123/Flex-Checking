@@ -113,7 +113,9 @@ services:
 
   celery:
     <<: *backend
-    command: celery -A config worker -l info --concurrency ${CELERY_CONCURRENCY:-4} --max-tasks-per-child 500
+    # sans gossip / mingle / heartbeat : échanges inutiles entre workers supprimés (moins de trafic Redis) ;
+    # un processus qui dépasse 256 Mo est recyclé après sa tâche en cours (aucune tâche interrompue)
+    command: celery -A config worker -l info --concurrency ${CELERY_CONCURRENCY:-4} --max-tasks-per-child 500 --max-memory-per-child 262144 --without-gossip --without-mingle --without-heartbeat
     healthcheck:
       test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 5 || exit 1"]
       interval: 60s
@@ -128,7 +130,7 @@ services:
     image: caddy:2-alpine
     logging: *journaux
     environment:
-      DOMAINE: ${DOMAINE:-emargement.mde.ci}
+      DOMAINE: ${DOMAINE:-inscription.mde.ci}
     volumes:
       - ./infra/Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - ./frontend/dist:/srv/frontend:ro

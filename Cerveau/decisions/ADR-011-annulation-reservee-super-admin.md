@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 44eceb5
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invites/GestionInvites.jsx, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 

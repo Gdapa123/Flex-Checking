@@ -910,3 +910,41 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Risques ou limites :** `preparer-serveur.sh` non testé (exige un vrai serveur avec systemd) ; aucun VPS réel
   installé ; certificat Let's Encrypt et envoi SMTP réels non testés ; `mettre-a-jour.sh` testé sans nouvelle
   version à récupérer. Rien n'est commité.
+
+## [2026-11-03] documentation | /wiki-maj : 31 pages revérifiées sur `107d1f8`
+
+- **Contexte :** `lint_wiki.py` signalait 31 pages à revérifier après `3616dd9`, `115df80` et `107d1f8` (champ
+  `commit` non mis à jour bien que la plupart des pages aient été corrigées dans `115df80`).
+- **Modifications :** diffs de code relus (`logs.py`, `serializers.py`, `settings.py`, `vercel.json`, `ci.yml`,
+  `EtatCarte.jsx`, `InscriptionPage.jsx`, `GestionInvites.jsx`, `PanneauInvite.jsx`, `lib/api.js`, `lib/schemas.js`,
+  tests, `conftest.py`, `infra/vps/`). Écarts corrigés :
+  [ADR-007](decisions/ADR-007-environnement-test-vercel.md) (CI Postgres depuis le 2026-11-02 ; quatre passages du
+  sondage et non deux) ; [test-cases](testing/test-cases.md) (nouveaux tests `test_invites`, `test_securite`,
+  `api.test.js`, `schemas.test.js`) ; EF-14 de [functional-requirements](specifications/functional-requirements.md)
+  (entreprise et fonction obligatoires à la modification) ; `logs.py` dans [components](architecture/components.md)
+  (masquage des URL, runserver compris) ; [scope](project/scope.md) (I7 retiré, cible VPS Lite préparée) ;
+  [risques-et-dette](project/risques-et-dette.md) (résolution de R26 replacée sous R26 ; **R27 ajouté** : scripts
+  VPS non éprouvés sur un vrai serveur) ; index (R1–R27). `verifie` / `commit` des 31 pages et de l'index → 2026-11-03 / `107d1f8`.
+- **Fichiers concernés :** `Cerveau/` uniquement (31 pages, `index.md`, `log.md`).
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` → 0 erreur, 0 page à revérifier, 0 avertissement. Aucun test de code lancé
+  (aucun code modifié).
+- **Risques ou limites :** les autres pages ont été comparées aux diffs par recherche ciblée des sujets modifiés, pas relues en
+  entier. `Cerveau/operations/deploiement-vps-facile.pdf` reste non suivi par git.
+
+## [2026-11-03] architecture | Allègement mémoire de la pile Docker
+
+- **Contexte :** application jugée trop gourmande en RAM sur le poste de développement. Mesure, pile de développement démarrée : ≈ 1,6 Go pour l'ensemble des conteneurs (Vite 497 Mo, MySQL 450 Mo, Django 197 Mo, Celery 186 Mo, Celery beat 123 Mo) ; l'essentiel de la mémoire occupée sur le Mac vient de la machine virtuelle Docker Desktop (plafond 7,7 Go) et du navigateur.
+- **Modifications :** `docker-compose.yml` : MySQL `--performance-schema=OFF` (450 → 127 Mo) ; worker Celery `--without-gossip --without-mingle --without-heartbeat`. `docker-compose.prod.yml` : worker Celery avec les mêmes options et `--max-memory-per-child 262144`. `--performance-schema=OFF` en production non appliqué (refusé par le contrôle de permissions de la session, en attente de décision).
+- **Fichiers concernés :** `docker-compose.yml`, `docker-compose.prod.yml`, `Cerveau/operations/deployment.md`
+- **Validation :** `pytest` backend → 275 réussis (MySQL sans performance_schema) ; `docker compose config` (dév. et prod.) valides ; worker de dév. : `celery inspect ping` → pong, tâche `relancer_emails_en_attente` exécutée (SUCCESS). Pile de production non lancée.
+- **Risques ou limites :** sans performance_schema, plus de diagnostic fin des requêtes MySQL en développement. Frontend non modifié : déjà découpé par espace (scan, admin, super admin chargés à la demande).
+
+## [2026-11-04] documentation | Domaine de production retenu : `inscription.mde.ci`
+
+- **Contexte :** décision de l'utilisateur : l'adresse du système sera `inscription.mde.ci` (remplace l'exemple `emargement.mde.ci`).
+- **Modifications :** défaut de `infra/Caddyfile.prod` et exemple de la question 1 de `infra/vps/installer.sh` passés à `inscription.mde.ci` ; guides VPS (enregistrement DNS A `inscription`, `dig`, URL de vérification), `deployment.md` et `scope.md` (domaine retiré des inconnus) mis à jour.
+  Défaut `${DOMAINE:-…}` du service `proxy` de `docker-compose.prod.yml` aligné ensuite, sur demande explicite de l'utilisateur.
+- **Fichiers concernés :** `docker-compose.prod.yml`, `infra/Caddyfile.prod`, `infra/vps/installer.sh`, `Cerveau/operations/deploiement-vps-facile.md`, `Cerveau/operations/deploiement-infomaniak.md`, `Cerveau/operations/deployment.md`, `Cerveau/project/scope.md`
+- **Validation :** `bash -n infra/vps/installer.sh` OK ; `docker compose -f docker-compose.prod.yml config --quiet` sans erreur ; plus aucune occurrence de l'ancien domaine hors `design-source/` (maquette, source brute non modifiée).
+- **PDF :** `Cerveau/operations/deploiement-vps-facile.pdf` régénéré depuis la page Markdown (conversion HTML puis impression Chrome sans interface, A4) ; rendu vérifié visuellement.
+- **Risques ou limites :** le PDF reste non suivi par git ; à régénérer à chaque modification du guide.

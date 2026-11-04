@@ -1,6 +1,6 @@
 # Production : fichiers statiques du frontend (npm run build → frontend/dist) + API Django (Gunicorn/Uvicorn).
 # En-têtes de sécurité (CSP, HSTS) appliqués à l'application web. Certificat HTTPS automatique.
-{$DOMAINE:emargement.mde.ci} {
+{$DOMAINE:inscription.mde.ci} {
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

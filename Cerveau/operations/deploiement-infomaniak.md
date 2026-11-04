@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-03
+commit: 107d1f8
 sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
 ---
 
@@ -54,7 +54,7 @@ de mots de passe de MDE, jamais dans le wiki).
 | À remplacer | Ce que c’est | Exemple / où le trouver |
 |---|---|---|
 | `<IP_DU_VPS>` | adresse IPv4 du serveur | Manager Infomaniak, étape 2.4 |
-| `<DOMAINE>` | adresse du site, sans `https://` | `emargement.mde.ci` |
+| `<DOMAINE>` | adresse du site, sans `https://` | `inscription.mde.ci` (retenue le 2026-11-04) |
 | `<EMAIL_ENVOI>` | adresse qui envoie les emails aux invités | `evenements@mde.ci` |
 | `<SERVEUR_SMTP>` | serveur d’envoi de la messagerie MDE | service informatique de MDE |
 | `<UTILISATEUR_SMTP>` | identifiant du compte d’envoi | souvent identique à `<EMAIL_ENVOI>` |
@@ -71,7 +71,7 @@ images Ubuntu chez Infomaniak, d’après leur documentation. Il est écrit tel 
 | Poste | Choix | Coût |
 |---|---|---|
 | Serveur | **VPS Lite** 2 vCPU / 4 Go RAM, Ubuntu 24.04 | environ 6 à 10 €/mois selon la formule (prix affiché en CHF, à vérifier sur la page VPS Lite) |
-| Adresse du site | sous-domaine du domaine existant (`emargement.mde.ci`) | 0 € |
+| Adresse du site | sous-domaine du domaine existant (`inscription.mde.ci`) | 0 € |
 | Certificat HTTPS | Let’s Encrypt, obtenu et renouvelé seul par Caddy | 0 € |
 | Envoi des emails | messagerie déjà utilisée par MDE (compte dédié) | 0 € de plus |
 | Sauvegardes | copie chiffrée chaque nuit + rapatriement sur un poste MDE | 0 € |

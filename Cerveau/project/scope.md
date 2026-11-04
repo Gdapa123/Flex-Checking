@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-10-13
-commit: dc0c75a
-sources: [PLAN.md, README.md]
+verifie: 2026-11-03
+commit: 107d1f8
+sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/vps/installer.sh]
 ---
 
 # Périmètre
@@ -18,7 +18,7 @@ sources: [PLAN.md, README.md]
   le design l’emporte pour l’apparence.** 26 contradictions C1–C26 y sont listées avec leur décision.
 
 ## Dans le périmètre (✅ implémenté)
-- Écrans invité I1–I8, scan S1–S12, admin A1–A7, super admin SA1–SA9 (numérotation de `PLAN.md` §2).
+- Écrans invité I1–I8 (sauf I7 « adresse déjà inscrite », retiré le 2026-11-02 : [ADR-005](../decisions/ADR-005-anti-enumeration-inscription.md)), scan S1–S12, admin A1–A7, super admin SA1–SA9 (numérotation de `PLAN.md` §2).
 - Ajouts postérieurs au plan, tous implémentés : écran de présentation des étapes avant le formulaire,
   analyses et rapports PDF, erreurs techniques (super admin), temps réel WebSocket, suppressions définitives
   (super admin), page « Infos pratiques », environnement de test Vercel.
@@ -32,7 +32,9 @@ sources: [PLAN.md, README.md]
 - Pas de visuel de couverture dans l’email n°2 (C19).
 
 ## Inconnus ❓
-- Domaine et hébergement de production réels (défaut de `docker-compose.prod.yml` : `emargement.mde.ci`, à confirmer).
+- Hébergement de production réel. Le **domaine est retenu** (2026-11-04) : `inscription.mde.ci`, valeur par défaut de
+  `docker-compose.prod.yml` et `infra/Caddyfile.prod`, exemple de `infra/vps/installer.sh`. Cible préparée : VPS Lite Infomaniak (scripts `infra/vps/`, guides [deploiement-infomaniak](../operations/deploiement-infomaniak.md)
+  et [deploiement-vps-facile](../operations/deploiement-vps-facile.md)) ; aucun serveur réel installé au 2026-11-03.
 - Fournisseur SMTP de production.
 - Logo officiel MDE distinct du logo Flex’Checking (Q3 posée ; le logo Flex’Checking est utilisé partout).
 - Nombre réel d’invités et de cérémonies par an.
