@@ -125,6 +125,10 @@ services:
   celery-beat:
     <<: *backend
     command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
+    # le contrôle de santé de l'image interroge le serveur web (port 8000), que beat ne sert pas :
+    # sans cette ligne, beat est toujours affiché « unhealthy » alors qu'il fonctionne
+    healthcheck:
+      disable: true
 
   proxy:
     image: caddy:2-alpine

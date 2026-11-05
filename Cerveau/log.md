@@ -965,3 +965,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/requirements.txt`
 - **Validation :** `pip install --dry-run -r requirements.txt` sans conflit ; `pip index versions kombu` → 5.7.0 publiée. Tests non relancés (version déjà installée en local, aucun changement effectif sur le poste).
 - **Risques ou limites :** blocage réseau côté Infomaniak à faire lever (règles à recréer, sinon support) ; R27 (scripts VPS non éprouvés) reste ouvert. À ajouter au guide : lancer `installer.sh` dans `tmux` et `ssh -o ServerAliveInterval=30`.
+
+## [2026-11-05] correction | Déploiement VPS : Celery réparé, faux « unhealthy » de celery-beat
+
+- **Contexte :** suite du premier déploiement (entrée du 2026-11-04). Après `git pull` de `bfb237a` et `docker compose up -d --build` sur le serveur : `celery` healthy, super admin créé, `celery-beat` affiché « unhealthy » alors que ses journaux montrent `relancer-emails-en-attente` envoyée toutes les 5 minutes.
+- **Modifications :** `docker-compose.prod.yml`, service `celery-beat` : `healthcheck: disable: true` (il héritait du HEALTHCHECK de `backend/Dockerfile`, qui interroge `http://127.0.0.1:8000/api/sante/`, port que beat ne sert pas). [deployment](operations/deployment.md) mis à jour.
+- **Fichiers concernés :** `docker-compose.prod.yml`, `Cerveau/operations/deployment.md`
+- **Validation :** `docker compose -f docker-compose.prod.yml config --quiet` sans erreur ; option `disable: true` présente dans la configuration résolue. Pas encore appliqué sur le serveur.
+- **Risques ou limites :** plus aucun contrôle de santé pour beat (un beat bloqué ne serait pas signalé par Docker). Ports 80/443 toujours injoignables depuis Internet (blocage côté Infomaniak, en cours de traitement par l'utilisateur).
