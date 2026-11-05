@@ -956,3 +956,12 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `Cerveau/` uniquement (13 pages, `index.md`, `log.md`).
 - **Validation :** `python3 Cerveau/outils/lint_wiki.py` → 0 erreur, 0 page à revérifier, 0 avertissement. Aucun test de code lancé (aucun code modifié).
 - **Risques ou limites :** `Cerveau/operations/deploiement-vps-facile.pdf` inchangé (la page Markdown correspondante n'a changé que dans son frontmatter).
+
+## [2026-11-04] correction | Premier déploiement réel (VPS Lite) : Celery en échec, ports 80/443 bloqués
+
+- **Contexte :** première installation sur le VPS Lite « IHM-Server01 » avec `infra/vps/installer.sh`, domaine `inscription.mde.ci`. Coupure SSH pendant « Attente du démarrage » ; à la relance, l'application ne répond pas après 5 minutes.
+- **Constats :** mysql, redis, django (healthy), migrate (0) et proxy démarrés. (1) Worker Celery en redémarrage : `kombu` non figé, la 5.7.0 installée sur le serveur exige redis-py ≥ 6.1 (`VersionMismatch`, `redis==5.2.1`). (2) Let's Encrypt « Timeout during connect » sur 80 et 443 ; téléphone en 4G : délai dépassé ; `tcpdump` sur `ens3` : aucun paquet vers le serveur sur 80/443, alors que le Firewall du Manager Infomaniak affiche TCP 80, TCP 443 et UDP 443 actifs, que `ufw` est inactif et `INPUT` en ACCEPT, et que le port 22 répond. Le réseau de MDE intercepte le HTTP : les tests `nc` / `curl` depuis le poste de MDE ne sont pas fiables.
+- **Modifications :** `backend/requirements.txt` : `kombu==5.6.2` (version installée en local, avec laquelle passent les 275 tests). Pas encore commité ni poussé : le serveur clone depuis GitHub.
+- **Fichiers concernés :** `backend/requirements.txt`
+- **Validation :** `pip install --dry-run -r requirements.txt` sans conflit ; `pip index versions kombu` → 5.7.0 publiée. Tests non relancés (version déjà installée en local, aucun changement effectif sur le poste).
+- **Risques ou limites :** blocage réseau côté Infomaniak à faire lever (règles à recréer, sinon support) ; R27 (scripts VPS non éprouvés) reste ouvert. À ajouter au guide : lancer `installer.sh` dans `tmux` et `ssh -o ServerAliveInterval=30`.
