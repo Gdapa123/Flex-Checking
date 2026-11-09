@@ -30,6 +30,8 @@ révoquer toutes les sessions d’un compte.
   un jeton à version de session périmée (`jeton_revoque`) ou révoqué à la déconnexion (`acces_revoque`), puis
   vérifie le CSRF (`verifier_csrf`).
 - Compléments postérieurs à la décision, sans la remettre en cause :
+  - **signature durcie** (2026-11-09) : HS256 seul accepté, clé propre aux JWT (`JWT_SIGNING_KEY` ou dérivée du
+    secret Django), `iss`/`aud` exigés ; voir [authentification](../features/authentification.md) ;
   - **déconnexion** : le jeton d'accès est révoqué jusqu'à son expiration (`revoquer_acces`, jti en cache), en plus
     de la liste noire du refresh ; les autres appareils du compte restent connectés ; la connexion temps réel de
     cette session seule est fermée (message `session_fermee` portant le jti, `7e0e071`) ;

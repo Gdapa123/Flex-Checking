@@ -4,6 +4,8 @@ Toutes les valeurs sensibles viennent des variables d'environnement (fichier .en
 du dépôt en développement, non commité ; voir .env.example).
 """
 
+import hashlib
+import hmac
 from datetime import timedelta
 from pathlib import Path
 
@@ -210,7 +212,31 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --- JWT en cookies httpOnly ---
+# Clé de signature propre aux JWT : JWT_SIGNING_KEY si fourni (rotation indépendante : toutes les sessions sont
+# fermées), sinon dérivée de DJANGO_SECRET_KEY par HMAC. Un secret Django réutilisé ailleurs (signatures de la borne,
+# du sondage…) ne permet donc pas de forger un jeton de session, et inversement.
+JWT_SIGNING_KEY = (
+    env("JWT_SIGNING_KEY", default="")
+    or hmac.new(SECRET_KEY.encode(), b"flex-checking/jwt-signature", hashlib.sha256).hexdigest()
+)
+if not DEBUG and len(JWT_SIGNING_KEY) < 32:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured("JWT_SIGNING_KEY doit faire 32 caractères minimum.")
+
 SIMPLE_JWT = {
+    # Méthode de signature imposée par le serveur : seul HS256 est accepté à la vérification, quel que soit l'« alg »
+    # annoncé dans l'en-tête du jeton (« none », HS512, RS256 avec une clé insérée dans l'en-tête… → refusés).
+    # Le contenu (payload) est signé, donc infalsifiable, mais lisible : il ne porte que l'identifiant du compte, la
+    # version de session, le mode borne et les dates, jamais de donnée personnelle ; il voyage en cookie httpOnly.
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": JWT_SIGNING_KEY,
+    "VERIFYING_KEY": "",
+    # émetteur et destinataire exigés : un jeton émis par un autre système, même signé avec la même clé, est refusé
+    "ISSUER": "flex-checking",
+    "AUDIENCE": "flex-checking-api",
+    "LEEWAY": 0,
+    "JWK_URL": None,  # aucune clé n'est jamais lue depuis une adresse indiquée dans le jeton
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MINUTES", default=15)),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=env.int("JWT_REFRESH_HOURS", default=12)),
     "ROTATE_REFRESH_TOKENS": True,

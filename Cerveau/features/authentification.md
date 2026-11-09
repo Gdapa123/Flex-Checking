@@ -55,6 +55,22 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
 - `oublierMoi` (`useMoi.js`, appelé sur 401 et à la déconnexion) efface aussi l'historique du poste de scan en
   `sessionStorage` (`fc-scan-historique-*`, `fc-scan-dernier-*`) : aucun nom d'invité ne reste sur une tablette partagée.
 
+## Signature des jetons (2026-11-09) ✅
+- Méthode imposée par le serveur (`SIMPLE_JWT` dans `backend/config/settings.py`) : **HS256 uniquement** à la
+  vérification ; l'`alg` annoncé par l'en-tête n'est pas suivi (`none`, HS384/HS512 même signés avec la bonne clé,
+  RS256 avec une clé publique jointe en `jwk` → 401). Aucune clé lue depuis le jeton (`JWK_URL` nul, `jku` ignoré).
+- Clé propre aux JWT : `JWT_SIGNING_KEY` (≥ 32 caractères) ou, par défaut, HMAC-SHA256 de `DJANGO_SECRET_KEY` (sel
+  `flex-checking/jwt-signature`) : le secret Django signe d'autres choses (choix de la borne, sondage) mais ne
+  permet pas de forger une session. Changer la clé ferme toutes les sessions.
+- Émetteur `iss = flex-checking` et destinataire `aud = flex-checking-api` exigés ; `LEEWAY` 0.
+- Contenu (payload) **signé, non chiffré** : `token_type`, `exp`, `iat`, `jti`, `user_id`, `vs`, `borne`, `iss`,
+  `aud` — aucune donnée personnelle ; toute modification (compte, expiration, version de session) casse la signature.
+  Chiffrement (JWE) non retenu : non pris en charge par SimpleJWT, nouvelle dépendance, et rien de sensible à cacher
+  dans un cookie httpOnly.
+- Preuves : `backend/apps/noyau/tests/test_jwt.py` (API, rafraîchissement, `AccessToken` du temps réel).
+- Effet du déploiement : les jetons émis avant (sans `iss`/`aud`, autre clé) sont refusés → **une reconnexion
+  unique** de chaque compte, bornes comprises.
+
 ## Requêtes
 - `CookieJWTAuthentication` : lit `fc_access`, refuse compte désactivé et jeton révoqué, **vérifie le CSRF** sur
   les requêtes modifiantes ; `lib/api.js` envoie `X-CSRFToken` et appelle `/api/auth/csrf/` si besoin.

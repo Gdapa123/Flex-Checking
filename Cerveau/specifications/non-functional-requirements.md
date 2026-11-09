@@ -12,7 +12,7 @@ sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, front
 | ID | Exigence | Mise en œuvre |
 |---|---|---|
 | ENF-S1 | Mots de passe forts et hachés | Argon2, ≥ 10 caractères, `CommonPasswordValidator` |
-| ENF-S2 | Sessions non volables par script et révocables | JWT en cookies httpOnly, CSRF, `version_session` ([authentification](../features/authentification.md)) |
+| ENF-S2 | Sessions non volables par script et révocables | JWT en cookies httpOnly, CSRF, `version_session`, signature HS256 imposée avec clé propre et `iss`/`aud` exigés (2026-11-09, `test_jwt.py` : `alg: none`, changement d'algorithme, contenu modifié refusés) ([authentification](../features/authentification.md)) |
 | ENF-S3 | Droits appliqués côté serveur | `CompteUtilisable` par défaut, `evenements_visibles` sur chaque queryset |
 | ENF-S4 | Limites anti-abus | voir tableau ci-dessous ; IP réelle via `NUM_PROXIES` (X-Forwarded-For non falsifiable) |
 | ENF-S5 | Pas de fuite de données personnelles | QR = jeton anonyme ; journal, logs (filtres `MasquerDonneesPersonnelles`, `MasquerParametresUrl`), WebSocket et erreurs sans email ni téléphone ; jeton du lien de sondage masqué dans les journaux (`logs.JETON_SONDAGE_RE`, filtre de `infra/Caddyfile.prod`) |
