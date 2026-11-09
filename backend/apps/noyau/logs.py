@@ -6,8 +6,13 @@ EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 JETON_SONDAGE_RE = re.compile(r"(/sondages?/)[^/?#\s\"']+")
 
 
+# jeton de session (JWT : en-tête et contenu en base64 JSON, commençant par « eyJ ») : jamais écrit en clair, par
+# précaution (les cookies ne sont pas journalisés, mais un jeton pourrait figurer dans un message d'exception)
+JWT_RE = re.compile(r"eyJ[\w-]{5,}\.eyJ[\w-]{5,}\.[\w-]*")
+
+
 def masquer_jetons(texte):
-    return JETON_SONDAGE_RE.sub(r"\1[jeton]", texte)
+    return JWT_RE.sub("[jwt]", JETON_SONDAGE_RE.sub(r"\1[jeton]", texte))
 
 
 TEL_RE = re.compile(r"(?:\+225[\s.]?)?\b0[1579](?:[\s.]?\d{2}){4}\b")

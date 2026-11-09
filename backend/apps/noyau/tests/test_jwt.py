@@ -6,15 +6,20 @@ un attaquant, puis le présente à l'API : il doit être refusé (401), jamais a
 
 import base64
 import json
+from datetime import timedelta
 
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
+from django.utils.timezone import now as timezone_now
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken
+
+from apps.comptes.jetons import purger_jetons
 
 from .conftest import client_connecte
 
@@ -132,3 +137,72 @@ def test_rafraichissement_et_temps_reel_refusent_un_jeton_forge(session):
         AccessToken(f"{b64({**e, 'alg': 'none'})}.{b64(p)}.")
     with pytest.raises(TokenError):
         AccessToken(jwt.encode(p, settings.JWT_SIGNING_KEY, algorithm="HS512"))
+
+
+def test_marqueur_borne_retire_refuse(admin):
+    # une borne libre-service ne peut pas se donner une session complète en retirant « borne » du jeton
+    borne = client_connecte(admin)
+    assert borne.post("/api/auth/borne/").status_code == 204
+    entete, contenu, signature = decouper(borne.cookies[settings.JWT_COOKIE_ACCESS].value)
+    assert contenu["borne"] is True
+    sans_borne = {k: v for k, v in contenu.items() if k != "borne"}
+    assert appel(f"{b64(entete)}.{b64(sans_borne)}.{signature}").status_code == 401
+    assert appel(f"{b64(entete)}.{b64({**contenu, 'borne': False})}.{signature}").status_code == 401
+
+
+def test_jeton_de_rafraichissement_jamais_stocke_en_base(admin):
+    client = client_connecte(admin)
+    assert OutstandingToken.objects.filter(user=admin).exists()
+    assert not OutstandingToken.objects.exclude(token="").exists()
+    # la session continue de fonctionner : rotation, liste noire de l'ancien jeton, déconnexion
+    ancien = client.cookies[settings.JWT_COOKIE_REFRESH].value
+    assert client.post("/api/auth/rafraichir/").status_code == 204
+    assert BlacklistedToken.objects.filter(token__jti=decouper(ancien)[1]["jti"]).exists()
+    assert not OutstandingToken.objects.exclude(token="").exists()
+    rejeu = APIClient(enforce_csrf_checks=True)
+    rejeu.get("/api/auth/csrf/")
+    rejeu.credentials(HTTP_X_CSRFTOKEN=rejeu.cookies["fc_csrftoken"].value)
+    rejeu.cookies[settings.JWT_COOKIE_REFRESH] = ancien
+    assert rejeu.post("/api/auth/rafraichir/").status_code in (401, 409)  # 409 : course entre onglets (< 30 s)
+    assert client.get("/api/auth/moi/").status_code == 200
+    assert client.post("/api/auth/deconnexion/").status_code == 204
+
+
+def test_purge_vide_les_anciens_jetons_et_supprime_les_expires(admin):
+    from django.utils import timezone
+
+    maintenant = timezone.now()
+    ancien = OutstandingToken.objects.create(user=admin, jti="a" * 32, token="x", expires_at=maintenant)
+    OutstandingToken.objects.filter(pk=ancien.pk).update(
+        token="eyJ.ancien.jeton", expires_at=maintenant + timedelta(hours=1)
+    )
+    expire = OutstandingToken.objects.create(
+        user=admin, jti="b" * 32, token="", expires_at=maintenant - timedelta(hours=1)
+    )
+    resultat = purger_jetons()
+    assert resultat == {"textesVides": 1, "supprimes": 1}
+    assert OutstandingToken.objects.get(pk=ancien.pk).token == ""
+    assert not OutstandingToken.objects.filter(pk=expire.pk).exists()
+
+
+def test_cron_purge_les_jetons(settings, admin):
+    settings.CRON_SECRET = "s" * 40
+    OutstandingToken.objects.create(user=admin, jti="c" * 32, token="", expires_at=timezone_now() - timedelta(days=1))
+    r = APIClient().get("/api/taches-planifiees/sondages/", HTTP_AUTHORIZATION=f"Bearer {'s' * 40}")
+    assert r.status_code == 200 and r.json()["jetons"]["supprimes"] == 1
+
+
+def test_jwt_masque_dans_les_journaux_et_les_erreurs(session):
+    import logging
+
+    from apps.noyau.erreurs import enregistrer
+    from apps.noyau.logs import MasquerDonneesPersonnelles
+    from apps.noyau.models import ErreurTechnique
+
+    _, jeton = session
+    record = logging.LogRecord("x", logging.ERROR, __file__, 1, "jeton refusé : %s", (jeton,), None)
+    MasquerDonneesPersonnelles().filter(record)
+    assert jeton not in record.getMessage() and "[jwt]" in record.getMessage()
+    enregistrer("SERVEUR", "TokenError", f"jeton {jeton}", details=f"cookie fc_access={jeton}")
+    e = ErreurTechnique.objects.latest("pk")
+    assert jeton not in e.message and jeton not in e.details

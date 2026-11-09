@@ -1073,3 +1073,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `57b619d` et la revérification du wiki poussés (`f76e789..e5c24d1`) ; frontend `flex-checking` redéployé au push (« Ready ») ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
 - **Validation :** en ligne : `/api/sante/` 200 ; `/api/auth/moi/` avec un jeton `alg: none` → 401 ; frontend `/connexion` 200. Connexion réelle non testée en ligne (mot de passe des comptes en ligne non utilisé).
 - **Risques ou limites :** toutes les sessions Vercel ouvertes avant le déploiement sont refusées une fois ; VPS `inscription.mde.ci` non mis à jour.
+
+## [2026-11-09] sécurité | Jetons de rafraîchissement jamais stockés en clair, purge, masquage des JWT
+
+- **Contexte :** question de l’utilisateur (« as-tu bien vérifié ce que pourrait présenter le JWT ? ») : revue de tous les endroits où le jeton passe. Cookies, corps de réponse, stockage navigateur, WebSocket et journaux : sains. Faille trouvée : SimpleJWT stocke chaque jeton de rafraîchissement en entier dans `token_blacklist_outstandingtoken.token`, et ce texte rafraîchissait une session (test : 204) — risque R29.
+- **Modifications :** `apps/comptes/jetons.py` (signal `pre_save` qui vide le texte, `purger_jetons`) branché dans `ComptesConfig.ready` ; purge dans `tasks.purger` (horaire) et `CronSondagesView` (clé `jetons`) ; `logs.JWT_RE` / `masquer_jetons` et `erreurs.masquer` masquent les JWT ; tests ajoutés à `test_jwt.py` (13 au total) ; `test_sondage.test_cron_protege_par_le_secret` attend la clé `jetons`.
+- **Fichiers concernés :** `backend/apps/comptes/jetons.py`, `backend/apps/comptes/apps.py`, `backend/apps/noyau/tasks.py`, `backend/apps/noyau/vues_sondage.py`, `backend/apps/noyau/logs.py`, `backend/apps/noyau/erreurs.py`, `backend/apps/noyau/tests/test_jwt.py`, `backend/apps/noyau/tests/test_sondage.py`, wiki (authentification, risques R29, exigences, cas de test, index)
+- **Validation :** `ruff` OK ; `pytest` 307 passed ; signal retiré → `test_jeton_de_rafraichissement_jamais_stocke_en_base` échoue ; Vitest 83/83 ; Playwright 7/7.
+- **Risques ou limites :** aucune reconnexion nécessaire ; sur Vercel, les textes déjà enregistrés sont vidés au prochain cron ; aucune migration (le champ reste, vide).

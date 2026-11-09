@@ -29,7 +29,8 @@ CHIFFRES_RE = re.compile(r"\d+")
 
 
 def masquer(texte):
-    return TEL_RE.sub("[tél]", EMAIL_RE.sub("[email]", texte or ""))
+    """Emails, téléphones, liens de sondage et jetons de session (JWT) masqués."""
+    return masquer_jetons(TEL_RE.sub("[tél]", EMAIL_RE.sub("[email]", texte or "")))
 
 
 def _signature(source, type_, message, lieu):
@@ -42,7 +43,7 @@ def enregistrer(source, type_, message, *, lieu="", details="", navigateur=""):
     try:
         type_ = (type_ or "Erreur")[:120]
         message = masquer(message)[:1000] or "(sans message)"
-        lieu = masquer_jetons(masquer(lieu.split("?")[0].split("#")[0]))[:300]
+        lieu = masquer(lieu.split("?")[0].split("#")[0])[:300]
         details = masquer(details)[:8000]
         signature = _signature(source, type_, message, lieu)
         maintenant = timezone.now()

@@ -288,6 +288,15 @@ Acceptés par choix documenté : R6, R9, R22, R23.
 
 Revérifiés le 2026-10-26 sur `44eceb5`, sans changement : R5, R6, R7, R9, R10, R11, R12 (Tailwind `^3.4.17`,
 Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
+## R29 — Jetons de rafraîchissement en clair dans la base (sécurité, élevé) — ✅ RÉSOLU le 2026-11-09
+- **Constat** : `OutstandingToken.token` (SimpleJWT, liste noire) contenait chaque jeton de rafraîchissement ;
+  quiconque lisait la base (identifiants de la base, console Neon, copie de sauvegarde) pouvait rafraîchir une session
+  de n'importe quel compte, super admin compris, pendant 12 h (vérifié par un test : 204). Table jamais purgée.
+- **Résolution** : texte vidé avant chaque enregistrement, anciens textes vidés et jetons expirés supprimés chaque
+  heure (VPS) ou à chaque cron (Vercel), JWT masqués dans les journaux. Voir [authentification](../features/authentification.md).
+- **Limite** : sur Vercel, les textes enregistrés avant le déploiement restent jusqu'au prochain cron (8 h, 12 h, 16 h,
+  20 h UTC) ; ils expirent de toute façon en 12 h au plus.
+
 ## R28 — QR codes malveillants à l’accueil et faux emails d’invitation (sécurité, moyen) — 🟡 ATTÉNUÉ le 2026-11-09
 - **Constat** : le scanner n’ouvrait déjà aucun lien (texte envoyé comme `qrToken`, recherche ORM exacte), mais le
   serveur acceptait tout texte de 200 caractères sans filtre des caractères de contrôle, et un QR code étranger

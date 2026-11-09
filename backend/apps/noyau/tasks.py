@@ -126,9 +126,13 @@ def anonymiser_donnees():
 
 @shared_task
 def purger():
-    """Fichiers d'export oubliés et erreurs techniques de plus de 30 jours."""
+    """Fichiers d'export oubliés, erreurs techniques de plus de 30 jours, jetons de session expirés (et texte des
+    jetons enregistrés avant `comptes.jetons`)."""
+    from apps.comptes.jetons import purger_jetons
+
     from .erreurs import purger as purger_erreurs
     from .taches import purger_exports
 
     purger_exports()
     purger_erreurs()
+    purger_jetons()

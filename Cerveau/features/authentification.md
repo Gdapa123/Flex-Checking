@@ -67,7 +67,16 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
   `aud` — aucune donnée personnelle ; toute modification (compte, expiration, version de session) casse la signature.
   Chiffrement (JWE) non retenu : non pris en charge par SimpleJWT, nouvelle dépendance, et rien de sensible à cacher
   dans un cookie httpOnly.
-- Preuves : `backend/apps/noyau/tests/test_jwt.py` (API, rafraîchissement, `AccessToken` du temps réel).
+- **Jetons de rafraîchissement jamais stockés en clair** (2026-11-09) : SimpleJWT écrivait chaque jeton en entier
+  dans `token_blacklist_outstandingtoken.token` ; lu dans la base, il ouvrait une session de 12 h (constaté : 204 au
+  rafraîchissement pour un compte à `version_session` 0). Signal `pre_save` (`comptes.jetons.vider_texte_du_jeton`,
+  branché dans `ComptesConfig.ready`) : texte vidé, seuls `jti`, compte et dates restent (suffisants pour la liste
+  noire et la détection des rotations). `comptes.jetons.purger_jetons` vide les anciens textes et supprime les jetons
+  expirés : tâche horaire `tasks.purger` (VPS) et cron Vercel (`CronSondagesView`, clé `jetons`).
+- JWT masqués (`[jwt]`) dans les journaux et les erreurs techniques (`logs.masquer_jetons`, `erreurs.masquer`).
+- Marqueur `borne` retiré ou mis à faux : signature cassée, 401.
+- Preuves : `backend/apps/noyau/tests/test_jwt.py` (13 tests : API, rafraîchissement, `AccessToken` du temps réel,
+  stockage, purge, cron, masquage, borne).
 - Effet du déploiement : les jetons émis avant (sans `iss`/`aud`, autre clé) sont refusés → **une reconnexion
   unique** de chaque compte, bornes comprises.
 

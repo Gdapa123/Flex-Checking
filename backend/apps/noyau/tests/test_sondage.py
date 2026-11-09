@@ -126,7 +126,7 @@ def test_cron_protege_par_le_secret(ceremonie_hier, settings):
     settings.CRON_SECRET = secret
     assert c.get("/api/taches-planifiees/sondages/", HTTP_AUTHORIZATION="Bearer faux").status_code == 404
     r = c.get("/api/taches-planifiees/sondages/", HTTP_AUTHORIZATION=f"Bearer {secret}")
-    assert r.status_code == 200 and set(r.json()) == {"programmes", "envoyes", "anonymisation"}
+    assert r.status_code == 200 and set(r.json()) == {"programmes", "envoyes", "anonymisation", "jetons"}
 
 
 # ---------------------------------------------------------------- page publique

@@ -15,6 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.comptes.jetons import purger_jetons
 from apps.comptes.permissions import EstSuperAdmin
 from apps.comptes.throttles import LimiteIpPartagee
 
@@ -209,6 +210,8 @@ class CronSondagesView(APIView):
         resultat = sondages.planifier_sondages()
         # sans Celery Beat, la conservation limitée des données personnelles passe par le même cron quotidien
         resultat["anonymisation"] = anonymiser_donnees_expirees()
+        # jetons de session : texte jamais conservé en base, jetons expirés supprimés (voir comptes.jetons)
+        resultat["jetons"] = purger_jetons()
         return Response(resultat)
 
 
