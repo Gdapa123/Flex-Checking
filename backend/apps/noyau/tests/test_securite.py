@@ -303,3 +303,9 @@ def test_changement_de_mot_de_passe_limite_par_compte(admin):
         for i in range(6)
     ]
     assert codes[:5] == [400] * 5 and codes[5] == 429
+
+
+def test_api_jamais_affichee_dans_un_cadre(client):
+    # contrôle en ligne du 2026-11-09 : DENY sur toute l'API, y compris la réponse directe du contrôle de santé
+    for url in ("/api/sante/", "/api/auth/csrf/", "/api/evenements/"):
+        assert client.get(url)["X-Frame-Options"] == "DENY", url

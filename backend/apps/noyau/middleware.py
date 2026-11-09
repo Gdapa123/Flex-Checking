@@ -70,4 +70,5 @@ class SanteMiddleware:
         reponse["X-Content-Type-Options"] = "nosniff"
         reponse["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         reponse["Referrer-Policy"] = "no-referrer"
+        reponse["X-Frame-Options"] = "DENY"  # XFrameOptionsMiddleware n'est pas atteint
         return reponse

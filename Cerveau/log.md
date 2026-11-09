@@ -1183,3 +1183,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/noyau/{cartes_invitation,ics,models,serializers,temps_reel,vues_admin,vues_public}.py`, `backend/apps/noyau/tests/test_carte_invitation.py` (19), `frontend/src/lib/{carteInvitation,schemas}.js`, `frontend/src/features/super/Evenements.jsx`, `frontend/tests/schemaLien.test.js`, `infra/Caddyfile.prod`, `frontend/vercel.json` ; wiki (ADR-016, API, exigences non fonctionnelles).
 - **Validation :** `ruff` OK ; `makemigrations --check` OK ; `pytest` 404 passed ; Vitest 102/102 ; lint et build OK ; Playwright 8/8.
 - **Risques ou limites :** limites de débit non éprouvées en ligne (éviter de bloquer l’IP du bureau ; couvertes par les tests) ; en-têtes de l’API à revérifier après déploiement et mise à jour du VPS.
+
+## [2026-11-09] déploiement | Vercel : carte d’invitation, revue, en-têtes de l’API ; guide des admins
+
+- **Contexte :** suite de la demande « commit, push, déploie sur Vercel, mets à jour le cerveau » et « donne-moi un petit guide pour les admins ».
+- **Modifications :** `40d0682` poussé ; migration `0013_carte_invitation` appliquée sur Neon (URL non poolée, fichier de variables privé supprimé aussitôt) avant le code ; backend et frontend déployés. Contrôle en ligne après déploiement : API en `X-Frame-Options: DENY` (corrigé), sauf `/api/sante/` (réponse directe du middleware de santé) → `DENY` ajouté dans `middleware` + `test_api_jamais_affichee_dans_un_cadre`, redéployé. Nouvelle page [operations/guide-admins.md](operations/guide-admins.md) (libellés relevés dans l’interface).
+- **Fichiers concernés :** `backend/apps/noyau/middleware.py`, `backend/apps/noyau/tests/test_securite.py`, `infra/Caddyfile.prod` (commentaire), `Cerveau/operations/guide-admins.md`, `Cerveau/index.md`, exigences non fonctionnelles.
+- **Validation :** `pytest` 405 passed ; contrôle en ligne Vercel : 32/33, le point restant étant une attente erronée du script (envoi de carte sans session → 401, refus attendu).
+- **Risques ou limites :** VPS `inscription.mde.ci` à mettre à jour (`infra/vps/mettre-a-jour.sh`, applique `0013`) ; en-têtes de l’API à revérifier ensuite sur le VPS.
