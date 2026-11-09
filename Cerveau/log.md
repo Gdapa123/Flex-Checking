@@ -1144,3 +1144,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/noyau/{suivi_emails,adresses,vues_public,emails,validation,serializers}.py`, `backend/config/settings.py`, tests `test_a_contacter.py`, `test_suivi_emails.py`, `test_corrections_invitation.py` ; `frontend/src/features/admin/SuiviEmails.jsx`, `frontend/src/features/super/{Evenements,Parametres}.jsx`, `frontend/src/lib/schemas.js`, tests `suiviEmails.test.jsx`, `schemaLien.test.js` ; wiki (tableau de bord, API, ADR-015).
 - **Validation :** `ruff` OK ; `makemigrations --check` OK ; `pytest` 385 passed ; Vitest 99/99 ; lint et build OK ; Playwright 7/7.
 - **Risques ou limites :** liste des extensions nationales finie (`adresses.EXTENSIONS_REELLES`) : un domaine national absent peut encore recevoir une suggestion, jamais appliquée sans clic ; couleurs d’icônes mises en cache 60 s (icônes d’un nouveau programme disponibles sous une minute).
+
+## [2026-11-09] déploiement | Vercel : invités à contacter, corrections du jour, revue de code (`8d7753a`)
+
+- **Contexte :** « /code-review et corrige test commit et deploie », puis autorisation explicite de l’utilisateur pour récupérer les variables Vercel.
+- **Modifications :** `8d7753a` poussé sur `main` (frontend `flex-checking` redéployé au push, « Ready ») ; migration `0012_liens_ceremonie` appliquée à la base Neon avec l’URL non poolée (`vercel env pull` dans un fichier privé hors dépôt, supprimé aussitôt) **avant** le code ; backend `flex-checking-api` déployé par `vercel deploy --prod --scope mde-it` (« Ready »).
+- **Validation :** en ligne : `/api/sante/` 200 ; `/api/public/emails/images/ic-check-18794E.png` 200 (`image/png`, `Cache-Control: public, max-age=31536000, immutable`) ; couleur inconnue 404 ; `/api/auth/moi/` sans session 401 ; frontend 200 et proxy `/api` 200. Emails n°1 et n°2 non envoyés en ligne.
+- **Risques ou limites :** VPS `inscription.mde.ci` non mis à jour (la migration s’y appliquera à la mise à jour) ; heure 12h30 → 14h30 à corriger dans l’écran Cérémonies.
