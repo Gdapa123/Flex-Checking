@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-11-09
+commit: f55527e
 sources: [PLAN.md, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, frontend/src/features/auth/ChangerMotDePasse.jsx, frontend/src/features/auth/RequireRole.jsx]
 ---
 

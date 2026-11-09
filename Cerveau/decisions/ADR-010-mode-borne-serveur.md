@@ -2,7 +2,7 @@
 type: decision
 statut: acceptée
 verifie: 2026-11-09
-commit: c72f9ba
+commit: f55527e
 sources: [backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/fileHorsLigne.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_durcissement.py]
 ---
 

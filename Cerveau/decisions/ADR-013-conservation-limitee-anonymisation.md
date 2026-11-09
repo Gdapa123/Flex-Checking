@@ -2,7 +2,7 @@
 type: decision
 statut: acceptée
 verifie: 2026-11-09
-commit: 021396e
+commit: f55527e
 sources: [backend/apps/noyau/donnees_personnelles.py, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/vues_sondage.py]
 ---
 

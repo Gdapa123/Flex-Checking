@@ -2,7 +2,7 @@
 type: operations
 statut: partiel
 verifie: 2026-11-09
-commit: c72f9ba
+commit: f55527e
 sources: [frontend/src/lib/schemas.js, frontend/src/features/scan/ScanPoste.jsx, backend/apps/noyau/validation.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/templates/emails/invitation.html, backend/templates/emails/invitation.txt]
 ---
 

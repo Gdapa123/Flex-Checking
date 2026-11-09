@@ -2,7 +2,7 @@
 type: feature
 statut: implémenté
 verifie: 2026-11-09
-commit: 021396e
+commit: f55527e
 sources: [backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/exceptions.py, frontend/src/lib/signalement.js, frontend/src/components/ui/FiletErreur.jsx, frontend/src/features/super/Erreurs.jsx]
 ---
 

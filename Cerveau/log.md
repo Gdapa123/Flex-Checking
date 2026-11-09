@@ -1097,3 +1097,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/requirements.txt`, `backend/requirements-dev.txt`, `backend/config/settings.py`, `backend/config/settings_test.py`, `backend/apps/comptes/views.py`, `backend/apps/comptes/validateurs.py`, `backend/apps/noyau/alertes.py`, `backend/apps/noyau/tasks.py`, `backend/apps/noyau/erreurs.py`, `backend/apps/noyau/journal.py`, `backend/apps/noyau/journal_texte.py`, `backend/apps/noyau/serializers.py`, `backend/apps/noyau/tests/test_securite_comptes.py`, `.github/workflows/ci.yml`, `.github/dependabot.yml`, wiki (analyse, R30, authentification, erreurs techniques, intégrations, exigences, installation, tests, index)
 - **Validation :** `ruff` OK ; `pytest` 317 passed ; Vitest 83/83 ; build OK ; Playwright 7/7 ; `pip-audit` sur les dépendances de production : aucune vulnérabilité ; `npm audit` : 0 ; démarrage simulé sans Daphne (`check --deploy`, ASGI) ; appel réel à Pwned Passwords vérifié. CI GitHub non encore exécutée sur ces changements.
 - **Risques ou limites :** appel HTTPS sortant nécessaire depuis le VPS et Vercel (sinon contrôle sauté, journalisé) ; les alertes dépendent du SMTP (SPF de `mde.ci` invalide, R28) ; MFA non faite ; non commité, non déployé.
+
+## [2026-11-09] documentation | /wiki-maj : 30 pages revérifiées sur `f55527e`
+
+- **Contexte :** `f55527e` touche des fichiers cités par 30 pages (réglages, vues des comptes, erreurs, tâches, journal, CI).
+- **Modifications :** diff relu : le contenu documenté change pour l’authentification, les erreurs techniques, les intégrations, les exigences, l’installation, les tests, les risques (R30) et l’analyse, mis à jour dans `f55527e` ; pour les autres pages, seuls `verifie` et `commit` changent.
+- **Fichiers concernés :** frontmatter des pages signalées
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier.
+- **Risques ou limites :** aucun.

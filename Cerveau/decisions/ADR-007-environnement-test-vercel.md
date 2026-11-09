@@ -2,7 +2,7 @@
 type: decision
 statut: acceptée
 verifie: 2026-11-09
-commit: 021396e
+commit: f55527e
 sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 

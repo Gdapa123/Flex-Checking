@@ -2,7 +2,7 @@
 type: analyse
 statut: partiel
 verifie: 2026-11-09
-commit: a7fce46
+commit: f55527e
 sources: [backend/config/settings.py, backend/requirements.txt, backend/requirements-dev.txt, backend/apps/comptes/views.py, backend/apps/comptes/validateurs.py, backend/apps/noyau/alertes.py, backend/apps/noyau/erreurs.py, .github/workflows/ci.yml, .github/dependabot.yml]
 ---
 

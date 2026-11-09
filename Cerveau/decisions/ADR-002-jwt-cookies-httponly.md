@@ -2,7 +2,7 @@
 type: decision
 statut: acceptée
 verifie: 2026-11-09
-commit: 57b619d
+commit: f55527e
 sources: [PLAN.md, backend/apps/comptes/authentication.py, backend/apps/comptes/views.py, backend/apps/comptes/permissions.py, backend/apps/noyau/consumers.py, backend/config/settings.py, frontend/src/lib/api.js]
 ---
 

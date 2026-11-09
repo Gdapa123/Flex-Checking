@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-26
-commit: 2523cbb
+verifie: 2026-11-09
+commit: f55527e
 sources: [backend/apps/comptes/views.py, backend/apps/noyau/temps_reel.py, backend/apps/noyau/consumers.py, backend/config/asgi.py, backend/apps/comptes/authentication.py, frontend/src/lib/tempsReel.js, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, backend/apps/noyau/tests/test_temps_reel.py, frontend/tests/tempsReel.test.js]
 ---
 
