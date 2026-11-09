@@ -223,6 +223,8 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "badge_present": f"Présent·e · {dates.heure_dt(source.present_le)}" if source.present_le else "Présent·e",
         "expediteur": p.expediteur,
         "lien_confidentialite": f"{settings.APP_PUBLIC_URL}/confidentialite",
+        # seul site officiel, rappelé aux invités contre les faux emails à QR code piégé (« quishing »)
+        "site_officiel": urlsplit(settings.APP_PUBLIC_URL).netloc,
         "ic": {
             nom: image(f"ic-{nom}-{c.strip('#')}", icone_png(nom, c))
             for nom, c in [

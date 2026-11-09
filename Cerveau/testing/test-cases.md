@@ -15,8 +15,8 @@ Volumes : voir [test-strategy](test-strategy.md) (273 tests backend exécutés l
 | Fichier | Couvre | Page |
 |---|---|---|
 | `test_inscription.py` | infos publiques, lien invalide, inscription + email 1, refus par état et date limite, doublon (même réponse + renvoi), renvois automatiques limités, consentement, validation, renvoi du QR, unicité des codes, .ics, agenda, entreprise/fonction obligatoires | [inscription](../features/inscription.md) |
-| `test_emargement.py` | premier passage + magazine, idempotence, invalide / autre événement, un seul champ, annulation réservée au super admin et sans second magazine, magazine inactif, hors ligne (date client, rejeu), limitation des codes (non contournable par le poste, codes valides jamais bloqués), récents, **concurrence**, droits | [scan](../features/scan-emargement.md), [hors-ligne](../features/hors-ligne.md) |
-| `test_emails.py` | échec après 3 relances, variables et échappement, lien magazine en clair, envoi, boutons vers infos pratiques | [emails](../features/emails.md) |
+| `test_emargement.py` | premier passage + magazine, idempotence, invalide / autre événement, un seul champ, annulation réservée au super admin et sans second magazine, magazine inactif, hors ligne (date client, rejeu), limitation des codes (non contournable par le poste, codes valides jamais bloqués), QR codes étrangers (2026-11-09 : lien, Wi‑Fi, injection, longueurs voisines → `CODE_INVALIDE` sans requête en base ; caractères de contrôle → 400 ; jetons générés toujours au bon format), récents, **concurrence**, droits | [scan](../features/scan-emargement.md), [hors-ligne](../features/hors-ligne.md) |
+| `test_emails.py` | échec après 3 relances, variables et échappement, lien magazine en clair, envoi, boutons vers infos pratiques, mention « ne pas répondre », mise en garde contre les QR codes piégés (email n°1) | [emails](../features/emails.md) |
 | `test_invites.py` | compteurs et pagination, recherche (dont code), filtres et tris, ajout manuel, modification + historique, entreprise et fonction obligatoires à la modification (`test_modification_entreprise_et_fonction_obligatoires`, 2026-11-02), renvoi, actions groupées (synchrones, Celery > 50), exports CSV/XLSX, export async, QR, statistiques (tranche en cours calculée par le serveur), renvois groupés limités par heure, formules neutralisées, purge, renvoi du magazine refusé s'il est désactivé | [gestion-invites](../features/gestion-invites.md) |
 | `test_permissions.py` | non connecté, cookies httpOnly, mauvais mot de passe + limite, CSRF, compte désactivé, rafraîchir/déconnexion, périmètre admin, X-Forwarded-For falsifié, limite par compte | [authentification](../features/authentification.md) |
 | `test_securite.py` | révocation des sessions (réinitialisation, changement, WebSocket), mot de passe temporaire bloquant, identifiants non numériques, corps non-objet, caractères de contrôle, .ics, formules, journal d’accès sans recherche (production et runserver de Daphne, `test_journal_du_serveur_de_developpement_sans_recherche`, 2026-11-02), santé, vérification et changement du mot de passe limités par compte (dont mot de passe de l'hôte) | [non-functional](../specifications/non-functional-requirements.md) |
@@ -35,7 +35,7 @@ Volumes : voir [test-strategy](test-strategy.md) (273 tests backend exécutés l
 | `test_theme.py` | tokens de référence, contrastes, couleur de texte, Argon2 en production | — |
 
 ## Frontend (`frontend/tests/`)
-`tokens`, `schemas` (dont entreprise et fonction exigées à la modification, `schemaInviteComplet`), `api` (2026-11-02 : rafraîchissement de session sur un 401 de `/auth/moi/` puis requête rejouée, pas de rafraîchissement sur un échec de connexion, 401 rendu si le rafraîchissement échoue), `format`, `agenda`, `connexion` (chemin interne), `garde` (401, 503, hors ligne),
+`tokens`, `schemas` (2026-11-09 : `natureQr` invitation / inscription / lien / inconnu ; dont entreprise et fonction exigées à la modification, `schemaInviteComplet`), `api` (2026-11-02 : rafraîchissement de session sur un 401 de `/auth/moi/` puis requête rejouée, pas de rafraîchissement sur un échec de connexion, 401 rendu si le rafraîchissement échoue), `format`, `agenda`, `connexion` (chemin interne), `garde` (401, 503, hors ligne),
 `confirmation` (scrollTo renvoyant une promesse), `tableauDeBord` (abréviations PAMP/PASD, graphique des arrivées vide ou rempli), `resultat` (résultat de scan), `signalement`, `tempsReel`, `analyses`,
 `sondage` (trois questions obligatoires, lien expiré, délai dépassé pendant la saisie, appareil déjà utilisé, déjà
 répondu, indicateurs et commentaires, jeton jamais transmis aux signalements), `suiviEmails` (compteurs, échecs et
@@ -43,10 +43,11 @@ renvoi après confirmation, email de test, emails désactivés, carte de l'email
 retrait d'un « C’est moi » expiré `CHOIX_BORNE_INVALIDE` puis rejeu des suivants ; arrêt sur un autre 403), `confidentialite` (2026-10-22 : durée et contact affichés, validation des réglages 1 à 60 mois et email facultatif), `focusDialogue` (2026-11-06 : dans `PanneauLateral` et `Dialogue`, le curseur reste dans le champ en cours de saisie malgré un `onFermer` recréé à chaque rendu ; Échap appelle la dernière fonction de fermeture).
 
 ## E2E (`frontend/e2e/`)
-- `parcours.spec.js` (2 tests) : inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export,
+- `parcours.spec.js` (3 tests) : douchette et QR code étranger (2026-11-09 : lien piégé → « QR code non reconnu », aucune requête d’émargement, aucun onglet ouvert) ; inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export,
   découpé en étapes `test.step` ; temps réel (une inscription apparaît chez l’admin sans rechargement). Aides
   `evenementPmdOuvert` / `urlInvites`, fixtures `browser` / `baseURL` (refactorisation du 2026-10-21, commitée dans
   `d91d426`) ; exécuté avec succès le 2026-10-22 (voir [test-strategy](test-strategy.md)).
+- `cameraQr.spec.js` (2026-11-09) : fausse caméra Chromium (`--use-file-for-fake-video-capture`, `e2e/fixtures/qr-lien-piege.mjpeg`) filmant un QR code piégé → lecture ZXing réelle, « QR code non reconnu », aucune requête, aucun onglet.
 - `accessibilite.spec.js` : audit axe-core des écrans principaux, dont `/confidentialite` (iframes d'aperçu d'email exclues).
 
 ## Non couvert (constaté)

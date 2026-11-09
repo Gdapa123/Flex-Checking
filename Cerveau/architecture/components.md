@@ -16,7 +16,7 @@ sources: [backend/apps, frontend/src, backend/Dockerfile]
 | `statuts.py` | constantes `INSCRIT`, `PRESENT` (le code ne référence jamais les libellés) |
 | `services.py` | `etat_inscriptions`, `statut_evenement`, `tirer_code`, `creer_invite`, `inscrire`, `emarger`, `annuler_emargement`, `annuler_presence`, `compteurs` |
 | `serializers.py` | sérialiseurs (dont `EvenementBorneSerializer`, liste réduite pour la borne ; `EmargementRequeteSerializer.choix_borne`), `tokens_programme`, `evenements_annotes`, `invites_annotes` (sous-requêtes email1/email2) |
-| `validation.py` | nom, email, téléphone (+225, 10 chiffres), couleur, refus des caractères de contrôle, `entier`, `date_iso`, `donnees_objet` |
+| `validation.py` | nom, email, téléphone (+225, 10 chiffres), couleur, refus des caractères de contrôle, `entier`, `date_iso`, `donnees_objet`, `est_qr_token` (format d’un QR code d’invitation, miroir de `schemas.natureQr`) |
 | `filtres.py` | recherche (nom, prénom, email, entreprise, code, téléphone), filtres, tri (`TRIS`), `PaginationInvites` (25/50/100) |
 | `vues_public.py` | événement public, inscription, renvoi du QR, agenda .ics, politique de confidentialité (`ConfidentialiteView`) |
 | `donnees_personnelles.py` | conservation limitée : `evenements_expires` (cérémonies ayant encore des invités identifiables), `anonymiser_evenement`, `anonymiser_donnees_expirees` — voir [donnees-personnelles](../features/donnees-personnelles.md) |

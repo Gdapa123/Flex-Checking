@@ -13,6 +13,8 @@ affiché « Enregistré, vérification à la reconnexion » (fond avertissement,
 
 ## Mécanisme
 - File IndexedDB `flex-checking-scan` / store `file` (`{id, evenementId, payload, cree}`), index par événement.
+- Un QR code étranger (lien, texte… : `schemas.natureQr` ≠ `invitation`) n’est **jamais** mis en file : écran local
+  « QR code non reconnu » (2026-11-09, voir [scan](scan-emargement.md)).
 - Mise en file si `navigator.onLine` est faux, si `fetch` échoue (TypeError) ou si le serveur répond ≥ 500.
 - Synchronisation : à l’événement `online`, puis toutes les 15 s ; une seule à la fois par événement ; ordre
   chronologique.

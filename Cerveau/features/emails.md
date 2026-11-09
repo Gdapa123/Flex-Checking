@@ -68,6 +68,9 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
 - Pied de page commun (`base.html` et les trois `.txt`) : adresse de MDE, mention propre au type, phrase « Cet email
   est envoyé automatiquement, merci de ne pas y répondre. » (ajoutée le 2026-11-06 : envoi prévu depuis
   `noreply@mde.ci`, Google Workspace, à confirmer en production), lien « Vos données personnelles ».
+- Email n°1 : mise en garde sous le code de secours (HTML) et bloc « SÉCURITÉ » (texte) contre les faux emails à
+  QR code piégé : QR code réservé à l’accueil, ni paiement ni mot de passe demandés, seul site officiel
+  `site_officiel` (hôte de `APP_PUBLIC_URL`) — 2026-11-09, voir [sécurité de l’accueil](../operations/securite-accueil.md).
 - Boutons de l’email → page publique `/i/<lien>/pratique#agenda` ou `#itineraire`.
 - Expéditeur : `Parametres.expediteur` (défaut « Flex’Checking · MDE Business School ») `<DEFAULT_FROM_EMAIL>`
   (`DEFAULT_FROM_EMAIL` doit donc être une adresse seule) ;

@@ -27,6 +27,7 @@ import {
 import * as file from './fileHorsLigne';
 import { appareilEffectif, ecrireReglages, lireReglages } from './reglages';
 import { signaler } from './retour';
+import { MESSAGES_QR, natureQr } from '../../lib/schemas';
 import useCamera from './useCamera';
 import { useEvenementsScan } from './useEvenementsScan';
 import { useMoi } from '../auth/useMoi';
@@ -92,6 +93,13 @@ function presenterResultat(r, { mode, poste }) {
         titre: 'Enregistré, vérification à la reconnexion',
         nom: '',
         meta: `Hors ligne · ${h} · ${poste}. Le passage sera vérifié et synchronisé automatiquement.`,
+      };
+    case 'QR_ETRANGER': // résultat local : QR code qui n'est pas une invitation, jamais envoyé au serveur
+      return {
+        type: 'CODE_INVALIDE',
+        titre: 'QR code non reconnu',
+        nom: '',
+        meta: MESSAGES_QR[r.nature] || MESSAGES_QR.inconnu,
       };
     default:
       return {
@@ -425,6 +433,18 @@ function Poste({ evenement }) {
     return () => clearInterval(t);
   }, [phase, pause, duree]);
 
+  // Contenu d'un QR code (caméra ou douchette). Un QR code étranger (lien piégé, Wi-Fi, texte…) n'est ni envoyé,
+  // ni mis en file hors ligne, ni ouvert, ni affiché : écran « QR code non reconnu » avec son et vibration
+  // d'erreur, caméra en pause pendant le résultat comme pour un code invalide renvoyé par le serveur.
+  const lireQr = useCallback(
+    (texte, mode) => {
+      const nature = natureQr(texte);
+      if (nature === 'invitation') emarger({ qrToken: texte.trim() }, mode);
+      else if (!occupe.current) afficher({ resultat: 'QR_ETRANGER', nature }, mode);
+    },
+    [emarger, afficher],
+  );
+
   // ------------------------------------------------------------------ lecture QR (caméra) avec anti-rebond
   const surDetection = useCallback(
     (texte) => {
@@ -432,9 +452,9 @@ function Poste({ evenement }) {
       if (phase !== 'attente' || feuille || occupe.current) return; // caméra en pause pendant le résultat
       if (texte === dernierScan.current.valeur && maintenant - dernierScan.current.t < ANTI_REBOND_MS) return;
       dernierScan.current = { valeur: texte, t: maintenant };
-      emarger({ qrToken: texte.trim() }, 'QR_CAMERA');
+      lireQr(texte, 'QR_CAMERA');
     },
-    [phase, feuille, emarger],
+    [phase, feuille, lireQr],
   );
 
   const cameraVoulue =
@@ -462,7 +482,7 @@ function Poste({ evenement }) {
     setValeurDouchette('');
     if (!v) return;
     if (/^\d{4}$/.test(v)) emarger({ code: v }, 'DOUCHETTE');
-    else emarger({ qrToken: v }, 'DOUCHETTE');
+    else lireQr(v, 'DOUCHETTE');
   };
 
   // ------------------------------------------------------------------ code à 4 chiffres

@@ -3,6 +3,7 @@ import {
   erreurChamp,
   erreursParChamp,
   formaterTelephone,
+  natureQr,
   schemaInscription,
   schemaInviteComplet,
 } from '../src/lib/schemas';
@@ -53,5 +54,42 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
   it('modification : entreprise et fonction absentes refusées avec un message en français', () => {
     const e = erreursParChamp(schemaInviteComplet.safeParse({ ...OK, entreprise: null, fonction: '  ' }));
     expect(e).toEqual({ entreprise: 'Indiquez votre entreprise.', fonction: 'Indiquez votre fonction.' });
+  });
+});
+
+describe('nature d’un QR code lu au scan (miroir de validation.QR_TOKEN_RE)', () => {
+  const jeton = 'Ab3_-xYz0123456789abcdefghijKLMN'; // 32 caractères base64 URL, comme secrets.token_urlsafe(24)
+
+  it('reconnaît un QR code d’invitation, espaces compris', () => {
+    expect(jeton).toHaveLength(32);
+    expect(natureQr(jeton)).toBe('invitation');
+    expect(natureQr(`  ${jeton}\n`)).toBe('invitation');
+  });
+
+  it('refuse un format proche mais différent', () => {
+    expect(natureQr(jeton.slice(1))).toBe('inconnu');
+    expect(natureQr(`${jeton}A`)).toBe('inconnu');
+    expect(natureQr(`${jeton.slice(1)}/`)).toBe('inconnu');
+    expect(natureQr('')).toBe('inconnu');
+    expect(natureQr(undefined)).toBe('inconnu');
+  });
+
+  it('signale un lien sans jamais le traiter comme une invitation', () => {
+    expect(natureQr('https://site-piege.example/connexion')).toBe('lien');
+    expect(natureQr('javascript:alert(1)')).toBe('lien');
+    expect(natureQr('WIFI:S:reseau;T:WPA;P:secret;;')).toBe('lien');
+    expect(natureQr('www.site-piege.example')).toBe('lien');
+    // même chemin qu'une affiche d'inscription, mais sur un autre site
+    expect(natureQr('https://site-piege.example/i/master-2026')).toBe('lien');
+  });
+
+  it('reconnaît l’affiche d’inscription du même site', () => {
+    expect(natureQr(`${window.location.origin}/i/master-2026`)).toBe('inscription');
+    expect(natureQr(`${window.location.origin}/i/master-2026/autre`)).toBe('lien');
+    // lien imprimé depuis APP_PUBLIC_URL : protocole, port et « www. » peuvent différer de l'adresse du poste
+    const { hostname } = window.location;
+    expect(natureQr(`https://www.${hostname}/i/master-2026`)).toBe('inscription');
+    expect(natureQr(`http://${hostname.toUpperCase()}:8080/i/master-2026`)).toBe('inscription');
+    expect(natureQr(`https://${hostname}.site-piege.example/i/master-2026`)).toBe('lien');
   });
 });

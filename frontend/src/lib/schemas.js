@@ -6,6 +6,41 @@ export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 // eslint-disable-next-line no-control-regex
 export const CONTROLE_MULTILIGNE_RE = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
 
+// QR code d'invitation : exactement le jeton du serveur (miroir de validation.QR_TOKEN_RE, 32 caractères base64 URL)
+export const QR_TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
+
+/**
+ * Nature du contenu lu par la caméra ou la douchette, avant tout envoi au serveur.
+ * Un QR code étranger n'est jamais ouvert ni affiché (il peut contenir un lien piégé).
+ * @returns {'invitation' | 'inscription' | 'lien' | 'inconnu'}
+ */
+export function natureQr(texte) {
+  const v = (texte || '').trim();
+  if (QR_TOKEN_RE.test(v)) return 'invitation';
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v) || /^www\./i.test(v)) {
+    // affiche d'inscription d'une cérémonie (lien public « …/i/<slug> » du même site). Comparaison sur le nom
+    // d'hôte sans « www. » ni protocole : le lien imprimé vient de APP_PUBLIC_URL, pas de l'adresse du poste
+    try {
+      const url = new URL(v);
+      const hote = (h) => h.toLowerCase().replace(/^www\./, '');
+      if (hote(url.hostname) === hote(window.location.hostname) && /^\/i\/[^/]+\/?$/.test(url.pathname))
+        return 'inscription';
+    } catch {
+      /* lien mal formé : traité comme un lien quelconque */
+    }
+    return 'lien';
+  }
+  return 'inconnu';
+}
+
+// conseil affiché sur l'écran « QR code non reconnu » (le contenu lu n'est jamais affiché)
+export const MESSAGES_QR = {
+  inscription:
+    'QR code d’inscription, pas une invitation. Demandez le QR code reçu par email ou proposez le code à 4 chiffres.',
+  lien: 'Ce QR code contient un lien, ce n’est pas une invitation : ne l’ouvrez pas. Proposez le code à 4 chiffres ou la recherche par nom.',
+  inconnu: 'Ce n’est pas une invitation Flex’Checking. Proposez le code à 4 chiffres ou la recherche par nom.',
+};
+
 export const champNom = (libelle) =>
   z
     .string({ error: `Indiquez votre ${libelle}.` })

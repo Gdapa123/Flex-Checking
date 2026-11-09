@@ -19,7 +19,7 @@ le code. Colonne « Preuve » : test automatisé ou fichier qui implémente la r
 | EF-04 | Une adresse = une inscription par cérémonie ; la réponse ne révèle pas si l’adresse est inscrite | ✅ | `test_deja_inscrit_meme_reponse_et_invitation_renvoyee` |
 | EF-05 | Email n°1 avec QR code, code de secours à 4 chiffres unique par cérémonie, infos pratiques, .ics | ✅ | `test_inscription_reussie_envoie_email_1`, `test_unicite_des_codes` |
 | EF-06 | Renvoi de l’invitation par l’invité, réponse identique, limité | ✅ | `test_renvoi_reponse_identique_et_limite` |
-| EF-07 | Émargement par QR caméra, douchette, code à 4 chiffres ou recherche manuelle | ✅ | `vues_scan.EmargementView`, `test_emargement.py` |
+| EF-07 | Émargement par QR caméra, douchette, code à 4 chiffres ou recherche manuelle ; QR code étranger refusé sans envoi (2026-11-09) | ✅ | `vues_scan.EmargementView`, `test_emargement.py` (`test_qr_*`), `e2e/parcours.spec.js` (douchette), `e2e/cameraQr.spec.js` (caméra) |
 | EF-08 | Émargement idempotent : un second passage affiche « Déjà émargé » avec l’heure du premier | ✅ | `test_idempotence_deja_emarge`, `test_concurrence_un_seul_emargement` |
 | EF-09 | QR d’une autre cérémonie signalé comme tel | ✅ | `test_code_invalide_et_autre_evenement` |
 | EF-10 | Annulation d’un émargement (historique conservé), super admin uniquement | ✅ | `test_annulation_puis_reemargement_sans_second_magazine`, `test_annulation_reservee_au_super_admin` |

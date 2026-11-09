@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-05
-commit: 9c6a8ba
-sources: [backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
+verifie: 2026-11-09
+commit: f0eaa1f
+sources: [backend/apps/noyau/validation.py, backend/templates/emails/invitation.html, backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
 ---
 
 # Risques, limitations et dette technique
@@ -272,9 +272,11 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   - `celery-beat` affiché « unhealthy » à tort (il héritait du HEALTHCHECK de `backend/Dockerfile`, qui interroge le
     port 8000) : ✅ corrigé (`healthcheck: disable: true` dans `docker-compose.prod.yml`, `9c6a8ba`). Limite : un beat
     bloqué n'est plus signalé par Docker ; seuls ses journaux (`docker compose logs celery-beat`) le montrent ;
-  - ports 80/443 injoignables depuis Internet malgré les règles du pare-feu Infomaniak (port 22 fonctionnel) : ❌ en
-    cours (support Infomaniak sollicité le 2026-11-05) ; certificat Let's Encrypt, SMTP réel, sauvegardes
-    (`activer-sauvegardes.sh`) et `mettre-a-jour.sh` restent non éprouvés.
+  - ports 80/443 injoignables depuis Internet malgré les règles du pare-feu Infomaniak (port 22 fonctionnel) : ✅
+    résolu le 2026-11-05 au soir par le support Infomaniak (règles du Manager désynchronisées de celles appliquées) ;
+    certificat Let's Encrypt obtenu par Caddy, `https://inscription.mde.ci` répond (constat de l'utilisateur, non
+    revérifié par l'agent). Restent non éprouvés : envoi SMTP réel (emails non reçus le 2026-11-06, diagnostic en
+    cours), sauvegardes (`activer-sauvegardes.sh`), `mettre-a-jour.sh`.
 
 Rappel : le temps de réponse du renvoi du QR sur Vercel (R6) est inchangé au 2026-10-22.
 
@@ -286,6 +288,21 @@ Acceptés par choix documenté : R6, R9, R22, R23.
 
 Revérifiés le 2026-10-26 sur `44eceb5`, sans changement : R5, R6, R7, R9, R10, R11, R12 (Tailwind `^3.4.17`,
 Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
+## R28 — QR codes malveillants à l’accueil et faux emails d’invitation (sécurité, moyen) — 🟡 ATTÉNUÉ le 2026-11-09
+- **Constat** : le scanner n’ouvrait déjà aucun lien (texte envoyé comme `qrToken`, recherche ORM exacte), mais le
+  serveur acceptait tout texte de 200 caractères sans filtre des caractères de contrôle, et un QR code étranger
+  partait en file hors ligne. Restent hors de l’application : scan avec l’appareil photo du téléphone (lien
+  ouvert), douchettes USB reprogrammables ou injectant des touches, autocollants sur les affiches, faux emails
+  d’invitation à QR code piégé (« quishing »).
+- **Résolution partielle** : contrôle du format des deux côtés (`validation.est_qr_token`, `schemas.natureQr`),
+  caractères de contrôle refusés, message « QR code non reconnu » sans envoi ; mise en garde dans l’email n°1
+  (`invitation.html`, `invitation.txt`, variable `site_officiel`). Preuves : `test_emargement.py`
+  (`test_qr_*`), `test_emails.py::test_invitation_mise_en_garde_qr_piege`, `frontend/tests/schemas.test.js`.
+- **Reste à faire** 📋 (humain) : consignes et réglage des douchettes de [sécurité de l’accueil](../operations/securite-accueil.md) ;
+  SPF/DKIM/DMARC sur `mde.ci` : constat DNS du 2026-11-09 — **SPF invalide** (mot `spf1` isolé → `permerror`, risque de
+  rejet de nos propres emails), DMARC `p=none`, DKIM Google absent du sélecteur par défaut (détail et correction dans la fiche). Le code à 4 chiffres était déjà limité
+  (`MAX_CODES_INVALIDES`, `vues_scan`).
+
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface
   (`Parametres.jsx`, dialogue « Raccourcir la durée de conservation ? ») ; l'API (`vues_admin`, paramètres globaux)

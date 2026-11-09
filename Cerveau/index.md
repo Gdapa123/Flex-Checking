@@ -27,7 +27,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R27 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels ; R27 premier déploiement VPS en cours : Celery corrigé, ports 80/443 bloqués chez Infomaniak) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R28 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels ; R27 premier déploiement VPS : site en ligne, SMTP et sauvegardes restant à éprouver ; R28 QR codes malveillants atténué) et limitations assumées |
 
 ## Architecture
 | Page | Description |
@@ -95,6 +95,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [operations/setup.md](operations/setup.md) | Docker Compose, développement sans Docker, données de démo, variables |
 | [operations/deployment.md](operations/deployment.md) | Production Docker, environnement Vercel, tests de charge |
 | [operations/deploiement-infomaniak.md](operations/deploiement-infomaniak.md) | Guide pas à pas : VPS Lite Infomaniak, toutes les fonctionnalités au moindre coût |
+| [operations/securite-accueil.md](operations/securite-accueil.md) | QR codes malveillants : protections de l’application, consignes aux hôtes, réglage des douchettes, affiches, SPF/DKIM/DMARC |
 | [operations/deploiement-vps-facile.md](operations/deploiement-vps-facile.md) | Guide simplifié VPS Lite en 8 étapes, avec les scripts `infra/vps/` (installation, sauvegardes, restauration, mise à jour) |
 
 ## Gabarits

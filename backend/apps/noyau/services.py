@@ -11,6 +11,7 @@ from . import emails, statuts
 from .exceptions import ErreurMetier
 from .journal import journaliser
 from .models import Emargement, Invite, ModeEmargement, Source, Statut, TypeEmail
+from .validation import est_qr_token
 
 # --- États d'ouverture des inscriptions ---
 OUVERT, FERME, COMPLET, DATE_LIMITE = "OUVERT", "FERME", "COMPLET", "DATE_LIMITE"
@@ -137,7 +138,10 @@ def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode,
         qs = Invite.objects.select_for_update()
         invite = None
         if qr_token:
-            invite = qs.filter(qr_token=qr_token.strip()).first()
+            qr_token = qr_token.strip()
+            if not est_qr_token(qr_token):  # QR code étranger (lien, texte…) : jamais cherché en base
+                return _resultat(CODE_INVALIDE, evenement)
+            invite = qs.filter(qr_token=qr_token).first()
             if invite is not None and invite.evenement_id != evenement.pk:
                 return _resultat(AUTRE_EVENEMENT, evenement, invite=None, evenement_autre=invite.evenement.nom_affiche)
         elif code:

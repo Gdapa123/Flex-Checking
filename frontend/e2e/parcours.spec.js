@@ -160,3 +160,23 @@ test('temps réel : une inscription apparaît chez l’admin sans rechargement',
   // sans WebSocket, la liste ne serait rafraîchie par aucune interrogation : l'apparition prouve la notification
   await expect(page.getByRole('row', { name: /Yao KONAN/ })).toBeVisible({ timeout: 4000 });
 });
+
+test('douchette : un QR code étranger (lien piégé) n’est ni envoyé ni ouvert', async ({ page }) => {
+  const ev = await evenementPmdOuvert(page);
+  const emargements = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/emargement/')) emargements.push(r.url());
+  });
+  await page.goto('/scan');
+  await page.getByRole('radio', { name: new RegExp(ev.nomAffiche) }).click();
+  await page.getByRole('radio', { name: 'Douchette' }).click();
+  await page.getByRole('button', { name: 'Démarrer l’émargement' }).click();
+  const champ = page.locator('#douchette');
+  await champ.fill('https://site-piege.example/connexion');
+  await champ.press('Enter');
+  await expect(page.getByText('QR code non reconnu').first()).toBeVisible();
+  await expect(page.getByText(/contient un lien, ce n’est pas une invitation : ne l’ouvrez pas/)).toBeVisible();
+  expect(page.url()).toContain('/scan/');
+  expect(page.context().pages()).toHaveLength(1); // aucun onglet ouvert
+  expect(emargements).toHaveLength(0); // rien envoyé au serveur
+});

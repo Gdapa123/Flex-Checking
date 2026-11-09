@@ -13,6 +13,14 @@ CONTROLE_MULTILIGNE_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 ENTIER_RE = re.compile(r"[0-9]{1,9}")
+# QR code d'invitation : exactement le jeton de models.nouveau_qr_token (secrets.token_urlsafe(24), 32 caractères
+# base64 URL). Tout autre contenu (lien, texte, commande d'une douchette) n'est jamais cherché en base.
+QR_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{32}")
+
+
+def est_qr_token(valeur):
+    """Vrai si la valeur a exactement le format d'un QR code d'invitation."""
+    return isinstance(valeur, str) and QR_TOKEN_RE.fullmatch(valeur) is not None
 
 
 def entier(valeur):

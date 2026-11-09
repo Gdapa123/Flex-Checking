@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-03
-commit: 107d1f8
-sources: [backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py]
+verifie: 2026-11-09
+commit: f0eaa1f
+sources: [backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py]
 ---
 
 # Scan et émargement
@@ -37,7 +37,9 @@ synchronisés sur l’appareil (`fileHorsLigne.compterTout`).
 ## Règle serveur (`services.emarger`) — atomique et idempotente
 1. Verrou `select_for_update` **sur la seule ligne de l’invité, sans jointure** (sous Postgres, une jointure
    faisait disparaître la ligne pour les scans concurrents).
-2. Recherche par `qr_token` (tous événements), `code` (cet événement) ou `invite_id` (cet événement).
+2. Recherche par `qr_token` (tous événements), `code` (cet événement) ou `invite_id` (cet événement). Un
+   `qr_token` qui n’a pas le format exact d’une invitation (`validation.est_qr_token`) répond `CODE_INVALIDE`
+   **sans requête en base** (2026-11-09).
 3. Résultats :
    - `AUTRE_EVENEMENT` : QR d’un invité d’une autre cérémonie (nom de l’autre cérémonie renvoyé, pas l’invité) ;
    - `CODE_INVALIDE` ;
@@ -86,6 +88,18 @@ Historique « Derniers passages » et « Dernier » en `sessionStorage` (`fc-sca
 `fc-scan-dernier-<id>`), effacés par `useMoi.oublierMoi` à la déconnexion (tablette partagée).
 Son (Web Audio) et vibration désactivables ; valeurs globales (Paramètres) surchargées par l’appareil.
 Anti-rebond caméra : même QR ignoré pendant 3 s ; caméra en pause pendant le résultat.
+
+## QR codes étrangers (2026-11-09) ✅
+Contre les QR codes malveillants (lien piégé, Wi‑Fi, texte, commandes d’une douchette) :
+- **Navigateur** : `schemas.natureQr` classe le contenu lu (caméra ou douchette) en `invitation` (exactement
+  32 caractères `A-Z a-z 0-9 _ -`, miroir de `validation.QR_TOKEN_RE`), `inscription` (lien `/i/<slug>` du même
+  site), `lien` ou `inconnu`. Hors `invitation` : message d’erreur `MESSAGES_QR` (« QR code non reconnu… Ne l’ouvrez
+  pas. »), rien n’est envoyé, mis en file hors ligne, ouvert ni affiché. Un contenu à 4 chiffres reste un code.
+- **Serveur** : `EmargementRequeteSerializer.validate_qr_token` refuse les caractères de contrôle (400) ;
+  `services.emarger` répond `CODE_INVALIDE` sans chercher en base si le format n’est pas celui d’un jeton
+  (`models.nouveau_qr_token` = `secrets.token_urlsafe(24)`, toujours 32 caractères). Un format inattendu n’est pas
+  une erreur 400, pour ne pas bloquer la synchronisation d’une file hors ligne remplie par une ancienne version.
+- Consignes humaines (hôtes, douchettes, affiches, SPF/DKIM/DMARC) : [sécurité de l’accueil](../operations/securite-accueil.md).
 
 ## États de la caméra (S9)
 autorisation, refus, aucune caméra, caméra occupée, erreur — chacun avec des alternatives (code, recherche, douchette).

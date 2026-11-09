@@ -9,6 +9,10 @@ INFOS PRATIQUES
 - Itinéraire (Google Maps) : {{ lien_itineraire }}
 - Ajouter à l'agenda (Google Agenda, Microsoft 365) : {{ lien_agenda }}
 
+SÉCURITÉ
+Votre QR code (en pièce jointe) sert uniquement à l'accueil : inutile de le scanner vous-même.
+MDE Business School ne vous demandera jamais de paiement ni de mot de passe ; nos seuls liens mènent à {{ site_officiel }}.
+
 --
 {{ expediteur }}
 MDE Business School · Abidjan, Côte d’Ivoire

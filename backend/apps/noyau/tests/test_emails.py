@@ -74,3 +74,13 @@ def test_mention_ne_pas_repondre(evenement, type_email):
     r = rendre(type_email, Source.depuis_invite(inv))
     mention = "merci de ne pas y répondre"
     assert mention in r["html"] and mention in r["texte"]
+
+
+def test_invitation_mise_en_garde_qr_piege(evenement, settings):
+    # email n°1 : rappel contre les faux emails à QR code piégé, avec le seul site officiel
+    settings.APP_PUBLIC_URL = "https://inscription.mde.ci"
+    r = rendre(TypeEmail.INVITATION, Source.depuis_invite(nouvel_invite(evenement)))
+    for version in (r["html"], r["texte"]):
+        assert "inutile de le scanner vous-même" in version
+        assert "jamais de paiement ni de mot de passe" in version
+        assert "inscription.mde.ci" in version

@@ -4,10 +4,12 @@ from datetime import timedelta
 import pytest
 from django.core import mail
 from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
-from apps.noyau.models import EmailEnvoye, Emargement, Invite, TypeEmail
+from apps.noyau.models import EmailEnvoye, Emargement, Invite, TypeEmail, nouveau_qr_token
 from apps.noyau.services import annuler_emargement, emarger
+from apps.noyau.validation import est_qr_token
 
 from .conftest import client_connecte, nouvel_invite
 
@@ -54,6 +56,48 @@ def test_code_invalide_et_autre_evenement(client_admin, evenement, autre_eveneme
     assert d["resultat"] == "AUTRE_EVENEMENT"
     assert d["evenementAutre"] == autre_evenement.nom_affiche
     assert d["invite"] is None
+
+
+def test_qr_tokens_generes_au_format_controle():
+    # le contrôle de format ne doit jamais refuser un vrai QR code d'invitation
+    assert all(est_qr_token(nouveau_qr_token()) for _ in range(500))
+
+
+@pytest.mark.parametrize(
+    "contenu",
+    [
+        "https://site-piege.example/connexion",  # lien piégé (« quishing »)
+        "WIFI:S:reseau;T:WPA;P:secret;;",
+        "' OR 1=1 --",
+        "A" * 31,
+        "A" * 33,
+        "A" * 31 + "/",
+        "é" * 32,
+    ],
+)
+def test_qr_etranger_code_invalide_sans_emargement(client_admin, evenement, contenu):
+    nouvel_invite(evenement)
+    r = scan(client_admin, evenement, qrToken=contenu)
+    assert r.status_code == 200 and r.json()["resultat"] == "CODE_INVALIDE"
+    assert not Emargement.objects.exists()
+
+
+def test_qr_etranger_jamais_cherche_en_base(client_admin, evenement):
+    # un contenu au mauvais format ne déclenche aucune requête sur les invités
+    with CaptureQueriesContext(connection) as requetes:
+        scan(client_admin, evenement, qrToken="https://site-piege.example/" + "x" * 40)
+    assert not any("qr_token" in q["sql"] for q in requetes.captured_queries)
+
+
+def test_qr_caracteres_de_controle_refuses(client_admin, evenement):
+    # séquences qu'une douchette piégée pourrait envoyer (échappement terminal, retour chariot, NUL)
+    for contenu in ["\x1b[31m" + "A" * 27, "A" * 16 + "\r\n" + "A" * 14, "A\x00"]:
+        assert scan(client_admin, evenement, qrToken=contenu).status_code == 400
+
+
+def test_qr_valide_avec_espaces_accepte(client_admin, evenement):
+    inv = nouvel_invite(evenement)
+    assert scan(client_admin, evenement, qrToken=f"  {inv.qr_token} ").json()["resultat"] == "PRESENT"
 
 
 def test_un_seul_champ_requis(client_admin, evenement):

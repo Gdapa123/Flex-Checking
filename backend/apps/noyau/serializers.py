@@ -335,6 +335,11 @@ class EmargementRequeteSerializer(serializers.Serializer):
     def validate_poste(self, v):
         return sans_controle(v)
 
+    def validate_qr_token(self, v):
+        # contenu d'un QR code étranger : caractères de contrôle refusés ; un format inattendu n'est pas une
+        # erreur de requête (« code invalide », voir services.emarger), pour ne pas bloquer la file hors ligne
+        return sans_controle(v)
+
     appareil = serializers.ChoiceField(choices=Appareil.choices, default=Appareil.TELEPHONE)
     date_client = serializers.DateTimeField(required=False, allow_null=True)
 
