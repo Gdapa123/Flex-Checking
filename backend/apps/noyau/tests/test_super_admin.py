@@ -25,13 +25,43 @@ def test_programme_crud_et_protection(client_sa, evenement, programme):
     assert JournalActivite.objects.filter(action="PROGRAMME_DESACTIVATION").exists()
 
 
-def test_couleur_invalide_et_magazine_sans_lien(client_sa, programme):
+def test_couleur_invalide_et_magazine_sans_lien(client_sa, programme, evenement):
     assert (
         client_sa.patch(f"/api/programmes/{programme.pk}/", {"couleurPrincipale": "rouge"}, format="json").status_code
         == 400
     )
+    # magazine activé sans lien de programme : accepté, chaque cérémonie peut avoir son lien ; sans aucun lien,
+    # l'email n°2 reste indisponible
     r = client_sa.patch(f"/api/programmes/{programme.pk}/", {"magazineActif": True, "lienMagazine": ""}, format="json")
-    assert r.status_code == 400
+    assert r.status_code == 200
+    evenement.refresh_from_db()
+    assert not evenement.magazine_disponible
+    r = client_sa.patch(
+        f"/api/evenements/{evenement.pk}/", {"lienMagazine": "https://mde.ci/magazine/promo"}, format="json"
+    )
+    assert r.status_code == 200 and r.json()["magazineActif"] is True
+    evenement.refresh_from_db()
+    assert evenement.lien_magazine_effectif == "https://mde.ci/magazine/promo"
+
+
+def test_liens_de_la_ceremonie(client_sa, evenement):
+    r = client_sa.patch(
+        f"/api/evenements/{evenement.pk}/",
+        {"lienBrochure": "javascript:alert(1)", "lienCarteInvitation": "pas un lien"},
+        format="json",
+    )
+    assert r.status_code == 400 and {"lienBrochure", "lienCarteInvitation"} <= set(r.json())
+    r = client_sa.patch(
+        f"/api/evenements/{evenement.pk}/",
+        {"lienBrochure": "https://mde.ci/brochure.pdf", "lienCarteInvitation": "https://mde.ci/carte.png"},
+        format="json",
+    )
+    assert r.status_code == 200
+    assert r.json()["lienBrochure"] == "https://mde.ci/brochure.pdf"
+    assert r.json()["lienCarteInvitation"] == "https://mde.ci/carte.png"
+    # la date limite n'est plus saisie : ignorée en écriture, alignée sur la date
+    r = client_sa.patch(f"/api/evenements/{evenement.pk}/", {"dateLimiteInscription": "2020-01-01"}, format="json")
+    assert r.status_code == 200 and r.json()["dateLimiteInscription"] == r.json()["date"]
 
 
 def test_evenement_creation_slug_qr(client_sa, programme, admin):

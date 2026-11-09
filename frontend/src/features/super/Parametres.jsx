@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
 import { dateLongue } from '../../lib/format';
-import { erreursParChamp, schemaDonneesPersonnelles } from '../../lib/schemas';
+import { erreursParChamp, schemaDonneesPersonnelles, schemaLien } from '../../lib/schemas';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
 import Champ from '../../components/ui/Champ';
@@ -35,7 +35,7 @@ const ONGLETS = [
 ];
 const AIDES = {
   1: '{qr_code} place la carte « QR code et code de secours ». Les infos pratiques et les boutons Agenda et Itinéraire sont toujours ajoutés.',
-  2: '{lien_magazine} place la carte « Lire le magazine ».',
+  2: '{lien_magazine} place la carte du magazine (boutons « Lire le magazine » et « Brochure Executive Education »).',
   3: '{lien_sondage} place la carte « Donner mon avis » avec la date de clôture (24 h après l’envoi, le lendemain de la cérémonie à 8 h).',
 };
 
@@ -58,6 +58,7 @@ export default function Parametres() {
   const [d, setD] = useState(null);
   const [onglet, setOnglet] = useState(1);
   const [erreursDonnees, setErreursDonnees] = useState({});
+  const [erreursServeur, setErreursServeur] = useState({});
   const [programme, setProgramme] = useState('');
   const [apercu, setApercu] = useState(null);
   const [envoi, setEnvoi] = useState(false);
@@ -113,7 +114,9 @@ export default function Parametres() {
       contactDonnees: d.contactDonnees ?? '',
     });
     setErreursDonnees(donnees.success ? {} : erreursParChamp(donnees));
-    if (!donnees.success) return;
+    const brochure = schemaLien.safeParse(d.lienBrochureDefaut ?? '');
+    setErreursServeur(brochure.success ? {} : { lienBrochureDefaut: brochure.error.issues[0].message });
+    if (!donnees.success || !brochure.success) return;
     // durée raccourcie : l'anonymisation de la nuit suivante est irréversible, on fait confirmer
     if (!dureeConfirmee && donnees.data.dureeConservationMois < (p?.dureeConservationMois ?? 0)) {
       setConfirmerDuree(true);
@@ -132,13 +135,18 @@ export default function Parametres() {
         dureeResultatScan: d.dureeResultatScan,
         sonActif: d.sonActif,
         vibrationActif: d.vibrationActif,
+        lienBrochureDefaut: brochure.data,
         ...donnees.data,
       });
       setD(r);
       qc.setQueryData(['parametres'], r);
       qc.invalidateQueries({ queryKey: ['parametres-scan'] });
+      setErreursServeur({});
       toast('Paramètres enregistrés');
     } catch (e) {
+      // lien de la brochure refusé (adresse invalide) : affiché sous le champ
+      const lien = e.status === 400 && e.data?.lienBrochureDefaut;
+      setErreursServeur(lien ? { lienBrochureDefaut: String([].concat(lien)[0]) } : {});
       toast(messageErreur(e), 'erreur');
     } finally {
       setEnvoi(false);
@@ -335,6 +343,27 @@ export default function Parametres() {
             aide="Adresse à laquelle les invités exercent leurs droits (accès, suppression…)."
           />
         </div>
+      </Carte>
+
+      <Carte mde as="section" className="flex flex-col gap-4 p-6" aria-labelledby="t-brochure">
+        <div className="flex max-w-[620px] flex-col gap-1">
+          <h2 id="t-brochure" className="m-0 text-[17px] font-semibold">
+            Brochure Executive Education
+          </h2>
+          <p className="m-0 text-[15px] text-mde-texte-2">
+            Bouton de l’email n°2, à côté du magazine. Ce lien vaut pour toutes les cérémonies ; il se remplace
+            cérémonie par cérémonie dans l’écran Cérémonies.
+          </p>
+        </div>
+        <Champ
+          univers="mde"
+          label="Lien par défaut de la brochure"
+          type="url"
+          value={d.lienBrochureDefaut ?? ''}
+          onChange={(e) => setD({ ...d, lienBrochureDefaut: e.target.value })}
+          erreur={erreursServeur.lienBrochureDefaut}
+          aide="Laissé vide : le bouton n’apparaît que pour les cérémonies qui ont leur propre lien."
+        />
       </Carte>
 
       <Dialogue

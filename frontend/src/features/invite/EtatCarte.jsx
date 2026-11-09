@@ -15,8 +15,8 @@ export default function EtatCarte({ ev, etat }) {
     },
     DATE_LIMITE: {
       icone: 'clock',
-      titre: 'La date limite d’inscription est dépassée',
-      texte: `La date limite d’inscription à la ${nom} était fixée au ${dateLongue(ev.dateLimiteInscription, false)}. Pour toute demande, contactez l’équipe événementielle de MDE Business School.`,
+      titre: 'Les inscriptions sont closes',
+      texte: `Les inscriptions à la ${nom} étaient ouvertes jusqu’au ${dateLongue(ev.date, false)}, jour de la cérémonie. Pour toute demande, contactez l’équipe événementielle de MDE Business School.`,
     },
     COMPLET: {
       icone: 'users',

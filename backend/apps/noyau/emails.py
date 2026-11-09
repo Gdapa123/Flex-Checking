@@ -7,9 +7,11 @@ est remplacée par la carte QR (ou magazine), le texte après dans une carte sui
 """
 
 import base64
+import hashlib
 import logging
 import re
 from email.mime.image import MIMEImage
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -61,9 +63,22 @@ class EmailAvecImagesInline(EmailMultiAlternatives):
         for cid, donnees in self.images_inline:
             image = MIMEImage(donnees, _subtype="png")
             image.add_header("Content-ID", f"<{cid}>")
-            image.add_header("Content-Disposition", "inline", filename=f"{cid}.png")
+            # sans nom de fichier : l'image intégrée n'est pas présentée comme une pièce jointe supplémentaire
+            image.add_header("Content-Disposition", "inline")
             related.attach(image)
         return related
+
+
+def url_image_publique(nom):
+    return f"{settings.APP_PUBLIC_URL}/api/public/emails/images/{nom}.png"
+
+
+@lru_cache(maxsize=2)
+def nom_logo(variante):
+    """« logo-blanc-<empreinte> » : l'empreinte change avec le fichier, donc un nouveau logo n'est jamais masqué par le
+    cache d'un an des messageries (`vues_public.ImageEmailView`)."""
+    empreinte = hashlib.sha256((ASSETS / f"logo-{variante}.png").read_bytes()).hexdigest()[:8]
+    return f"logo-{variante}-{empreinte}"
 
 
 def _remplacer(texte, valeurs):
@@ -139,7 +154,7 @@ def _valeurs(source):
         "date": dates.date_longue(ev.date),
         "lieu": ev.lieu,
         "code": source.code,
-        "lien_magazine": prog.lien_magazine or "",
+        "lien_magazine": ev.lien_magazine_effectif or "",
         "lien_sondage": lien_sondage(source.jeton_sondage) if source.jeton_sondage else "",
     }
 
@@ -181,14 +196,22 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
 
     images = {}
 
-    def image(cid, donnees):
-        images[cid] = donnees
-        if apercu:
-            return "data:image/png;base64," + base64.b64encode(donnees).decode()
-        return f"cid:{cid}"
+    def data_uri(donnees):
+        return "data:image/png;base64," + base64.b64encode(donnees).decode()
 
-    logo_blanc = t["on_primary"] == "#FFFFFF"
-    logo = (ASSETS / ("logo-blanc.png" if logo_blanc else "logo-rouge.png")).read_bytes()
+    def image(cid, donnees):
+        """Image intégrée au message : le QR code seulement (lisible même hors ligne ou images bloquées)."""
+        images[cid] = donnees
+        return data_uri(donnees) if apercu else f"cid:{cid}"
+
+    def image_publique(nom, donnees):
+        """Logo et icônes : servis par `vues_public.ImageEmailView`, pour que le message ne porte que deux pièces
+        jointes (QR code et fichier d'agenda) ; certaines messageries listent chaque image intégrée comme pièce
+        jointe."""
+        return data_uri(donnees) if apercu else url_image_publique(nom)
+
+    variante_logo = "blanc" if t["on_primary"] == "#FFFFFF" else "rouge"
+    logo = (ASSETS / f"logo-{variante_logo}.png").read_bytes()
     lien_public = f"{settings.APP_PUBLIC_URL}/i/{ev.slug_inscription}"
     contexte = {
         "t": t,
@@ -196,7 +219,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "nom_affiche": ev.nom_affiche,
         "programme": prog.nom,
         "annee": ev.annee,
-        "logo_src": image("logo", logo),
+        "logo_src": image_publique(nom_logo(variante_logo), logo),
         "paragraphes_avant": _paragraphes_html(avant, valeurs),
         "paragraphes_apres": _paragraphes_html(apres, valeurs),
         "date_longue": dates.date_longue_majuscule(ev.date),
@@ -208,7 +231,9 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         "lien_agenda": lien_pratique(ev, "agenda"),
         "lien_itineraire": lien_pratique(ev, "itineraire"),
         "lien_public": lien_public,
-        "lien_magazine": prog.lien_magazine,
+        "lien_magazine": ev.lien_magazine_effectif,
+        # email n°2 : brochure Executive Education (lien de la cérémonie, sinon lien par défaut des paramètres)
+        "lien_brochure": ev.lien_brochure or p.lien_brochure_defaut,
         "lien_sondage": valeurs["lien_sondage"],
         "action_sondage": action_sondage(source.jeton_sondage) if source.jeton_sondage else "",
         "notes_sondage": LIBELLES_NOTES,
@@ -226,7 +251,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         # seul site officiel, rappelé aux invités contre les faux emails à QR code piégé (« quishing »)
         "site_officiel": urlsplit(settings.APP_PUBLIC_URL).netloc,
         "ic": {
-            nom: image(f"ic-{nom}-{c.strip('#')}", icone_png(nom, c))
+            nom: image_publique(f"ic-{nom}-{c.strip('#').upper()}", icone_png(nom, c))
             for nom, c in [
                 ("calendar", t["primary"]),
                 ("clock", t["primary"]),

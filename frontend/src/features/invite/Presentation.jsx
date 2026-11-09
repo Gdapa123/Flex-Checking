@@ -1,16 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useId, useState } from 'react';
 import Icon from '../../components/ui/Icon';
-import { dateLongue } from '../../lib/format';
 
 /**
- * Écran d'accueil du lien d'inscription : explique les étapes avant de commencer.
- * L'étape « magazine » n'apparaît que si le programme envoie l'email n°2.
+ * Guide « Comment ça se passe ? » au-dessus du formulaire d'inscription, replié par défaut : le formulaire est
+ * visible dès l'ouverture du lien. L'étape « magazine » n'apparaît que si la cérémonie envoie l'email n°2.
  */
-export default function Presentation({ ev, onCommencer }) {
-  const titre = useRef(null);
-  useEffect(() => {
-    titre.current?.focus({ preventScroll: true });
-  }, []);
+export default function Presentation({ ev }) {
+  const [ouvert, setOuvert] = useState(false);
+  const idContenu = useId();
 
   const etapes = [
     {
@@ -36,25 +33,29 @@ export default function Presentation({ ev, onCommencer }) {
   ];
 
   return (
-    <>
-      <main className="relative mx-auto -mt-8 flex w-full max-w-[560px] flex-1 flex-col px-3 pb-2 sm:-mt-10 sm:pb-8">
-        <section
-          aria-labelledby="titre-etapes"
-          className="flex animate-in-up flex-col gap-4 rounded-carte border border-bordure-carte bg-surface px-4 py-5 shadow-carte sm:gap-5 sm:px-6 sm:py-7"
+    <section className="animate-in-up overflow-hidden rounded-carte border border-bordure-carte bg-surface shadow-carte">
+      <h2 className="m-0">
+        <button
+          type="button"
+          aria-expanded={ouvert}
+          aria-controls={idContenu}
+          onClick={() => setOuvert((v) => !v)}
+          className="flex min-h-12 w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-4 py-3 text-left sm:px-5"
         >
-          <div className="flex flex-col gap-1">
-            <h2
-              id="titre-etapes"
-              ref={titre}
-              tabIndex={-1}
-              className="m-0 text-[17px] font-semibold tracking-[-0.01em] outline-none sm:text-[20px]"
-            >
+          <Icon nom="info" className="flex-none text-[18px] text-p" />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-texte sm:text-[17px]">
               Comment ça se passe ?
-            </h2>
-            <p className="m-0 text-[13px] text-texte-2 sm:text-[15px]">
-              {etapes.length} étapes simples, de l’inscription au jour J.
-            </p>
-          </div>
+            </span>
+            <span className="text-[12.5px] font-normal text-texte-2 sm:text-[14px]">
+              {etapes.length} étapes, de l’inscription au jour J
+            </span>
+          </span>
+          <Icon nom={ouvert ? 'chevU' : 'chevD'} className="flex-none text-[18px] text-texte-2" />
+        </button>
+      </h2>
+      {ouvert && (
+        <div id={idContenu} className="flex flex-col gap-4 border-t border-bordure-carte px-4 py-4 sm:px-5 sm:py-5">
           <ol className="m-0 flex list-none flex-col p-0">
             {etapes.map((e, i) => {
               const derniere = i === etapes.length - 1;
@@ -79,28 +80,10 @@ export default function Presentation({ ev, onCommencer }) {
           </ol>
           <p className="m-0 flex items-start gap-2 rounded-moyen bg-fond px-3 py-2.5 text-[12.5px] leading-[1.45] text-texte-3 sm:text-[14px]">
             <Icon nom="clock" className="mt-0.5 text-[15px] text-texte-2" />
-            <span>
-              Inscriptions ouvertes jusqu’au {dateLongue(ev.dateLimiteInscription, false)}, dans la limite des places
-              disponibles.
-            </span>
+            <span>Inscriptions ouvertes jusqu’au jour de la cérémonie, dans la limite des places disponibles.</span>
           </p>
-        </section>
-      </main>
-
-      <div className="sticky bottom-0 z-10 -mt-7 bg-gradient-to-b from-transparent via-fond via-45% to-fond px-4 pb-3 pt-5 sm:pb-4 sm:pt-6">
-        <div className="mx-auto max-w-[560px]">
-          <button
-            type="button"
-            onClick={onCommencer}
-            className="btn-principal flex h-[52px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-bouton border-0 pl-5 pr-2 text-[16px] font-semibold active:scale-[.98] sm:h-14"
-          >
-            <span className="flex-1 text-left">Commencer mon inscription</span>
-            <span className="flex h-10 w-10 items-center justify-center rounded-moyen bg-blanc-18 text-[18px]">
-              <Icon nom="arrowR" />
-            </span>
-          </button>
         </div>
-      </div>
-    </>
+      )}
+    </section>
   );
 }

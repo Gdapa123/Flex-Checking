@@ -56,7 +56,15 @@ class Evenement(models.Model):
     # invités anonymisés à l'expiration de la durée de conservation (voir `donnees_personnelles`)
     anonymise_le = models.DateTimeField(null=True, blank=True)
     lien_carte = models.URLField(blank=True)
+    # email n°2 : magazine de la promotion (à défaut, lien du programme) et brochure Executive Education (à défaut,
+    # lien par défaut des paramètres) ; carte d'invitation du programme, jointe à l'événement d'agenda (.ics)
+    lien_magazine = models.URLField(blank=True, default="", db_default="")
+    lien_brochure = models.URLField(blank=True, default="", db_default="")
+    lien_carte_invitation = models.URLField(blank=True, default="", db_default="")
     capacite = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    # plus saisie depuis le 2026-11-09 : les inscriptions restent ouvertes jusqu'au jour de la cérémonie inclus
+    # (`services.etat_inscriptions`) ; la colonne est alignée sur `date` à chaque enregistrement
+    # (étendre puis contracter : suppression possible dans une version ultérieure)
     date_limite_inscription = models.DateField()
     inscriptions_ouvertes = models.BooleanField(default=True)
     slug_inscription = models.SlugField(max_length=80, unique=True)
@@ -78,7 +86,24 @@ class Evenement(models.Model):
     def nom_affiche(self):
         return f"Graduation {self.programme.nom} {self.annee}"
 
+    @property
+    def nom_agenda(self):
+        return f"Cérémonie de Graduation {self.programme.nom} {self.annee}"
+
+    @property
+    def lien_magazine_effectif(self):
+        return self.lien_magazine or self.programme.lien_magazine
+
+    @property
+    def magazine_disponible(self):
+        # email n°2 : magazine activé pour le programme ET un lien (cérémonie ou programme)
+        return bool(self.programme.magazine_actif and self.lien_magazine_effectif)
+
     def save(self, *args, **kwargs):
+        if self.date:
+            self.date_limite_inscription = self.date
+            if kwargs.get("update_fields") is not None and "date" in kwargs["update_fields"]:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "date_limite_inscription"}
         if not self.slug_inscription:
             self.slug_inscription = nouveau_slug(self.programme.nom, self.annee)
         super().save(*args, **kwargs)
@@ -290,15 +315,15 @@ class JournalActivite(models.Model):
 
 CORPS_EMAIL_1 = (
     "Bonjour {civilite} {prenom} {nom},\n\n"
-    "Votre inscription à la Graduation {programme} {annee} est confirmée. Le jour de la cérémonie, "
-    "présentez ce QR code à l’accueil : il sera lu automatiquement.\n\n"
+    "Votre inscription à la Graduation {programme} {annee} est confirmée. "
+    "Présentez ce QR code à l’accueil le jour de la cérémonie.\n\n"
     "{qr_code}\n\n"
-    "À très bientôt,\nMDE Business School"
+    "À très bientôt !"
 )
 CORPS_EMAIL_2 = (
     "Bonjour {civilite} {prenom} {nom},\n\n"
     "Votre présence est enregistrée. Nous sommes heureux de vous accueillir ce soir. "
-    "Retrouvez dès maintenant le magazine du programme {programme}.\n\n"
+    "Retrouvez dès maintenant le magazine de la promotion {programme} et la brochure Executive Education.\n\n"
     "{lien_magazine}"
 )
 CORPS_EMAIL_3 = (
@@ -330,6 +355,8 @@ class Parametres(models.Model):
     # déploiement).
     duree_conservation_mois = models.PositiveSmallIntegerField(default=12, db_default=12)
     contact_donnees = models.EmailField(blank=True, default="", db_default="")
+    # bouton « Brochure Executive Education » de l'email n°2, modifiable cérémonie par cérémonie
+    lien_brochure_defaut = models.URLField(blank=True, default="https://mde.ci", db_default="https://mde.ci")
     modifie_le = models.DateTimeField(auto_now=True)
 
     class Meta:

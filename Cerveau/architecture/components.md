@@ -21,7 +21,9 @@ sources: [backend/apps, frontend/src, backend/Dockerfile]
 | `vues_public.py` | événement public, inscription, renvoi du QR, agenda .ics, politique de confidentialité (`ConfidentialiteView`) |
 | `donnees_personnelles.py` | conservation limitée : `evenements_expires` (cérémonies ayant encore des invités identifiables), `anonymiser_evenement`, `anonymiser_donnees_expirees` — voir [donnees-personnelles](../features/donnees-personnelles.md) |
 | `vues_scan.py` | émargement, annulation (super admin), derniers passages, réglages de scan, recherche de la borne ; jeton signé « C’est moi » (`jeton_choix_borne`, `choix_borne_valide`) |
-| `suivi_emails.py` | suivi des emails (A7) : compteurs, échecs, renvoi groupé, email de test |
+| `suivi_emails.py` | suivi des emails (A7) : invités à contacter (`a_contacter`, `cause_echec`), compteurs, échecs, renvoi groupé, email de test |
+| `adresses.py` | adresses probablement mal tapées : `suggerer_correction` (domaine à 1-2 fautes d’un fournisseur courant) |
+| `alertes.py` | alertes email aux super admins (compte bloqué, nouvelle erreur serveur), plafonnées |
 | `sondages.py` | sondage de satisfaction : `planifier_sondages` (8 h, idempotente ; sans file : envoi dans un budget de 200 s), `etat`, `resultats`, `resume_global`, NPS, `repondre` (réponse unique par lien et par appareil), `sondage_renvoyable` (indépendant de la réponse de l’invité) |
 | `vues_sondage.py` | page publique du sondage, déclencheur du cron (`CRON_SECRET` : sondage puis anonymisation), cumul super admin |
 | `vues_invites.py` | listes, détail/PATCH/DELETE, QR PNG, renvoi, historique, actions groupées, exports, suivi de tâche |

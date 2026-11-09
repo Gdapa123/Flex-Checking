@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
+import { erreursParChamp, schemaLiensCeremonie } from '../../lib/schemas';
 import { dateCourte } from '../../lib/format';
 import { telecharger } from '../../lib/telechargement';
 import Bouton from '../../components/ui/Bouton';
@@ -16,14 +17,24 @@ import { PageSuper } from './SuperApp';
 import ErreurChargement from './ErreurChargement';
 import { CHAMP_MDE, useAdmins, useEvenements, useProgrammes } from './donnees';
 
+// [clé, libellé, type, pleine largeur]. Pas de date limite : inscriptions ouvertes jusqu'au jour de la cérémonie.
 const CHAMPS = [
   ['date', 'Date', 'date'],
+  ['capacite', 'Capacité', 'number'],
   ['heureDebut', 'Heure de début', 'time'],
   ['heureAccueil', 'Heure d’accueil', 'time'],
-  ['capacite', 'Capacité', 'number'],
-  ['dateLimiteInscription', 'Date limite d’inscription', 'date'],
-  ['lieu', 'Lieu', 'text'],
-  ['lienCarte', 'Lien de l’itinéraire (carte)', 'url'],
+  ['lieu', 'Lieu', 'text', true],
+  ['lienCarte', 'Lien de l’itinéraire (carte)', 'url', true],
+];
+// liens de l'email n°2 et de l'agenda : [clé, libellé, aide]
+const LIENS = [
+  ['lienMagazine', 'Lien du magazine de la promotion', 'Bouton « Lire le magazine » de l’email n°2.'],
+  ['lienBrochure', 'Lien de la brochure Executive Education', 'Bouton de l’email n°2.'],
+  [
+    'lienCarteInvitation',
+    'Lien de la carte d’invitation du programme',
+    'Joint à l’événement d’agenda des invités (fichier .ics) et rappelé dans sa description.',
+  ],
 ];
 
 const VIDE = {
@@ -32,9 +43,11 @@ const VIDE = {
   heureDebut: '18:00',
   heureAccueil: '17:15',
   capacite: 200,
-  dateLimiteInscription: '',
   lieu: '',
   lienCarte: '',
+  lienMagazine: '',
+  lienBrochure: '',
+  lienCarteInvitation: '',
   inscriptionsOuvertes: true,
   admins: [],
 };
@@ -48,6 +61,9 @@ export default function Evenements() {
   const { data: evenements, error: erreurListe, refetch } = useEvenements();
   const { data: programmes = [] } = useProgrammes();
   const { data: admins = [] } = useAdmins();
+  // liens par défaut, rappelés en indication dans les champs vides
+  const { data: parametres } = useQuery({ queryKey: ['parametres'], queryFn: () => api.get('/parametres/') });
+  const brochureDefaut = parametres?.lienBrochureDefaut;
   const nouveau = id === 'nouveau';
   // sans identifiant : première cérémonie de la liste ; identifiant inconnu : « introuvable » (jamais une autre)
   const courant = nouveau ? null : id ? evenements?.find((e) => String(e.id) === id) : evenements?.[0];
@@ -61,6 +77,7 @@ export default function Evenements() {
   const [initial, setInitial] = useState(null);
   const [sortie, setSortie] = useState(null); // destination en attente si le formulaire a des modifications
   const modifie = Boolean(d && initial && JSON.stringify(d) !== initial);
+  const magazineProgramme = programmes.find((p) => p.id === Number(d?.programme))?.lienMagazine;
 
   useEffect(() => {
     setErreurs({});
@@ -88,6 +105,16 @@ export default function Evenements() {
     ]);
 
   const enregistrer = async () => {
+    // liens vérifiés avant l'envoi (miroir de `validation.valider_lien`), le serveur reste l'arbitre
+    const liens = schemaLiensCeremonie.safeParse({
+      lienMagazine: d.lienMagazine ?? '',
+      lienBrochure: d.lienBrochure ?? '',
+      lienCarteInvitation: d.lienCarteInvitation ?? '',
+    });
+    if (!liens.success) {
+      setErreurs(erreursParChamp(liens));
+      return;
+    }
     setEnvoi(true);
     setErreurs({});
     const corps = {
@@ -96,9 +123,9 @@ export default function Evenements() {
       heureDebut: d.heureDebut,
       heureAccueil: d.heureAccueil,
       capacite: Number(d.capacite),
-      dateLimiteInscription: d.dateLimiteInscription,
       lieu: d.lieu,
       lienCarte: d.lienCarte,
+      ...liens.data,
       inscriptionsOuvertes: d.inscriptionsOuvertes,
       admins: d.admins,
     };
@@ -231,10 +258,10 @@ export default function Evenements() {
                 </select>
                 {erreurs.programme && <span className="text-[14px] font-normal text-erreur">{erreurs.programme}</span>}
               </label>
-              {CHAMPS.map(([k, l, type]) => (
+              {CHAMPS.map(([k, l, type, large]) => (
                 <label
                   key={k}
-                  className={`flex flex-col gap-2 text-[15px] font-medium ${k === 'lieu' || k === 'lienCarte' ? 'sm:col-span-2' : ''}`}
+                  className={`flex flex-col gap-2 text-[15px] font-medium ${large ? 'sm:col-span-2' : ''}`}
                 >
                   {l}
                   <input
@@ -248,13 +275,40 @@ export default function Evenements() {
                 </label>
               ))}
             </div>
+            <div className="flex flex-col gap-4 border-t border-mde-bordure pt-4">
+              <span className="text-[15px] font-semibold">Email n°2 et agenda</span>
+              {LIENS.map(([k, l, aide]) => (
+                <label key={k} className="flex flex-col gap-2 text-[15px] font-medium">
+                  {l}
+                  <input
+                    type="url"
+                    value={d[k] ?? ''}
+                    placeholder={
+                      k === 'lienBrochure' && brochureDefaut
+                        ? brochureDefaut
+                        : k === 'lienMagazine' && magazineProgramme
+                          ? magazineProgramme
+                          : 'https://…'
+                    }
+                    onChange={(e) => setD({ ...d, [k]: e.target.value })}
+                    className={CHAMP_MDE}
+                  />
+                  <span className="text-[14px] font-normal text-mde-texte-2">
+                    {aide}
+                    {k === 'lienBrochure' && ' Vide : lien par défaut des Paramètres.'}
+                    {k === 'lienMagazine' && ' Vide : lien du programme.'}
+                  </span>
+                  {erreurs[k] && <span className="text-[14px] font-normal text-erreur">{erreurs[k]}</span>}
+                </label>
+              ))}
+            </div>
             <div className="rounded-[12px] border border-mde-bordure px-4">
               <Interrupteur
                 actif={d.inscriptionsOuvertes}
                 onChange={(v) => setD({ ...d, inscriptionsOuvertes: v })}
                 univers="mde"
                 label="Inscriptions ouvertes"
-                description="Fermées automatiquement après la date limite ou quand la capacité est atteinte."
+                description="Fermées automatiquement après le jour de la cérémonie ou quand la capacité est atteinte."
               />
             </div>
             <div className="flex flex-col gap-2">

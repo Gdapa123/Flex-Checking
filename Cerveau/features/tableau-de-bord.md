@@ -47,18 +47,38 @@ Rafraîchissement : temps réel, sinon toutes les 5 s ; 15 s en cas d’erreur.
 Page de suivi (remplace l’ancien aperçu en lecture seule, jugé inutile par l’utilisateur le 2026-10-14) :
 `frontend/src/features/admin/SuiviEmails.jsx` (`ApercuEmails.jsx` supprimé), une carte par email : n°1 Invitation,
 n°2 Magazine, **n°3 Sondage de satisfaction** (« envoyé le lendemain à 8 h, ouvert 24 h »).
+- **Invités à contacter** (2026-11-09, en tête de page ; l’utilisateur jugeait l’écran « pas très utile » : des
+  compteurs, et « Envoyés » ne prouve pas la réception) : une ligne par invité dont un email n’est pas, ou
+  probablement pas, arrivé — `suivi_emails.a_contacter`, clé `aContacter` de `GET …/suivi-emails/` (`total`,
+  `causesEnvoi`, `invites`, 200 au plus ; invités anonymisés exclus ; 4 requêtes quel que soit le nombre d’invités ; `causesEnvoi` = nombre d’**invités** dont un problème vient de l’envoi, y compris jamais envoyée et bloquée).
+  Problèmes : **invitation jamais envoyée** (sauf invité ajouté à la main en décochant l’envoi : journal `INVITE_AJOUT` `email_envoye: false`) ; **dernier envoi en échec** avec sa cause lue dans l’erreur SMTP
+  (`suivi_emails.cause_echec`, notre côté testé en premier — expéditeur refusé, identifiants refusés, filtrage 5.7.x,
+  email trop volumineux 5.3.4 —, puis adresse inexistante, domaine inexistant, boîte pleine, adresse refusée côté
+  « adresse », enfin serveur injoignable ou inconnue côté « envoi » ; revue du 2026-11-09 : un rejet Gmail 5.7.26
+  qui cite « users » n’est plus imputé à l’adresse de l’invité) ;
+  n°2 et n°3 seulement pour un invité encore présent, échecs « Sondage non envoyé » (lien clos) ignorés ; **envoi
+  bloqué** en attente depuis plus de 15 min ; **adresse probablement mal tapée** (`adresses.suggerer_correction` :
+  domaine à 1 ou 2 fautes d’un fournisseur courant — gmial.com → gmail.com —, jamais pour un domaine réel proche
+  comme ymail.com, orange.ci, ni un domaine national d’un grand fournisseur — hotmail.be, yahoo.es, aol.fr —, ni une
+  adresse professionnelle ; mde.ci corrigé seulement sur l’extension — mde.cii), signalée même si l’envoi a « réussi ». Chaque ligne :
+  nom → fiche, statut, adresse (+ correction proposée), causes, téléphone en lien `tel:`, et une action : « Corriger
+  et renvoyer » (suggestion : `PATCH invites/<id>/` puis `POST invites/<id>/renvoi-email/`), « Corriger l’adresse »
+  (→ fiche) ou « Renvoyer » (« Nouvel essai automatique » à la place quand l’envoi est seulement en file, pour éviter un doublon ;
+  écran rechargé même si le renvoi échoue après la correction). Lignes « à corriger » en premier ; bandeau quand des échecs viennent du serveur d’envoi.
+  Aucun invité : « Aucun invité à contacter ». Note en bas : « Envoyés » = accepté par le serveur d’envoi.
 - **Compteurs** envoyés / en attente / en échec, d’après le **dernier envoi** de chaque type par invité
   (`GET /evenements/<id>/suivi-emails/`, `suivi_emails.suivi` ; rechargé par le temps réel — sujets `statistiques` et
   `sondage` —, sinon toutes les 15 s).
-- **Échecs** : liste (5 visibles, 50 au plus renvoyés par l’API) avec nom → fiche de l’invité, adresse, erreur SMTP,
-  tentatives, date ; bouton « Renvoyer les N emails » avec confirmation
+- **Échecs** (dans chaque carte, 2026-11-09) : un seul bandeau « N invités n’ont pas reçu cet email » (le détail est
+  dans « Invités à contacter » ; `listeEchecs` retirée de l’API le 2026-11-09) ; bouton « Renvoyer les N emails » avec confirmation
   (`POST /evenements/<id>/suivi-emails/renvoyer-echecs/` `{type}`, 10/h par compte, `suivi_emails.renvoyer_echecs`) ;
   lien vers la liste des invités filtrée `?email1=ECHEC` (invitation seulement). Renvoi ignoré pour les n°2 et n°3
   si l’invité n’est plus Présent, et pour le n°3 si le lien a expiré (24 h). Le n°3 repart **que l’invité ait
   répondu ou non** (même total, même journal : l’admin ne peut pas déduire qui a répondu ; un invité qui a déjà
   répondu reçoit de nouveau son lien, qui affiche « déjà répondu » — `7e0e071`). Journal `EMAIL_RENVOI` si au moins
   un envoi.
-- **M’envoyer un test** (`POST /evenements/<id>/suivi-emails/test/`, 10/h par compte) : l’email rempli avec
+- **M’envoyer un test** — rangé avec l’aperçu dans le volet replié « Aperçu et email de test » de chaque carte
+  (2026-11-09) — (`POST /evenements/<id>/suivi-emails/test/`, 10/h par compte) : l’email rempli avec
   l’invitée fictive part à l’adresse du compte connecté, objet préfixé « [Test] » ; aucune ligne `EmailEnvoye`
   créée ; échec SMTP → 502 `ENVOI_IMPOSSIBLE` ; journal `EMAIL_TEST`.
 - **Aperçu** replié (`GET /evenements/<id>/apercu-emails/`, les trois types ; iframe `sandbox=""`, données fictives

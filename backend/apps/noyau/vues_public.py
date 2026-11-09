@@ -1,6 +1,7 @@
 """Espace invité : public, sans compte, avec limitation de débit."""
 
 import hashlib
+import re
 from datetime import UTC
 
 from django.core.cache import cache
@@ -12,13 +13,15 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.comptes.throttles import CacheDeSecours, LimiteIpPartagee, LimiteSensible, email_soumis
+from apps.comptes.throttles import AnonymeThrottle, CacheDeSecours, LimiteIpPartagee, LimiteSensible, email_soumis
 
 from . import caches, emails, services
 from .exceptions import ErreurMetier
+from .icones_email import ICONES_EMAIL, icone_png
 from .ics import bornes, description_agenda, ics_evenement
-from .models import Evenement, Invite, Parametres, TypeEmail
+from .models import Evenement, Invite, Parametres, Programme, TypeEmail
 from .serializers import InscriptionSerializer, tokens_programme
+from .theme import deriver_tokens
 from .validation import valider_email
 
 MESSAGE_RENVOI = (
@@ -101,12 +104,12 @@ class EvenementPublicView(APIView):
             "lienCarte": ev.lien_carte,
             # bornes UTC pour les liens Google Agenda / Outlook (même contenu que le fichier .ics)
             "agenda": {
+                "titre": ev.nom_agenda,
                 "debut": debut.astimezone(UTC).isoformat().replace("+00:00", "Z"),
                 "fin": fin.astimezone(UTC).isoformat().replace("+00:00", "Z"),
                 "description": description_agenda(ev, slug),
             },
-            "dateLimiteInscription": ev.date_limite_inscription,
-            "magazineActif": bool(ev.programme.magazine_actif and ev.programme.lien_magazine),
+            "magazineActif": ev.magazine_disponible,
             "etat": services.FERME if ancien else services.etat_inscriptions(ev),
         }
 
@@ -210,4 +213,56 @@ class AgendaView(APIView):
         reponse = HttpResponse(ics_evenement(ev, slug), content_type="text/calendar; charset=utf-8")
         nom = f"graduation-{slugify(ev.programme.nom)}-{ev.annee}.ics"
         reponse["Content-Disposition"] = f'attachment; filename="{nom}"'
+        return reponse
+
+
+# logo et icônes des emails (`emails.url_image_publique`) : noms fermés, aucune donnée personnelle
+IMAGE_EMAIL = re.compile(r"^(?:logo-(blanc|rouge)-[0-9a-f]{8}|ic-([a-zA-Z]+)-([0-9A-F]{6}))$")
+# couleurs fixes des gabarits (texte, succès) ; les autres viennent des programmes (`couleurs_des_emails`)
+COULEURS_FIXES = {"#1B1D20", "#18794E"}
+
+
+def couleurs_des_emails():
+    """Couleurs d'icônes réellement utilisées par les emails : une couleur arbitraire n'est jamais dessinée (le
+    rendu Pillow coûte du temps de calcul ; le cache des icônes est borné)."""
+    couleurs = cache.get("emails:couleurs")
+    if couleurs is None:
+        couleurs = set(COULEURS_FIXES)
+        for principale, secondaire in Programme.objects.values_list("couleur_principale", "couleur_secondaire"):
+            t = deriver_tokens(principale, secondaire)
+            couleurs |= {t["primary"].upper(), t["on_primary"].upper()}
+        cache.set("emails:couleurs", couleurs, 60)  # nouveau programme : ses icônes sous une minute
+    return couleurs
+
+
+class ImageEmailThrottle(AnonymeThrottle):
+    """Limite propre aux images des emails : un afflux d'ouvertures (Wi-Fi du lieu, une seule IP) ne consomme pas la
+    limite anonyme partagée avec l'inscription et les pages publiques."""
+
+    scope = "images_email"
+
+
+class ImageEmailView(APIView):
+    """Image d'un email servie par lien plutôt qu'intégrée au message (seuls le QR code et le fichier d'agenda sont
+    joints, ADR-015). Contenu immuable pour un nom donné (l'empreinte du logo change avec le fichier) : mis en cache
+    un an par les messageries et leurs relais d'images."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [ImageEmailThrottle]
+
+    @extend_schema(responses={(200, "image/png"): bytes}, summary="Logo ou icône des emails (PNG)")
+    def get(self, request, nom):
+        m = IMAGE_EMAIL.match(nom)
+        if not m:
+            raise Http404
+        if m[1]:
+            # empreinte périmée (ancien email) : le logo actuel, jamais une erreur
+            donnees = (emails.ASSETS / f"logo-{m[1]}.png").read_bytes()
+        elif m[2] in ICONES_EMAIL and f"#{m[3]}" in couleurs_des_emails():
+            donnees = icone_png(m[2], f"#{m[3]}")
+        else:
+            raise Http404
+        reponse = HttpResponse(donnees, content_type="image/png")
+        reponse["Cache-Control"] = "public, max-age=31536000, immutable"
         return reponse

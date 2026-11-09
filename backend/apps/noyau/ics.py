@@ -16,6 +16,10 @@ def _echapper(texte):
     return texte.replace("\r\n", "\\n").replace("\r", "\\n").replace("\n", "\\n")
 
 
+def _sans_saut(texte):
+    return texte.replace("\r", "").replace("\n", "")
+
+
 def _utc(dt):
     return dt.astimezone(UTC).strftime(FORMAT)
 
@@ -34,12 +38,19 @@ def bornes(evenement):
     return debut, fin
 
 
+# rappels de l'agenda : la veille et une heure avant le début (accueil)
+RAPPELS = ("-P1D", "-PT1H")
+
+
 def description_agenda(evenement, slug=None):
-    return (
+    description = (
         f"Accueil dès {evenement.heure_accueil:%H:%M}, lancement à {evenement.heure_debut:%H:%M}. "
         "Présentez votre QR code à l'accueil.\n"
         f"Itinéraire : {lien_pratique(evenement, 'itineraire', slug)}"
     )
+    if evenement.lien_carte_invitation:
+        description += f"\nCarte d'invitation : {evenement.lien_carte_invitation}"
+    return description
 
 
 def ics_evenement(evenement, slug=None):
@@ -57,16 +68,21 @@ def ics_evenement(evenement, slug=None):
         f"DTSTAMP:{_utc(timezone.now())}",
         f"DTSTART:{_utc(debut)}",
         f"DTEND:{_utc(fin)}",
-        f"SUMMARY:{_echapper(evenement.nom_affiche)}",
+        f"SUMMARY:{_echapper(evenement.nom_agenda)}",
         f"LOCATION:{_echapper(evenement.lieu)}",
         f"DESCRIPTION:{_echapper(description)}",
         f"URL:{settings.APP_PUBLIC_URL}/i/{slug}",
-        "BEGIN:VALARM",
-        "TRIGGER:-PT2H",
-        "ACTION:DISPLAY",
-        f"DESCRIPTION:{_echapper(evenement.nom_affiche)}",
-        "END:VALARM",
-        "END:VEVENT",
-        "END:VCALENDAR",
     ]
+    if evenement.lien_carte_invitation:
+        # lien validé (URLField) : ni saut de ligne ni point-virgule à échapper dans une valeur URI
+        lignes.append(f"ATTACH:{_sans_saut(evenement.lien_carte_invitation)}")
+    for declencheur in RAPPELS:
+        lignes += [
+            "BEGIN:VALARM",
+            f"TRIGGER:{declencheur}",
+            "ACTION:DISPLAY",
+            f"DESCRIPTION:{_echapper(evenement.nom_agenda)}",
+            "END:VALARM",
+        ]
+    lignes += ["END:VEVENT", "END:VCALENDAR"]
     return ("\r\n".join(lignes) + "\r\n").encode("utf-8")

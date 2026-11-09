@@ -18,7 +18,10 @@
   @media (max-width:620px) {
     .conteneur { width:100% !important; }
     .pad-x { padding-left:16px !important; padding-right:16px !important; }
-    .titre { font-size:26px !important; }
+    .titre { font-size:22px !important; }
+    .entete { padding:16px 16px 20px 16px !important; }
+    .marge-ext { padding:8px 4px !important; }
+    .contenu { padding:8px 8px 16px 8px !important; }
     .bouton-col { display:block !important; width:100% !important; padding:0 0 12px 0 !important; }
   }
 </style>
@@ -26,16 +29,16 @@
 <body style="margin:0;padding:0;background:#EEF0F2;">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">{% block preheader %}{% endblock %}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEF0F2" style="background:#EEF0F2;">
-<tr><td align="center" style="padding:24px 8px;">
+<tr><td align="center" class="marge-ext" style="padding:24px 8px;">
   <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
   <table role="presentation" class="conteneur" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#F6F7F8;border:1px solid #EAECEE;border-radius:16px;overflow:hidden;" bgcolor="#F6F7F8">
     <!-- En-tête : dégradé de la couleur principale, liseré secondaire -->
-    <tr><td class="pad-x police" bgcolor="{{ t.primary }}" style="background-color:{{ t.primary }};background-image:linear-gradient(165deg,{{ t.gradient_dark }} 0%,{{ t.primary }} 55%,{{ t.gradient_light }} 100%);padding:24px 24px 44px 24px;color:{{ t.on_primary }};">
-      <img src="{{ logo_src }}" width="146" height="44" alt="Flex’Checking · MDE Business School" style="display:block;width:146px;height:44px;">
-      <div class="titre police" style="margin-top:20px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.08;font-weight:800;letter-spacing:-1px;color:{{ t.on_primary }};">{{ titre }}</div>
-      <div style="margin-top:12px;width:56px;height:4px;line-height:4px;font-size:4px;background:{{ t.secondary }};border-radius:2px;">&nbsp;</div>
+    <tr><td class="pad-x police entete" bgcolor="{{ t.primary }}" style="background-color:{{ t.primary }};background-image:linear-gradient(165deg,{{ t.gradient_dark }} 0%,{{ t.primary }} 55%,{{ t.gradient_light }} 100%);padding:20px 24px 28px 24px;color:{{ t.on_primary }};">
+      <img src="{{ logo_src }}" width="120" height="36" alt="Flex’Checking · MDE Business School" style="display:block;width:120px;height:36px;">
+      <div class="titre police" style="margin-top:12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.08;font-weight:800;letter-spacing:-1px;color:{{ t.on_primary }};">{{ titre }}</div>
+      <div style="margin-top:10px;width:56px;height:4px;line-height:4px;font-size:4px;background:{{ t.secondary }};border-radius:2px;">&nbsp;</div>
     </td></tr>
-    <tr><td class="pad-x" style="padding:16px 16px 24px 16px;">
+    <tr><td class="pad-x contenu" style="padding:12px 12px 20px 12px;">
       {% block contenu %}{% endblock %}
       <p class="police" style="margin:16px 8px 0 8px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#5F666C;text-align:center;">MDE Business School · Abidjan, Côte d’Ivoire<br>{% block mention %}{% endblock %}<br>Cet email est envoyé automatiquement, merci de ne pas y répondre.<br><a href="{{ lien_confidentialite }}" style="color:#5F666C;text-decoration:underline;">Vos données personnelles</a></p>
     </td></tr>

@@ -186,6 +186,8 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("LIMITE_ANONYME", default="600/min"),
+        # images des emails (logo, icônes) : propre limite, pour ne pas épuiser la limite anonyme partagée
+        "images_email": env("LIMITE_IMAGES_EMAIL", default="3000/min"),
         "user": env("LIMITE_COMPTE", default="1200/min"),
         "connexion": "5/min",  # par IP et par email : des hôtes partageant une IP ne se bloquent pas
         "connexion_ip": env("LIMITE_CONNEXION_IP", default="30/min"),

@@ -20,11 +20,14 @@ PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740
 
 ### Evenement (cérémonie)
 `programme` (FK **PROTECT**), `date`, `heure_debut`, `heure_accueil`, `lieu`, `lien_carte`, `capacite` (≥ 1),
-`date_limite_inscription`, `inscriptions_ouvertes`, `slug_inscription` (unique), `admins` (M2M Admin),
+`lien_magazine`, `lien_brochure`, `lien_carte_invitation` (URL, vides par défaut, migration `0012`),
+`date_limite_inscription` (plus saisie depuis `0012` : alignée sur `date` par `save`), `inscriptions_ouvertes`, `slug_inscription` (unique), `admins` (M2M Admin),
 `anonymise_le` (null ; date de la dernière anonymisation de ses invités, migration `0010`).
-- `nom_affiche` = « Graduation {programme} {année} » — **calculé, jamais stocké**.
+- `nom_affiche` = « Graduation {programme} {année} » — **calculé, jamais stocké** ; `nom_agenda` = « Cérémonie de
+  Graduation {programme} {année} » ; `lien_magazine_effectif` (cérémonie, sinon programme) ;
+  `magazine_disponible` (`magazine_actif` du programme **et** lien effectif).
 - Slug : `slugify(programme)-année-<6 hex>`, jamais réattribué (vérifie aussi `AncienSlug`).
-- Validations : date limite ≤ date ; accueil ≤ début.
+- Validations : accueil ≤ début (la règle « date limite ≤ date » a disparu avec la saisie de la date limite).
 
 ### AncienSlug
 Lien remplacé par une régénération : reste lisible (page pratique, agenda, renvoi du QR) mais **n’accepte plus

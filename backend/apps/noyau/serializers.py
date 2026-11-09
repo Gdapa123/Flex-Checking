@@ -23,6 +23,7 @@ from .validation import (
     sans_controle,
     valider_couleur,
     valider_email,
+    valider_lien,
     valider_nom,
     valider_telephone,
     valider_texte_obligatoire,
@@ -81,14 +82,9 @@ class ProgrammeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Indiquez le nom du programme.")
         return v
 
-    def validate(self, attrs):
-        actif = attrs.get("magazine_actif", getattr(self.instance, "magazine_actif", False))
-        lien = attrs.get("lien_magazine", getattr(self.instance, "lien_magazine", ""))
-        if actif and not lien:
-            raise serializers.ValidationError(
-                {"lien_magazine": "Indiquez le lien du magazine pour activer l’email n°2."}
-            )
-        return attrs
+    # lien du magazine facultatif ici : chaque cérémonie peut avoir le sien (`Evenement.lien_magazine`), celui du
+    # programme sert de lien par défaut ; sans aucun lien, l'email n°2 n'est pas envoyé
+    # (`Evenement.magazine_disponible`)
 
 
 # ---------------------------------------------------------------- Événements
@@ -138,6 +134,9 @@ class EvenementSerializer(serializers.ModelSerializer):
             "heure_accueil",
             "lieu",
             "lien_carte",
+            "lien_magazine",
+            "lien_brochure",
+            "lien_carte_invitation",
             "capacite",
             "date_limite_inscription",
             "inscriptions_ouvertes",
@@ -152,14 +151,15 @@ class EvenementSerializer(serializers.ModelSerializer):
             "cree_le",
             "modifie_le",
         ]
-        read_only_fields = ["slug_inscription", "cree_le", "modifie_le"]
+        # date limite : n'est plus saisie, alignée sur la date de la cérémonie (`Evenement.save`)
+        read_only_fields = ["slug_inscription", "date_limite_inscription", "cree_le", "modifie_le"]
 
     def get_tokens(self, obj):
         return tokens_programme(obj.programme)
 
     def get_magazine_actif(self, obj):
         # même règle que l'envoi de l'email n°2 (services) et la page publique : activé ET lien renseigné
-        return bool(obj.programme.magazine_actif and obj.programme.lien_magazine)
+        return obj.magazine_disponible
 
     def get_lien_inscription(self, obj):
         return f"{settings.APP_PUBLIC_URL}/i/{obj.slug_inscription}"
@@ -176,18 +176,23 @@ class EvenementSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Ce programme est désactivé.")
         return programme
 
+    def validate_lien_magazine(self, v):
+        return valider_lien(v)
+
+    def validate_lien_brochure(self, v):
+        return valider_lien(v)
+
+    def validate_lien_carte_invitation(self, v):
+        return valider_lien(v)
+
     def validate_admins(self, admins):
         if any(a.role != Role.ADMIN and a.role != Role.SUPER_ADMIN for a in admins):
             raise serializers.ValidationError("Compte invalide.")
         return admins
 
     def validate(self, attrs):
-        date = attrs.get("date", getattr(self.instance, "date", None))
-        limite = attrs.get("date_limite_inscription", getattr(self.instance, "date_limite_inscription", None))
         accueil = attrs.get("heure_accueil", getattr(self.instance, "heure_accueil", None))
         debut = attrs.get("heure_debut", getattr(self.instance, "heure_debut", None))
-        if date and limite and limite > date:
-            raise serializers.ValidationError({"date_limite_inscription": "La date limite doit précéder l’événement."})
         if accueil and debut and accueil > debut:
             raise serializers.ValidationError({"heure_accueil": "L’accueil doit commencer avant la cérémonie."})
         return attrs
@@ -434,12 +439,16 @@ class ParametresSerializer(serializers.ModelSerializer):
             "expediteur",
             "duree_conservation_mois",
             "contact_donnees",
+            "lien_brochure_defaut",
             "modifie_le",
         ]
         read_only_fields = ["expediteur", "modifie_le"]
         extra_kwargs = {"duree_conservation_mois": {"min_value": 1, "max_value": 60}}
 
     # un saut de ligne dans l'objet ferait échouer tous les envois (en-tête d'email invalide)
+    def validate_lien_brochure_defaut(self, v):
+        return valider_lien(v)
+
     def validate_objet_email_1(self, v):
         return sans_controle(v)
 

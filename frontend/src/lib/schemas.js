@@ -130,3 +130,18 @@ export const schemaDonneesPersonnelles = z.object({
 });
 
 export const schemaCouleur = z.string().regex(/^#[0-9a-f]{6}$/i, 'Couleur au format #RRGGBB attendue.');
+
+/** Lien facultatif (magazine, brochure, carte d'invitation) : miroir de `validation.valider_lien`. */
+// eslint-disable-next-line no-control-regex
+const LIEN_RE = /^https?:\/\/[^\s/$.?#][^\s\x00-\x1f\x7f]*$/i;
+export const schemaLien = z.union([
+  z.literal(''),
+  z.string().trim().regex(LIEN_RE, 'Lien invalide : il doit commencer par https://'),
+]);
+
+/** Liens d'une cérémonie (SA5) et lien par défaut de la brochure (SA7). */
+export const schemaLiensCeremonie = z.object({
+  lienMagazine: schemaLien,
+  lienBrochure: schemaLien,
+  lienCarteInvitation: schemaLien,
+});

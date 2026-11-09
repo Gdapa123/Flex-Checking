@@ -20,7 +20,8 @@ OUVERT, FERME, COMPLET, DATE_LIMITE = "OUVERT", "FERME", "COMPLET", "DATE_LIMITE
 def etat_inscriptions(evenement, nb_inscrits=None):
     if not evenement.inscriptions_ouvertes:
         return FERME
-    if timezone.localdate() > evenement.date_limite_inscription:
+    # ouvertes jusqu'au jour de la cérémonie inclus, dans la limite des places
+    if timezone.localdate() > evenement.date:
         return DATE_LIMITE
     if nb_inscrits is None:
         nb_inscrits = evenement.invites.count()
@@ -31,7 +32,7 @@ def etat_inscriptions(evenement, nb_inscrits=None):
 
 MESSAGES_ETAT = {
     FERME: "Les inscriptions sont fermées.",
-    DATE_LIMITE: "La date limite d’inscription est dépassée.",
+    DATE_LIMITE: "Les inscriptions sont closes : la cérémonie a eu lieu.",
     COMPLET: "L’événement est complet.",
 }
 
@@ -191,9 +192,8 @@ def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode,
             emargement=emargement.pk,
             hors_ligne=bool(date_client and abs((maintenant - date_client).total_seconds()) > 120),
         )
-        programme = invite.evenement.programme
         magazine = False
-        if programme.magazine_actif and programme.lien_magazine and not emails.magazine_deja_parti(invite):
+        if invite.evenement.magazine_disponible and not emails.magazine_deja_parti(invite):
             emails.planifier(invite, TypeEmail.MAGAZINE)
             magazine = True
         return _resultat(

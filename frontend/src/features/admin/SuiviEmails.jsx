@@ -51,9 +51,14 @@ const RENVOI = {
   SONDAGE:
     'Le sondage repart vers chaque invité en échec, avec le même lien. Les liens déjà clos (24 h) ou déjà utilisés sont ignorés.',
 };
-const ECHECS_VISIBLES = 5;
+const LIGNES_VISIBLES = 8;
+const LIBELLE_TYPE = { INVITATION: 'Invitation', MAGAZINE: 'Magazine', SONDAGE: 'Sondage' };
 
-/** A7 · Suivi des trois emails : compteurs, échecs à renvoyer, email de test, aperçu. */
+/**
+ * A7 · Suivi des emails. En tête : les invités à contacter (email non reçu ou probablement non reçu, avec la cause
+ * et l'action utile) ; puis une carte par email (compteurs, renvoi groupé des échecs) ; aperçu et email de test
+ * repliés dans chaque carte.
+ */
 export default function SuiviEmails({ ev }) {
   const secours = useSecours(15_000);
   const { data, error, refetch } = useQuery({
@@ -64,44 +69,215 @@ export default function SuiviEmails({ ev }) {
   });
   if (error) return <EtatErreur titre="Suivi indisponible" erreur={error} onReessayer={() => refetch()} />;
   return (
-    <div className="grid items-start gap-6 min-[1240px]:grid-cols-2">
-      {EMAILS.map((e) => (
-        <CarteEmail key={e.cle} ev={ev} email={e} suivi={data?.[e.cle]} />
-      ))}
+    <div className="flex flex-col gap-6">
+      <AContacter ev={ev} donnees={data?.aContacter} />
+      <div className="grid items-start gap-6 min-[1240px]:grid-cols-2">
+        {EMAILS.map((e) => (
+          <CarteEmail key={e.cle} ev={ev} email={e} suivi={data?.[e.cle]} />
+        ))}
+      </div>
+      <p className="m-0 text-[13px] leading-relaxed text-texte-2">
+        « Envoyés » signifie accepté par le serveur d’envoi : la réception n’est pas garantie. Une adresse mal tapée ou
+        un email refusé plus tard apparaît dans « Invités à contacter » dès que la cause est connue.
+      </p>
     </div>
   );
 }
 
-function CarteEmail({ ev, email, suivi }) {
-  const [apercu, setApercu] = useState(false);
-  const [test, setTest] = useState(false);
-  const toast = useToast();
-  const inactif = email.cle !== 'INVITATION' && suivi?.actif === false;
-  const titre = `${email.numero} · ${email.nom}`;
+function AContacter({ ev, donnees }) {
+  const [tout, setTout] = useState(false);
+  if (!donnees) {
+    return (
+      <Carte as="section" aria-label="Invités à contacter" className="flex flex-col gap-3 p-5 sm:p-6">
+        <Squelette className="h-6 w-56" />
+        <Squelette className="h-16 w-full" />
+      </Carte>
+    );
+  }
+  if (!donnees.total) {
+    return (
+      <Carte as="section" aria-label="Invités à contacter" className="flex items-start gap-4 p-5 sm:p-6">
+        <span className="flex h-12 w-12 flex-none items-center justify-center rounded-champ bg-succes-doux text-[22px] text-succes">
+          <Icon nom="checkCircle" />
+        </span>
+        <div className="flex flex-col gap-1">
+          <h2 className="m-0 text-[19px] font-bold leading-tight">Aucun invité à contacter</h2>
+          <p className="m-0 text-[15px] text-texte-3">
+            Aucun échec d’envoi, aucun email bloqué, aucune adresse qui semble mal tapée.
+          </p>
+        </div>
+      </Carte>
+    );
+  }
+  const lignes = tout ? donnees.invites : donnees.invites.slice(0, LIGNES_VISIBLES);
+  const aCorriger = donnees.invites.filter((x) => x.action === 'CORRIGER').length;
+  return (
+    <Carte as="section" aria-labelledby="titre-a-contacter" className="flex flex-col overflow-hidden">
+      <div className="flex flex-col gap-3 p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-champ bg-avert-doux text-[22px] text-avert">
+            <Icon nom="users" />
+          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 id="titre-a-contacter" className="m-0 text-[19px] font-bold leading-tight">
+              Invités à contacter <span className="text-texte-2">· {nombre(donnees.total)}</span>
+            </h2>
+            <p className="m-0 text-[15px] text-texte-3">
+              {aCorriger
+                ? `${nombre(aCorriger)} adresse${aCorriger > 1 ? 's' : ''} à corriger ou à confirmer avec l’invité, puis renvoyer.`
+                : 'Un renvoi suffit : les adresses ne sont pas en cause.'}
+            </p>
+          </div>
+        </div>
+        {donnees.causesEnvoi > 0 && (
+          <p className="m-0 flex items-start gap-2 rounded-champ border border-avert-bord bg-avert-doux p-3 text-[14px] leading-relaxed text-texte">
+            <Icon nom="info" className="mt-0.5 flex-none text-[17px] text-avert" />
+            {donnees.causesEnvoi > 1
+              ? `Pour ${nombre(donnees.causesEnvoi)} invités, le problème vient de l’envoi, pas de leur adresse.`
+              : 'Pour 1 invité, le problème vient de l’envoi, pas de son adresse.'}{' '}
+            Renvoyez une fois l’envoi rétabli ; si cela se répète, prévenez la direction des événements.
+          </p>
+        )}
+      </div>
+      <ul className="m-0 flex list-none flex-col divide-y divide-bordure-carte border-t border-bordure-carte p-0">
+        {lignes.map((x) => (
+          <LigneContact key={x.inviteId} ev={ev} ligne={x} />
+        ))}
+      </ul>
+      {donnees.invites.length > LIGNES_VISIBLES && (
+        <button
+          type="button"
+          onClick={() => setTout((v) => !v)}
+          className="min-h-12 cursor-pointer border-0 border-t border-bordure-carte bg-transparent px-5 text-left text-[14px] font-semibold text-texte underline underline-offset-[3px] hover:bg-fond sm:px-6"
+        >
+          {tout ? 'Réduire la liste' : `Afficher les ${nombre(donnees.invites.length)} invités`}
+        </button>
+      )}
+      {donnees.total > donnees.invites.length && (
+        <p className="m-0 border-t border-bordure-carte px-5 py-3 text-[13px] text-texte-2 sm:px-6">
+          {nombre(donnees.invites.length)} premiers affichés sur {nombre(donnees.total)}.
+        </p>
+      )}
+    </Carte>
+  );
+}
 
-  const envoyerTest = async () => {
-    setTest(true);
+function LigneContact({ ev, ligne }) {
+  const [envoi, setEnvoi] = useState(false);
+  const toast = useToast();
+  const qc = useQueryClient();
+  const fiche = `/admin/evenements/${ev.id}/invites?fiche=${ligne.inviteId}`;
+  // type à renvoyer : celui du premier problème qui n'est ni une adresse douteuse ni un envoi déjà en file (un
+  // envoi « bloqué » est repris automatiquement : le renvoyer créerait un doublon), sinon l'invitation
+  const aRenvoyer = ligne.problemes.find((p) => p.code !== 'ADRESSE_DOUTEUSE' && p.code !== 'BLOQUE');
+  const typeRenvoi = aRenvoyer?.type || 'INVITATION';
+  const seulementEnFile = !ligne.suggestion && ligne.problemes.every((p) => p.code === 'BLOQUE');
+
+  const executer = async (action, message) => {
+    setEnvoi(true);
     try {
-      const r = await api.post(`/evenements/${ev.id}/suivi-emails/test/`, { type: email.cle });
-      toast(`Email de test envoyé à ${r.destinataire}.`);
+      await action();
+      toast(message);
     } catch (e) {
       toast(messageErreur(e), 'erreur');
     } finally {
-      setTest(false);
+      // rechargé même après un échec partiel (adresse corrigée, renvoi refusé) : l'écran montre l'état réel
+      qc.invalidateQueries({ queryKey: ['suivi-emails', ev.id] });
+      qc.invalidateQueries({ queryKey: ['statistiques', ev.id] });
+      setEnvoi(false);
     }
   };
+  const renvoyer = () =>
+    executer(
+      () => api.post(`/invites/${ligne.inviteId}/renvoi-email/`, { type: typeRenvoi }),
+      `${LIBELLE_TYPE[typeRenvoi]} renvoyé${typeRenvoi === 'INVITATION' ? 'e' : ''} à ${ligne.nomComplet}.`,
+    );
+  const corrigerEtRenvoyer = () =>
+    executer(
+      async () => {
+        await api.patch(`/invites/${ligne.inviteId}/`, { email: ligne.suggestion });
+        // l'email en échec (magazine d'un invité présent, par exemple), sinon l'invitation
+        await api.post(`/invites/${ligne.inviteId}/renvoi-email/`, { type: typeRenvoi });
+      },
+      `Adresse corrigée en ${ligne.suggestion}, ${LIBELLE_TYPE[typeRenvoi].toLowerCase()} renvoyé${typeRenvoi === 'INVITATION' ? 'e' : ''}.`,
+    );
+
+  return (
+    <li className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link to={fiche} className="text-[15px] font-semibold text-texte underline-offset-2 hover:underline">
+            {ligne.nomComplet}
+          </Link>
+          <Badge type={ligne.statut} taille="sm">
+            {ligne.statut === 'PRESENT' ? 'Présent' : 'Inscrit'}
+          </Badge>
+        </div>
+        <span className="break-all text-[14px] text-texte-3">
+          {ligne.email}
+          {ligne.suggestion && (
+            <>
+              {' '}
+              → <strong className="text-texte">{ligne.suggestion}</strong> ?
+            </>
+          )}
+        </span>
+        <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+          {ligne.problemes.map((p) => (
+            <li key={`${p.code}-${p.type}`} className="text-[13px] text-texte-2" title={p.detail || undefined}>
+              <span className={p.cote === 'adresse' ? 'font-semibold text-erreur' : 'font-semibold text-avert'}>
+                {p.libelle}
+              </span>
+              {' · '}
+              {LIBELLE_TYPE[p.type]}
+              {p.le ? ` · ${jourHeure(p.le)}` : ''}
+            </li>
+          ))}
+        </ul>
+        {ligne.telephone && (
+          <a
+            href={`tel:${ligne.telephone.replace(/\s/g, '')}`}
+            className="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold text-texte underline-offset-2 hover:underline"
+          >
+            <Icon nom="smartphone" className="text-[16px] text-texte-2" />
+            {ligne.telephone}
+          </a>
+        )}
+      </div>
+      <div className="flex flex-none flex-wrap gap-2">
+        {ligne.suggestion ? (
+          <Bouton taille="sm" icone="send" chargement={envoi} onClick={corrigerEtRenvoyer}>
+            Corriger et renvoyer
+          </Bouton>
+        ) : ligne.action === 'CORRIGER' ? (
+          <Link
+            to={fiche}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-champ border border-champ px-3 text-[14px] font-semibold text-texte hover:bg-fond"
+          >
+            <Icon nom="edit" className="text-[16px]" />
+            Corriger l’adresse
+          </Link>
+        ) : seulementEnFile ? (
+          <span className="inline-flex min-h-10 items-center text-[14px] text-texte-2">Nouvel essai automatique</span>
+        ) : (
+          <Bouton variante="secondaire" taille="sm" icone="refresh" chargement={envoi} onClick={renvoyer}>
+            Renvoyer
+          </Bouton>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function CarteEmail({ ev, email, suivi }) {
+  const [ouvert, setOuvert] = useState(false);
+  const inactif = email.cle !== 'INVITATION' && suivi?.actif === false;
+  const titre = `${email.numero} · ${email.nom}`;
 
   return (
     <Carte as="section" aria-label={titre} className="flex min-w-0 flex-col overflow-hidden">
       <div className="flex flex-col gap-5 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <EnteteEmail email={email} />
-          {!inactif && (
-            <Bouton variante="secondaire" taille="sm" icone="send" chargement={test} onClick={envoyerTest}>
-              M’envoyer un test
-            </Bouton>
-          )}
-        </div>
+        <EnteteEmail email={email} />
         {inactif ? (
           <p className="m-0 rounded-champ bg-subtil p-4 text-[15px] leading-relaxed text-texte-3">
             {DESACTIVE[email.cle]}
@@ -117,17 +293,17 @@ function CarteEmail({ ev, email, suivi }) {
         <div className="border-t border-bordure-carte">
           <button
             type="button"
-            aria-expanded={apercu}
-            onClick={() => setApercu((v) => !v)}
-            className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-5 text-left text-[15px] font-semibold text-texte hover:bg-fond sm:px-6"
+            aria-expanded={ouvert}
+            onClick={() => setOuvert((v) => !v)}
+            className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-5 text-left text-[14px] font-medium text-texte-3 hover:bg-fond sm:px-6"
           >
             <span className="inline-flex items-center gap-2">
-              <Icon nom="eye" className="text-[18px] text-texte-2" />
-              {apercu ? 'Masquer l’aperçu' : 'Voir l’aperçu de l’email'}
+              <Icon nom="eye" className="text-[17px] text-texte-2" />
+              Aperçu et email de test
             </span>
-            <Icon nom={apercu ? 'chevU' : 'chevD'} className="text-[18px] text-texte-2" />
+            <Icon nom={ouvert ? 'chevU' : 'chevD'} className="text-[17px] text-texte-2" />
           </button>
-          {apercu && <Apercu ev={ev} email={email} />}
+          {ouvert && <Apercu ev={ev} email={email} />}
         </div>
       )}
     </Carte>
@@ -154,25 +330,15 @@ function Compteurs({ suivi }) {
   );
 }
 
+/** Échecs de cet email : renvoi groupé (le détail, invité par invité, est dans « Invités à contacter »). */
 function Echecs({ ev, email, suivi }) {
-  const [tout, setTout] = useState(false);
   const [confirmer, setConfirmer] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const toast = useToast();
   const qc = useQueryClient();
-  const base = `/admin/evenements/${ev.id}/invites`;
 
-  if (!suivi.echecs) {
-    return (
-      <p className="m-0 flex items-center gap-2 text-[15px] text-texte-3">
-        <Icon nom="checkCircle" className="text-[18px] text-succes" />
-        Aucun échec d’envoi.
-      </p>
-    );
-  }
+  if (!suivi.echecs) return null;
 
-  const liste = tout ? suivi.listeEchecs : suivi.listeEchecs.slice(0, ECHECS_VISIBLES);
-  const reste = suivi.echecs - liste.length;
   const renvoyer = async () => {
     setConfirmer(false);
     setEnvoi(true);
@@ -193,56 +359,16 @@ function Echecs({ ev, email, suivi }) {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-champ border border-erreur-bord bg-erreur-doux p-4">
-      <div className="flex items-start gap-2.5">
-        <Icon nom="alertCircle" className="mt-0.5 flex-none text-[18px] text-erreur" />
-        <p className="m-0 text-[15px] font-semibold text-texte">
-          {suivi.echecs > 1
-            ? `${nombre(suivi.echecs)} invités n’ont pas reçu cet email`
-            : '1 invité n’a pas reçu cet email'}
-        </p>
-      </div>
-      <ul className="m-0 flex list-none flex-col divide-y divide-erreur-bord rounded-moyen bg-surface p-0">
-        {liste.map((x) => (
-          <li key={x.inviteId} className="flex flex-col gap-0.5 px-3 py-2.5">
-            <Link
-              to={`${base}?fiche=${x.inviteId}`}
-              className="self-start text-[14px] font-semibold text-texte underline-offset-2 hover:underline"
-            >
-              {x.nomComplet}
-            </Link>
-            <span className="break-all text-[13px] text-texte-3">{x.email}</span>
-            <span className="text-[12.5px] text-texte-2">
-              {x.erreur || 'Erreur inconnue'} · {x.tentatives} tentative{x.tentatives > 1 ? 's' : ''} ·{' '}
-              {jourHeure(x.le)}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {(reste > 0 || tout) && suivi.listeEchecs.length > ECHECS_VISIBLES && (
-        <button
-          type="button"
-          onClick={() => setTout((v) => !v)}
-          className="cursor-pointer self-start border-0 bg-transparent p-0 text-[14px] font-semibold text-texte underline underline-offset-[3px]"
-        >
-          {tout
-            ? 'Réduire la liste'
-            : `Afficher ${nombre(Math.min(reste, suivi.listeEchecs.length - liste.length))} de plus`}
-        </button>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <Bouton taille="sm" icone="refresh" chargement={envoi} onClick={() => setConfirmer(true)}>
-          Renvoyer {suivi.echecs > 1 ? `les ${nombre(suivi.echecs)} emails` : 'l’email'}
-        </Bouton>
-        {email.cle === 'INVITATION' && (
-          <Link
-            to={`${base}?email1=ECHEC`}
-            className="flex min-h-10 items-center px-2 text-[14px] font-semibold text-texte underline underline-offset-[3px]"
-          >
-            Voir dans la liste des invités
-          </Link>
-        )}
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-champ border border-erreur-bord bg-erreur-doux px-4 py-3">
+      <p className="m-0 flex items-center gap-2 text-[15px] font-semibold text-texte">
+        <Icon nom="alertCircle" className="flex-none text-[18px] text-erreur" />
+        {suivi.echecs > 1
+          ? `${nombre(suivi.echecs)} invités n’ont pas reçu cet email`
+          : '1 invité n’a pas reçu cet email'}
+      </p>
+      <Bouton taille="sm" icone="refresh" chargement={envoi} onClick={() => setConfirmer(true)}>
+        Renvoyer {suivi.echecs > 1 ? `les ${nombre(suivi.echecs)} emails` : 'l’email'}
+      </Bouton>
       <Dialogue
         univers="programme"
         ouvert={confirmer}
@@ -268,13 +394,32 @@ function Echecs({ ev, email, suivi }) {
 }
 
 function Apercu({ ev, email }) {
+  const [test, setTest] = useState(false);
+  const toast = useToast();
   const { data, error, refetch } = useQuery({
     queryKey: ['apercu-emails', ev.id],
     queryFn: () => api.get(`/evenements/${ev.id}/apercu-emails/`),
   });
+  const envoyerTest = async () => {
+    setTest(true);
+    try {
+      const r = await api.post(`/evenements/${ev.id}/suivi-emails/test/`, { type: email.cle });
+      toast(`Email de test envoyé à ${r.destinataire}.`);
+    } catch (e) {
+      toast(messageErreur(e), 'erreur');
+    } finally {
+      setTest(false);
+    }
+  };
   if (error) return <EtatErreur titre="Aperçu indisponible" erreur={error} onReessayer={() => refetch()} />;
   return (
     <div className="flex flex-col gap-4 border-t border-bordure-carte bg-fond p-3 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="m-0 text-[13px] text-texte-2">Vérifiez le rendu dans votre propre messagerie :</p>
+        <Bouton variante="secondaire" taille="sm" icone="send" chargement={test} onClick={envoyerTest}>
+          M’envoyer un test
+        </Bouton>
+      </div>
       <div className="flex flex-col gap-1 rounded-champ bg-surface px-4 py-3">
         <span className="text-[12px] font-semibold uppercase tracking-[.06em] text-texte-2">Objet</span>
         <div className="text-[15px] font-semibold leading-snug text-texte">

@@ -16,9 +16,10 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
    - 404 → `LienInvalide` (palette MDE, lien vers mde.ci ; titre et texte paramétrables depuis `bd4f807`, réutilisé
      par la page du sondage).
    - `etat` ≠ `OUVERT` → `EtatCarte` : `FERME`, `DATE_LIMITE`, `COMPLET`.
-2. **Présentation des étapes** (`Presentation.jsx`) : 2 ou 3 étapes (la 3ᵉ, « magazine », seulement si
-   `magazineActif`), puis « Commencer mon inscription » → `?etape=formulaire` (entrée d’historique : le bouton
-   retour du téléphone revient à la présentation).
+2. **Guide des étapes** (`Presentation.jsx`) : bloc « Comment ça se passe ? » **replié par défaut** au-dessus du
+   formulaire (bouton `aria-expanded`), 2 ou 3 étapes (la 3ᵉ, « magazine », seulement si `magazineActif`). Depuis
+   le 2026-11-09 le formulaire s’affiche directement ; l’ancien écran intermédiaire « Commencer mon inscription »
+   (`?etape=formulaire`) est supprimé.
 3. **Formulaire** : civilité, nom, prénom, email, téléphone (+225), entreprise, fonction, consentement —
    **tous obligatoires**. Chaque champ a son libellé visible et le reprend en placeholder ; le téléphone
    affiche en plus l’aide « 10 chiffres, par exemple 07 12 34 56 78 ». Validation Zod au fil de l’eau, erreurs visibles après sortie du champ ou envoi ;
@@ -34,7 +35,9 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
 
 ## Règles serveur (`services.inscrire`, `creer_invite`)
 - Verrou `select_for_update` sur l’événement → la capacité est garantie même en concurrence.
-- Ordre des refus : fermé → date limite dépassée → complet (`etat_inscriptions`).
+- Ordre des refus : fermé → cérémonie passée (code `DATE_LIMITE`) → complet (`etat_inscriptions`). Depuis le
+  2026-11-09, inscriptions ouvertes **jusqu’au jour de la cérémonie inclus**, dans la limite des places : la date
+  limite n’est plus saisie (colonne `date_limite_inscription` conservée, alignée sur `date` par `Evenement.save`).
 - Consentement obligatoire (400 `CONSENTEMENT`).
 - Email normalisé en minuscules ; code à 4 chiffres tiré par `secrets` parmi les codes libres ; jusqu’à 20
   essais en cas de collision (puis 503 `CODE_INDISPONIBLE`) ; `CODES_EPUISES` à 10 000.

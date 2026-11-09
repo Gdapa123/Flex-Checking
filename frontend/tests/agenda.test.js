@@ -4,9 +4,12 @@ import { adresse, liensAgenda, liensItineraire } from '../src/lib/agenda';
 const ev = {
   slug: 'pmd-2026-b0b3bb',
   nomAffiche: 'Graduation PMD 2026',
+  programme: 'PMD',
+  annee: 2026,
   lieu: 'Sofitel Abidjan Hôtel Ivoire · Cocody, Abidjan',
   lienCarte: 'https://maps.google.com/?q=Sofitel',
   agenda: {
+    titre: 'Cérémonie de Graduation PMD 2026',
     debut: '2026-11-27T17:45:00Z',
     fin: '2026-11-27T21:30:00Z',
     description: 'Accueil dès 17:45.\nItinéraire : https://x/i/pmd/pratique#itineraire',
@@ -26,7 +29,7 @@ describe('agenda et itinéraire', () => {
     const url = new URL(parCle(liensAgenda(ev)).google.href);
     expect(url.origin).toBe('https://calendar.google.com');
     expect(url.searchParams.get('action')).toBe('TEMPLATE');
-    expect(url.searchParams.get('text')).toBe('Graduation PMD 2026');
+    expect(url.searchParams.get('text')).toBe('Cérémonie de Graduation PMD 2026');
     expect(url.searchParams.get('dates')).toBe('20261127T174500Z/20261127T213000Z');
     expect(url.searchParams.get('location')).toBe(adresse(ev));
     expect(url.searchParams.get('details')).toContain('Itinéraire');
@@ -39,7 +42,7 @@ describe('agenda et itinéraire', () => {
     expect(url.host).toBe('outlook.office.com');
     expect(url.searchParams.get('rru')).toBe('addevent');
     expect(url.searchParams.get('startdt')).toBe(ev.agenda.debut);
-    expect(url.searchParams.get('subject')).toBe(ev.nomAffiche);
+    expect(url.searchParams.get('subject')).toBe(ev.agenda.titre);
   });
 
   it('itinéraire en mode navigation : Google Maps uniquement', () => {
@@ -55,5 +58,6 @@ describe('données sans horaires d’agenda (cache d’une version antérieure)'
     const ancien = { ...ev, agenda: undefined, date: '2026-11-27', heureAccueil: '17:45', heureDebut: '18:30' };
     const url = new URL(parCle(liensAgenda(ancien)).google.href);
     expect(url.searchParams.get('dates')).toBe('20261127T174500Z/20261127T213000Z');
+    expect(url.searchParams.get('text')).toBe('Cérémonie de Graduation PMD 2026');
   });
 });

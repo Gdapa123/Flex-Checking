@@ -83,11 +83,20 @@ def test_refus_etat(client, programme, modif, code):
     assert r.status_code == 409 and r.json()["code"] == code
 
 
-def test_refus_date_limite(client, programme):
-    hier = timezone.localdate() - timedelta(days=1)
-    ev = creer_evenement(programme, date_limite_inscription=hier, date=timezone.localdate() + timedelta(days=3))
+def test_inscription_ouverte_jusqu_au_jour_de_la_ceremonie(client, programme):
+    # plus de date limite saisie : ouvertes le jour J (dans la limite des places), une ancienne date limite est ignorée
+    aujourd_hui = timezone.localdate()
+    ev = creer_evenement(programme, date=aujourd_hui, date_limite_inscription=aujourd_hui - timedelta(days=5))
+    ev.refresh_from_db()
+    assert ev.date_limite_inscription == aujourd_hui  # alignée sur la date de la cérémonie
     r = client.post(url(ev, "inscription/"), payload(), content_type="application/json")
-    assert r.json()["code"] == "DATE_LIMITE"
+    assert r.status_code == 201
+
+
+def test_refus_apres_le_jour_de_la_ceremonie(client, programme):
+    ev = creer_evenement(programme, date=timezone.localdate() - timedelta(days=1))
+    r = client.post(url(ev, "inscription/"), payload(), content_type="application/json")
+    assert r.status_code == 409 and r.json()["code"] == "DATE_LIMITE"
 
 
 def test_deja_inscrit_meme_reponse_et_invitation_renvoyee(client, evenement):

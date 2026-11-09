@@ -14,7 +14,7 @@ le code. Colonne « Preuve » : test automatisé ou fichier qui implémente la r
 | ID | Exigence | Statut | Preuve |
 |---|---|---|---|
 | EF-01 | Inscription publique sans compte par un lien unique et régénérable par cérémonie | ✅ | `test_inscription.py`, `Evenement.regenerer_slug` |
-| EF-02 | Refus si inscriptions fermées, date limite dépassée ou capacité atteinte, avec écran dédié | ✅ | `test_refus_etat`, `test_refus_date_limite` |
+| EF-02 | Refus si inscriptions fermées, cérémonie passée (ouvertes jusqu’au jour J inclus depuis le 2026-11-09) ou capacité atteinte, avec écran dédié | ✅ | `test_refus_etat`, `test_inscription_ouverte_jusqu_au_jour_de_la_ceremonie`, `test_refus_apres_le_jour_de_la_ceremonie` |
 | EF-03 | Tous les champs obligatoires à l’inscription (dont entreprise, fonction) et consentement | ✅ | `test_entreprise_et_fonction_obligatoires`, `test_refus_sans_consentement` |
 | EF-04 | Une adresse = une inscription par cérémonie ; la réponse ne révèle pas si l’adresse est inscrite | ✅ | `test_deja_inscrit_meme_reponse_et_invitation_renvoyee` |
 | EF-05 | Email n°1 avec QR code, code de secours à 4 chiffres unique par cérémonie, infos pratiques, .ics | ✅ | `test_inscription_reussie_envoie_email_1`, `test_unicite_des_codes` |

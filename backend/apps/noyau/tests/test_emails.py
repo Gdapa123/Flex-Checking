@@ -81,6 +81,6 @@ def test_invitation_mise_en_garde_qr_piege(evenement, settings):
     settings.APP_PUBLIC_URL = "https://inscription.mde.ci"
     r = rendre(TypeEmail.INVITATION, Source.depuis_invite(nouvel_invite(evenement)))
     for version in (r["html"], r["texte"]):
-        assert "inutile de le scanner vous-même" in version
+        assert "inutile de le scanner vous-même" in version.lower()
         assert "jamais de paiement ni de mot de passe" in version
         assert "inscription.mde.ci" in version

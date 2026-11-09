@@ -22,12 +22,16 @@ function horaires(ev) {
   };
 }
 
+/** Titre de l'événement d'agenda (même règle que `Evenement.nom_agenda` côté serveur). */
+const titreAgenda = (ev) => ev.agenda?.titre || `Cérémonie de Graduation ${ev.programme} ${ev.annee}`;
+
 export function liensAgenda(ev) {
   const { debut, fin, description } = horaires(ev);
   const lieu = adresse(ev);
+  const titre = titreAgenda(ev);
   const google = new URLSearchParams({
     action: 'TEMPLATE',
-    text: ev.nomAffiche,
+    text: titre,
     dates: `${compact(debut)}/${compact(fin)}`,
     details: description,
     location: lieu,
@@ -35,7 +39,7 @@ export function liensAgenda(ev) {
   const microsoft365 = `https://outlook.office.com/calendar/0/deeplink/compose?${new URLSearchParams({
     path: '/calendar/action/compose',
     rru: 'addevent',
-    subject: ev.nomAffiche,
+    subject: titre,
     startdt: debut,
     enddt: fin,
     location: lieu,

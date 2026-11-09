@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { erreursParChamp, formaterTelephone, schemaInscription } from '../../lib/schemas';
 import useTitre from '../../lib/useTitre';
@@ -95,14 +95,6 @@ function Formulaire({ ev, slug }) {
   const [envoi, setEnvoi] = useState(false);
   const [erreursServeur, setErreursServeur] = useState({});
   const [etat, setEtat] = useState(ev.etat !== 'OUVERT' ? ev.etat : null);
-  // Écran de présentation des étapes avant le formulaire. L'étape est dans l'URL (entrée d'historique) :
-  // le bouton retour du téléphone revient à la présentation au lieu de quitter le site, et un rechargement la conserve.
-  const [parametres] = useSearchParams();
-  const commence = parametres.get('etape') === 'formulaire';
-  const commencer = () => {
-    naviguer('?etape=formulaire');
-    window.scrollTo(0, 0);
-  };
 
   const erreurs = useMemo(
     () => ({ ...erreursParChamp(schemaInscription.safeParse(v)), ...erreursServeur }),
@@ -185,15 +177,6 @@ function Formulaire({ ev, slug }) {
     el?.focus({ preventScroll: true });
   }
 
-  if (!commence) {
-    return (
-      <div className="flex min-h-[100dvh] flex-col">
-        <EnteteInvite ev={ev} />
-        <Presentation ev={ev} onCommencer={commencer} />
-      </div>
-    );
-  }
-
   return (
     <form
       noValidate
@@ -214,6 +197,9 @@ function Formulaire({ ev, slug }) {
             {erreursServeur.general}
           </div>
         )}
+
+        {/* guide des étapes replié : le formulaire s'affiche directement */}
+        <Presentation ev={ev} />
 
         <section className="flex animate-in-up flex-col gap-4 rounded-carte border border-bordure-carte bg-surface px-4 py-4 shadow-carte sm:gap-6 sm:px-5 sm:py-6">
           <div className="flex items-baseline justify-between gap-1 sm:flex-col sm:items-start">

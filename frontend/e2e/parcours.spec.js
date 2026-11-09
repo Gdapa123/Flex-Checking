@@ -54,8 +54,11 @@ test('inscription → email 1 → scan par code → Présent → email 2 → tab
     const p = await invite.newPage();
     await p.goto(`/i/${ev.slugInscription}`);
     await expect(p.getByRole('heading', { name: ev.nomAffiche })).toBeVisible();
-    await expect(p.getByRole('heading', { name: 'Comment ça se passe ?' })).toBeVisible();
-    await p.getByRole('button', { name: 'Commencer mon inscription' }).click();
+    // formulaire affiché directement ; le guide des étapes est replié et se déplie
+    const guide = p.getByRole('button', { name: /Comment ça se passe/ });
+    await expect(guide).toHaveAttribute('aria-expanded', 'false');
+    await guide.click();
+    await expect(p.getByText('Je m’inscris', { exact: true })).toBeVisible();
     await p.getByRole('button', { name: 'Confirmer mon inscription' }).click();
     await expect(p.getByText(/informations à compléter/)).toBeVisible(); // validation
     await p.getByRole('radio', { name: 'Mme' }).click();

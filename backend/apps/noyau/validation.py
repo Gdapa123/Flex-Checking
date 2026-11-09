@@ -105,3 +105,15 @@ def valider_couleur(valeur):
     if not HEX_RE.match(valeur or ""):
         raise serializers.ValidationError("Couleur au format #RRGGBB attendue.")
     return valeur.upper()
+
+
+LIEN_RE = re.compile(r"^https?://[^\s/$.?#][^\s\x00-\x1f\x7f]*$", re.IGNORECASE)
+
+
+def valider_lien(valeur):
+    """Lien facultatif (magazine, brochure, carte d'invitation) : vide, ou adresse http(s) sans espace ni caractère
+    de contrôle. Miroir de `schemaLien` (schemas.js) ; `URLField` vérifie en plus le domaine."""
+    valeur = (valeur or "").strip()
+    if valeur and not LIEN_RE.match(valeur):
+        raise serializers.ValidationError("Lien invalide : il doit commencer par https://")
+    return valeur

@@ -9,6 +9,7 @@ from functools import lru_cache
 
 from PIL import Image, ImageDraw
 
+ICONES_EMAIL = ("calendar", "calendarPlus", "clock", "mapPin", "check", "navigation", "external")
 ECHELLE = 4
 TAILLE = 40  # px du PNG final (affiché en 20 px, net sur écrans haute densité)
 

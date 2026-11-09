@@ -39,11 +39,11 @@ def test_suivi_compte_et_liste_les_echecs(evenement, client_admin):
     assert r.status_code == 200
     inv = r.json()["INVITATION"]
     assert (inv["envoyes"], inv["attente"], inv["echecs"]) == (1, 0, 1)
-    assert inv["listeEchecs"][0]["inviteId"] == ko.pk
-    assert inv["listeEchecs"][0]["email"] == "ko@exemple.ci"
-    assert "550" in inv["listeEchecs"][0]["erreur"]
+    # plus de liste d'échecs par email : le détail est dans « Invités à contacter » (sans doublon de données)
+    assert "listeEchecs" not in inv
+    assert [x["inviteId"] for x in r.json()["aContacter"]["invites"]] == [ko.pk]
     assert r.json()["MAGAZINE"]["actif"] is True
-    assert ok.pk not in [e["inviteId"] for e in inv["listeEchecs"]]
+    assert ok.pk != ko.pk
 
 
 def test_suivi_reserve_aux_admins_de_la_ceremonie(autre_evenement, client_admin):

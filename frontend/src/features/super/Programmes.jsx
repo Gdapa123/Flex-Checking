@@ -337,7 +337,7 @@ export default function Programmes() {
             <div className="flex flex-col gap-2 border-t border-mde-bordure pt-4">
               <span className="text-[15px] font-semibold">Email n°2 · magazine</span>
               <label className="flex flex-col gap-2 text-[15px] font-medium">
-                Lien du magazine
+                Lien du magazine par défaut
                 <input
                   type="url"
                   value={d.lienMagazine}
@@ -354,7 +354,7 @@ export default function Programmes() {
                 onChange={(v) => setD({ ...d, magazineActif: v })}
                 univers="mde"
                 label="Envoyer l’email n°2 au passage « Présent »"
-                description="Une seule fois par invité, avec le lien du magazine."
+                description="Une seule fois par invité. Lien de la cérémonie (écran Cérémonies), sinon ce lien par défaut."
               />
             </div>
 

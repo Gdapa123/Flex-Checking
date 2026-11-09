@@ -3,7 +3,7 @@ type: feature
 statut: implémenté
 verifie: 2026-11-09
 commit: f55527e
-sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
+sources: [backend/apps/noyau/tests/test_corrections_invitation.py, backend/apps/noyau/vues_public.py, backend/templates/emails/invitation.html, backend/templates/emails/magazine.html, backend/apps/noyau/adresses.py, backend/apps/noyau/tests/test_a_contacter.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
 ---
 
 # Emails n°1 (invitation), n°2 (magazine) et n°3 (sondage)
@@ -12,7 +12,7 @@ sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emai
 | Email | Déclencheur | Condition |
 |---|---|---|
 | n°1 · invitation | inscription publique, ajout manuel (case cochée par défaut), renvoi (public, fiche, action groupée) | toujours |
-| n°2 · magazine | premier passage à Présent | programme `magazine_actif` **et** `lien_magazine` renseigné **et** aucun email MAGAZINE déjà créé pour cet invité |
+| n°2 · magazine | premier passage à Présent | programme `magazine_actif` **et** un lien de magazine (celui de la cérémonie, sinon celui du programme : `Evenement.magazine_disponible`) **et** aucun email MAGAZINE déjà créé pour cet invité |
 | n°3 · sondage | lendemain de la cérémonie, à partir de 8 h (Beat ou cron) | invité Présent, programme `sondage_actif`, aucun lien de sondage existant ; au moment de l’envoi, `tasks._envoyer` le passe en ECHEC sans l’envoyer si le lien est clos (24 h) ou si la présence a été annulée — voir [sondage-satisfaction](sondage-satisfaction.md) |
 
 L’email n°2 **ne repart jamais automatiquement**, même après annulation puis nouveau scan
@@ -61,9 +61,24 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   avis en 3 questions » avec bouton et date de clôture), le texte après va dans une carte suivante ; infos
   pratiques et boutons Agenda / Itinéraire toujours ajoutés (n°1). Valeurs échappées en HTML.
 - Gabarits `templates/emails/` : tables 600 px, compatibles Gmail/Outlook, pas de marge négative ; icônes en PNG
-  générées par Pillow (`icones_email.py`) ; logo blanc ou rouge selon le contraste.
-- Structure MIME : `mixed[ related[ alternative(texte, html), images CID ], pièces jointes ]`.
-- Pièces jointes n°1 : `qr-code.png` et `graduation.ics` (aucune pièce jointe pour n°2 et n°3).
+  générées par Pillow (`icones_email.py`) ; logo blanc ou rouge selon le contraste. Depuis le 2026-11-09, logo et
+  icônes sont **servis par lien** (`emails.url_image_publique` → `GET /api/public/emails/images/<nom>.png`,
+  `vues_public.ImageEmailView`, noms fermés, cache un an) au lieu d’être intégrés : certaines messageries listaient
+  chaque image intégrée comme pièce jointe. Limite : une messagerie qui bloque les images distantes (Outlook de
+  bureau) affiche le texte de remplacement du logo ; le QR code, lui, reste intégré.
+- Structure MIME : `mixed[ related[ alternative(texte, html), QR code CID sans nom de fichier ], pièces jointes ]`.
+- Pièces jointes n°1 : **seulement** `qr-code.png` et `graduation.ics` (aucune pièce jointe pour n°2 et n°3).
+- Email n°1 compact (2026-11-09) : message, QR code (132 px) et code de secours côte à côte, mise en garde courte,
+  infos pratiques, boutons « Agenda » / « Itinéraire », puis la formule de fin (texte après `{qr_code}`, par défaut
+  « À très bientôt ! », sans signature) **en bas de l’email**. Mesuré à 390 px de large : formule de fin à 715 px.
+- Email n°2 (2026-11-09) : deux boutons, « Lire le magazine » (`Evenement.lien_magazine_effectif`) et « Brochure
+  Executive Education » (`Evenement.lien_brochure`, sinon `Parametres.lien_brochure_defaut`, `https://mde.ci` par
+  défaut) ; un bouton sans lien est masqué.
+- Fichier .ics (`ics.ics_evenement`) : titre « Cérémonie de Graduation {programme} {année} »
+  (`Evenement.nom_agenda`, aussi pour les liens Google Agenda / Microsoft 365 via `agenda.titre`), **deux rappels**
+  (la veille `-P1D` et une heure avant `-PT1H`), carte d’invitation (`Evenement.lien_carte_invitation`) en `ATTACH`
+  et dans la description. Limite : le lien Google Agenda ne permet ni rappel ni pièce jointe (Google applique les
+  rappels par défaut de l’utilisateur) ; seul le lien de la carte figure dans sa description.
 - Gabarits par type : `invitation`, `magazine`, `sondage` (`.html` + `.txt`, sur `base.html`). Le gabarit `sondage.html` contient le questionnaire (formulaire HTML, voir [sondage-satisfaction](sondage-satisfaction.md)).
 - Pied de page commun (`base.html` et les trois `.txt`) : adresse de MDE, mention propre au type, phrase « Cet email
   est envoyé automatiquement, merci de ne pas y répondre. » (ajoutée le 2026-11-06 : envoi prévu depuis
@@ -79,9 +94,14 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   (`vues_admin._source_exemple`, lien de sondage factice) : `POST /api/parametres/apercu-email/` (super admin) et
   `GET /api/evenements/<id>/apercu-emails/` (les trois types, utilisé par l’aperçu replié de A7).
 - Écran A7 « Suivi des emails » (`frontend/src/features/admin/SuiviEmails.jsx`, logique serveur
-  `backend/apps/noyau/suivi_emails.py`) — remplace l’ancien `ApercuEmails.jsx`, supprimé dans `bd4f807` : une carte
-  par email (n°1, n°2, n°3) avec compteurs envoyés / en attente / échecs (dernier envoi de chaque invité), jusqu’à
-  50 échecs listés, renvoi groupé, email de test vers son propre compte, aperçu replié ; voir
+  `backend/apps/noyau/suivi_emails.py`) — remplace l’ancien `ApercuEmails.jsx`, supprimé dans `bd4f807`. En tête
+  (2026-11-09), « Invités à contacter » (`suivi_emails.a_contacter`, clé `aContacter`) : invitation jamais envoyée,
+  dernier envoi en échec avec sa cause lue dans l’erreur SMTP (`suivi_emails.cause_echec`, côté adresse ou côté
+  envoi), envoi en attente depuis plus de 15 min, adresse probablement mal tapée (`adresses.suggerer_correction`,
+  distance d’édition sur les fournisseurs courants) ; actions « Corriger et renvoyer » (renvoie l’email en échec,
+  sinon l’invitation), « Corriger l’adresse » (fiche), « Renvoyer », lien `tel:`. Puis une carte par email (n°1, n°2,
+  n°3) avec compteurs envoyés / en attente / échecs (dernier envoi de chaque invité) et renvoi groupé ; aperçu et
+  email de test vers son propre compte repliés ; voir
   [tableau-de-bord](tableau-de-bord.md) § A7. Points d’accès (admin de la cérémonie) :
   `GET evenements/<id>/suivi-emails/`, `POST …/suivi-emails/renvoyer-echecs/` (10/h, `relance_emails`),
   `POST …/suivi-emails/test/` (10/h, `email_test`).
@@ -97,7 +117,7 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
 « ne pas répondre » dans les trois emails),
 `test_emargement.py` (magazine unique), `test_analytique.py` (file indisponible, relance),
 `test_suivi_emails.py` (9 : compteurs, droits, renvoi groupé, magazine désactivé, email de test, SMTP
-indisponible), `test_sondage.py` (envoi, renvoi et aperçu du n°3), `test_invites.py`
+indisponible), `test_a_contacter.py` (30 : causes SMTP, adresses douteuses, invités à contacter, nombre de requêtes), `test_sondage.py` (envoi, renvoi et aperçu du n°3), `test_invites.py`
 (`test_renvoi_magazine_refuse_si_desactive`), `test_durcissement.py` (`test_modeles_d_email_enregistres`,
 `test_variables_remplacees_en_une_seule_passe`, `test_message_id_stable_par_envoi`,
 `test_relance_d_une_tentative_perdue`, `test_renvoi_du_sondage_ne_revele_pas_qui_a_repondu`) ;
@@ -105,4 +125,7 @@ indisponible), `test_sondage.py` (envoi, renvoi et aperçu du n°3), `test_invit
 
 ## Limites
 - L’ancien écart du renvoi manuel du n°2 (`magazine_actif` non vérifié) est corrigé le 2026-10-22 (R14 résolu).
+- Les rebonds différés (adresse acceptée puis abandonnée par le destinataire) ne remontent pas à l’application :
+  « Envoyés » signifie accepté par le serveur d’envoi ; seule une adresse qui ressemble à une faute de frappe est
+  signalée.
 - Email n°3 absent de la liste des invités et de son export (R15 de [risques-et-dette](../project/risques-et-dette.md)).

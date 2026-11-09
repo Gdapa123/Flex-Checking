@@ -82,6 +82,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [decisions/ADR-012-sondage-satisfaction.md](decisions/ADR-012-sondage-satisfaction.md) | acceptée | Sondage : lien personnel 24 h, une réponse par email et par appareil, Beat ou cron |
 | [decisions/ADR-013-conservation-limitee-anonymisation.md](decisions/ADR-013-conservation-limitee-anonymisation.md) | acceptée | Données personnelles : anonymisation automatique après une durée réglable |
 | [decisions/ADR-014-migrations-expand-contract.md](decisions/ADR-014-migrations-expand-contract.md) | acceptée | Migrations : étendre (nullable / `db_default`) puis contracter ; sauvegarde avant destruction |
+| [decisions/ADR-015-images-email-par-lien.md](decisions/ADR-015-images-email-par-lien.md) | acceptée | Logo et icônes des emails servis par lien ; seules pièces jointes : QR code et .ics |
 
 ## Tests
 | Page | Description |
