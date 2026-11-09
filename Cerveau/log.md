@@ -1022,3 +1022,15 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** frontmatter des 23 pages signalées, `Cerveau/index.md`
 - **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 53 pages, 0 erreur, 0 page à revérifier, 0 avertissement.
 - **Risques ou limites :** aucun.
+
+## [2026-11-09] fonctionnalité | Robustesse : délai SMTP, délai de frappe de la recherche du scan, garde contre les N+1
+
+- **Contexte :** tri d’une liste générique de conseils de performance ; trois points retenus comme utiles et non faits.
+- **Modifications :**
+  - `EMAIL_TIMEOUT` (15 s, variable d’environnement, `.env.example`) : sans lui, un SMTP qui accepte la connexion sans répondre bloquait indéfiniment l’email de test (envoyé dans la requête), l’envoi sans file (sans Redis) et un worker jusqu’à sa limite de 120 s.
+  - Recherche du scan et de la borne : `lib/useValeurDifferee` (300 ms, effacement immédiat), « Recherche… » pendant l’attente. Avant : une requête par lettre, la borne (30 recherches/min) pouvait se bloquer avec quelques invités à la suite.
+  - `test_requetes.py` : 27 pages + recherche de la borne mesurées avec 3 puis 23 invités. **Aucun N+1 trouvé** dans le code actuel ; le test sert de garde (vérifié en retirant un `select_related` : échec).
+  - E2E : projet `setup` (`auth.setup.js`) qui enregistre une session admin réutilisée par `sessionAdmin.spec.js` et `cameraQr.spec.js` ; la suite dépassait sinon la limite serveur de 5 connexions/min par compte (échecs « Trop de tentatives »), limite laissée intacte. Test temps réel déplacé (inscription faite depuis un contexte sans session).
+- **Fichiers concernés :** `backend/config/settings.py`, `.env.example`, `.gitignore`, `backend/apps/noyau/tests/test_suivi_emails.py`, `backend/apps/noyau/tests/test_requetes.py`, `frontend/src/lib/useValeurDifferee.js`, `frontend/src/features/scan/ScanPoste.jsx`, `frontend/tests/valeurDifferee.test.jsx`, `frontend/playwright.config.js`, `frontend/e2e/auth.setup.js`, `frontend/e2e/sessionAdmin.spec.js`, `frontend/e2e/parcours.spec.js`, `frontend/e2e/cameraQr.spec.js`, pages du wiki (intégrations, déploiement Infomaniak, exigences non fonctionnelles, scan, tests)
+- **Validation :** `ruff` OK ; `pytest` 294 passed (MySQL Docker) ; `npm run lint` OK ; Vitest 83/83 ; build OK ; Playwright 7/7, deux exécutions de suite.
+- **Risques ou limites :** N+1 non mesurés dans les tâches Celery (actions groupées, relances, sondage, anonymisation) ; `EMAIL_TIMEOUT` s’applique à chaque échange SMTP, pas à l’envoi complet (borné par la limite Celery de 90/120 s) ; non déployé.

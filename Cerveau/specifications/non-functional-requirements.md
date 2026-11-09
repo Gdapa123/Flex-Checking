@@ -67,6 +67,12 @@ Les limites sensibles (connexion, renvoi, codes, mot de passe) et les limites pa
   2026-10-26 : `/api/sante/` médiane 0,17 s au lieu de 0,6 à 1,1 s quand chaque requête ouvrait sa connexion TLS ;
   démarrage à froid de la fonction ≈ 5 s, non traité.
 - Caches 30 s invalidés à chaque changement : statistiques, page publique, analyses.
+- Pas de requêtes N+1 (2026-11-09) : 27 pages et la recherche de la borne gardent un nombre de requêtes constant
+  quand le nombre d’invités grandit (`test_requetes.py`). Non couvert : tâches Celery (actions groupées, relances,
+  envoi du sondage, anonymisation).
+- Recherche à la frappe différée de 300 ms : liste des invités (`GestionInvites`) et recherche du scan et de la borne
+  (`lib/useValeurDifferee`, 2026-11-09) ; « Kouassi » tapé lettre par lettre = 1 requête au lieu de 5, la borne ne
+  bute plus sur sa limite de 30 recherches/min.
 - Émargement : ~50 ms (README) ; email n°2 en arrière-plan.
 
 ## Résilience
@@ -75,6 +81,7 @@ Les limites sensibles (connexion, renvoi, codes, mot de passe) et les limites pa
 | File Celery | l’inscription ou le scan réussit ; l’email reste « en attente » et est relancé (`tasks.relancer_emails_en_attente` : jamais parti depuis 15 min, ou dernière tentative de plus d'1 h, `derniere_tentative_le`, migration `0011`) ; `Message-ID` stable par envoi, incluant l'hôte public et la date de création (base de test ≠ production) contre les doublons |
 | Disque MySQL (production) | durabilité InnoDB par défaut (`innodb-flush-log-at-trx-commit=2` retiré de `docker-compose.prod.yml` le 2026-10-22) ; journaux binaires 7 jours (`--binlog-expire-logs-seconds=604800`) |
 | Disque plein (journaux) | journaux des conteneurs plafonnés à 3 × 10 Mo par service (`x-journaux`, dev et prod) |
+| SMTP lent ou muet | chaque échange SMTP abandonné après `EMAIL_TIMEOUT` (15 s) : l’email de test répond 502 « Réessayez plus tard », l’email planifié passe en échec puis est relancé ; prouvé par `test_email_de_test_smtp_muet_echoue_vite` (2026-11-09) |
 | Redis | pas de cache ni de temps réel ; limites en mémoire locale ; interrogation périodique |
 | WebSocket | reconnexion progressive, rechargement complet |
 | Réseau au scan | file IndexedDB, synchronisation |

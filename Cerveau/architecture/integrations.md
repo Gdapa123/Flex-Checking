@@ -10,7 +10,7 @@ sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps
 
 | Intégration | Usage | Configuration | Détail |
 |---|---|---|---|
-| **SMTP** | emails n°1, n°2 et n°3 (sondage) ; email de test envoyé de façon synchrone depuis « Suivi des emails » (`suivi_emails.envoyer_test`) | `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL` | dev : console ou Mailpit ; prod : fournisseur ❓ à confirmer ; `Message-ID` construit avec le domaine de `DEFAULT_FROM_EMAIL` et l’hôte de `APP_PUBLIC_URL` (aucune collision entre test et production) |
+| **SMTP** | emails n°1, n°2 et n°3 (sondage) ; email de test envoyé de façon synchrone depuis « Suivi des emails » (`suivi_emails.envoyer_test`) | `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `EMAIL_TIMEOUT` (15 s par défaut, depuis le 2026-11-09 : un SMTP muet ne bloque plus l’email de test ni un worker), `DEFAULT_FROM_EMAIL` | dev : console ou Mailpit ; prod : fournisseur ❓ à confirmer ; `Message-ID` construit avec le domaine de `DEFAULT_FROM_EMAIL` et l’hôte de `APP_PUBLIC_URL` (aucune collision entre test et production) |
 | **Mailpit** | boîte de test (dev Docker) | `docker-compose.yml`, http://localhost:8025 | aucun email ne sort |
 | **Redis** | broker Celery, relais Channels, cache, limites, métriques | `REDIS_URL` (base 0), `REDIS_CACHE_URL` (base 1 par défaut) | absent → mode dégradé (ADR-007) ; client `redis==5.2.1` avec `kombu==5.6.2` figé (kombu 5.7.0 exige redis-py ≥ 6.1) |
 | **Google Agenda / Microsoft 365** | liens « Ajouter à l’agenda » | `lib/agenda.js` | horaires UTC fournis par l’API (`agenda.debut/fin`) |

@@ -583,6 +583,7 @@ Ce que veut dire chaque ligne :
 | `EMAIL_BACKEND` | envoi réel par SMTP (en développement, les emails restent dans la console) |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS` | serveur d’envoi de MDE, port **587**, chiffrement activé (`1`) |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | compte d’envoi dédié |
+| `EMAIL_TIMEOUT` | facultatif : délai maximal (secondes) de chaque échange SMTP, **15** par défaut |
 | `DEFAULT_FROM_EMAIL` | **adresse seule** (ex. `evenements@mde.ci`), sans nom ni guillemets |
 | `MYSQL_INNODB_BUFFER` | mémoire de MySQL : `512M` au lieu de `1G` par défaut (petit serveur) |
 | `REDIS_MAXMEMORY` | mémoire de Redis : `128mb` au lieu de `512mb` |

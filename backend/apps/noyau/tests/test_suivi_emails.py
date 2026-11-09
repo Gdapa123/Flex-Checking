@@ -1,5 +1,9 @@
 """Écran « Suivi des emails » : compteurs, renvoi groupé des échecs, email de test."""
 
+import socket
+import threading
+import time
+
 import pytest
 from django.core import mail
 
@@ -96,6 +100,35 @@ def test_email_de_test_smtp_indisponible(evenement, client_admin, settings):
     r = client_admin.post(url(evenement, "test/"), {"type": "INVITATION"}, format="json")
     assert r.status_code == 502
     assert r.json()["code"] == "ENVOI_IMPOSSIBLE"
+
+
+def test_email_de_test_smtp_muet_echoue_vite(evenement, client_admin, settings):
+    # SMTP qui accepte la connexion puis ne répond jamais : sans EMAIL_TIMEOUT, la requête resterait bloquée
+    serveur = socket.socket()
+    serveur.bind(("127.0.0.1", 0))
+    serveur.listen(1)
+    connexions = []
+    threading.Thread(target=lambda: connexions.append(serveur.accept()), daemon=True).start()
+    settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    settings.EMAIL_HOST, settings.EMAIL_PORT = "127.0.0.1", serveur.getsockname()[1]
+    settings.EMAIL_USE_TLS, settings.EMAIL_TIMEOUT = False, 1
+    debut = time.monotonic()
+    try:
+        r = client_admin.post(url(evenement, "test/"), {"type": "INVITATION"}, format="json")
+    finally:
+        serveur.close()
+        for c, _ in connexions:
+            c.close()
+    assert r.status_code == 502 and r.json()["code"] == "ENVOI_IMPOSSIBLE"
+    assert time.monotonic() - debut < 5
+
+
+def test_delai_smtp_par_defaut():
+    from django.conf import settings
+    from django.core.mail import get_connection
+
+    assert settings.EMAIL_TIMEOUT == 15
+    assert get_connection("django.core.mail.backends.smtp.EmailBackend").timeout == 15
 
 
 def test_type_invalide(evenement, client_admin):

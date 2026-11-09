@@ -5,6 +5,7 @@ import { api } from '../../lib/api';
 import { heure, MODES, nombre } from '../../lib/format';
 import { useSecours } from '../../lib/tempsReel';
 import useTitre from '../../lib/useTitre';
+import useValeurDifferee from '../../lib/useValeurDifferee';
 import ThemeScope from '../../theme/ThemeScope';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
@@ -516,17 +517,19 @@ function Poste({ evenement }) {
 
   // ------------------------------------------------------------------ recherche par nom
   const borne = appareil === 'TABLETTE';
-  const rechercheActive = vue === 'recherche' && (!borne || q.trim().length >= 3);
+  // une requête quand la saisie s'arrête (300 ms), pas une par lettre : la borne est limitée à 30 recherches/min
+  const qRecherche = useValeurDifferee(q.trim());
+  const rechercheActive = vue === 'recherche' && (!borne || qRecherche.length >= 3);
   const {
     data: recherche,
     isFetching,
     isError: rechercheEnErreur,
   } = useQuery({
-    queryKey: ['scan-recherche', evenementId, q.trim()],
+    queryKey: ['scan-recherche', evenementId, qRecherche],
     queryFn: () =>
       borne
-        ? api.get(`/evenements/${evenementId}/borne/recherche/`, { q: q.trim() })
-        : api.get(`/evenements/${evenementId}/invites/`, { q: q.trim(), taille: 25, tri: 'nom' }),
+        ? api.get(`/evenements/${evenementId}/borne/recherche/`, { q: qRecherche })
+        : api.get(`/evenements/${evenementId}/invites/`, { q: qRecherche, taille: 25, tri: 'nom' }),
     enabled: rechercheActive && enLigne,
     placeholderData: (p) => p,
     staleTime: 3000,
@@ -620,7 +623,7 @@ function Poste({ evenement }) {
         borne={borne}
         enCours={phase === 'detection'}
         indisponible={!enLigne || (rechercheEnErreur && !recherche)}
-        chargement={isFetching && !recherche}
+        chargement={(isFetching && !recherche) || q.trim() !== qRecherche}
         total={recherche?.total ?? 0}
         resultats={(recherche?.resultats || []).map((r) => ({ ...r, heure: heure(r.presentLe) }))}
         onEmarger={emargerManuel}

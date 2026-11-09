@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
 import path from 'node:path';
+import { SESSION_ADMIN } from '../playwright.config.js';
 
 /**
  * Lecture par la vraie caméra (ZXing) : Chromium reçoit une fausse caméra qui filme un QR code piégé
  * (lien « https://site-piege.example/connexion », fichier généré `fixtures/qr-lien-piege.mjpeg`).
  */
 const VIDEO = path.resolve('e2e/fixtures/qr-lien-piege.mjpeg');
-const ADMIN = { email: 'mariam.kone@mde.ci', mdp: process.env.DEMO_MOT_DE_PASSE_ADMIN };
 
 test.use({
+  storageState: SESSION_ADMIN, // session de auth.setup.js : pas de nouvelle connexion
   permissions: ['camera'],
   launchOptions: {
     args: [
@@ -20,12 +21,7 @@ test.use({
 });
 
 test('caméra : un QR code piégé affiche « QR code non reconnu », sans envoi ni ouverture', async ({ page }) => {
-  expect(ADMIN.mdp, 'définir DEMO_MOT_DE_PASSE_ADMIN (fichier .env ou CI)').toBeTruthy();
-  await page.goto('/connexion');
-  await page.getByLabel('Email').fill(ADMIN.email);
-  await page.getByLabel('Mot de passe', { exact: true }).fill(ADMIN.mdp);
-  await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page.getByRole('heading', { name: 'Vos cérémonies' })).toBeVisible();
+  await page.goto('/scan');
   const evenements = await page.evaluate(() => fetch('/api/evenements/').then((r) => r.json()));
   const ev = evenements.find((e) => e.programmeNom === 'PMD' && e.etatInscriptions === 'OUVERT');
   expect(ev, 'un événement PMD ouvert doit exister (seed_demo)').toBeTruthy();

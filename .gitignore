@@ -14,6 +14,8 @@ frontend/playwright-report/
 .DS_Store
 media-tests/
 .emails-e2e/
+# session admin des tests E2E (cookies de connexion, recréée à chaque exécution)
+frontend/e2e/.auth/
 
 # Liaison locale aux projets Vercel (vercel link)
 .vercel/

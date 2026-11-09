@@ -19,6 +19,7 @@ if (fs.existsSync(fichierEnv)) {
  * `python manage.py seed_demo` exécuté.
  */
 export const DOSSIER_EMAILS = path.resolve('.emails-e2e');
+export const SESSION_ADMIN = path.resolve('e2e/.auth/admin.json');
 const BACKEND = path.resolve('../backend');
 
 export default defineConfig({
@@ -28,7 +29,12 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: { baseURL: 'http://localhost:5174', trace: 'retain-on-failure', locale: 'fr-FR', timezoneId: 'Africa/Abidjan' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // « setup » se connecte une fois avec le compte admin et enregistre la session (SESSION_ADMIN) : les tests qui n'ont
+  // pas besoin de tester la connexion la réutilisent, sans dépasser la limite serveur de 5 connexions/min par compte
+  projects: [
+    { name: 'setup', testMatch: /auth\.setup\.js/ },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
+  ],
   webServer: [
     {
       command: `"${BACKEND}/.venv/bin/python" "${BACKEND}/manage.py" runserver 127.0.0.1:8001 --noreload`,

@@ -87,6 +87,8 @@ s’affiche en `clamp(34px, 3.6vw, 52px)`.
 Historique « Derniers passages » et « Dernier » en `sessionStorage` (`fc-scan-historique-<id>`,
 `fc-scan-dernier-<id>`), effacés par `useMoi.oublierMoi` à la déconnexion (tablette partagée).
 Son (Web Audio) et vibration désactivables ; valeurs globales (Paramètres) surchargées par l’appareil.
+Recherche par nom (hôte et borne) : requête envoyée 300 ms après la dernière frappe (`lib/useValeurDifferee`,
+2026-11-09), « Recherche… » affiché pendant l’attente ; la borne reste limitée à 30 recherches/min par le serveur.
 Anti-rebond caméra : même QR ignoré pendant 3 s ; caméra en pause pendant le résultat.
 
 ## QR codes étrangers (2026-11-09) ✅
