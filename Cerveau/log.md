@@ -1105,3 +1105,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** frontmatter des pages signalées
 - **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier.
 - **Risques ou limites :** aucun.
+
+## [2026-11-09] déploiement | Backend Vercel : corrections de sécurité R30 (`f55527e`)
+
+- **Contexte :** « déploie le backend sur vercel ».
+- **Modifications :** `flex-checking-api` déployé par `vercel deploy --prod --scope mde-it` depuis `backend/` (« Ready », alias `https://flex-checking-api.vercel.app`) ; frontend déjà redéployé au push de `f739344`. Aucune migration.
+- **Validation :** en ligne : `/api/sante/` 200, `/api/auth/csrf/` 204, connexion avec un compte inconnu → 401 `IDENTIFIANTS_INVALIDES` (chemin de journalisation des échecs exécuté sans erreur serveur), `/api/auth/moi/` sans session → 401. Alertes email et contrôle Pwned Passwords non déclenchés en ligne.
+- **Risques ou limites :** VPS `inscription.mde.ci` non mis à jour ; résultat de la CI GitHub non consulté (`gh` absent du poste).
