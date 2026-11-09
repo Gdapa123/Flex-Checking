@@ -27,7 +27,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [project/overview.md](project/overview.md) | Finalité, parcours de l’invité, les quatre espaces, notions métier |
 | [project/scope.md](project/scope.md) | Origine (cahier des charges, design, PLAN), périmètre, hors périmètre, inconnus |
 | [project/roadmap.md](project/roadmap.md) | Historique des étapes et prochaines étapes proposées |
-| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R27 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels ; R27 scripts VPS non éprouvés sur un vrai serveur) et limitations assumées |
+| [project/risques-et-dette.md](project/risques-et-dette.md) | Risques R1–R27 (R1–R4, R13, R14, R17, R21, R24–R26 résolus ; R5, R7, R8, R15, R16 atténués ou partiels ; R27 premier déploiement VPS en cours : Celery corrigé, ports 80/443 bloqués chez Infomaniak) et limitations assumées |
 
 ## Architecture
 | Page | Description |

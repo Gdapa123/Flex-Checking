@@ -65,6 +65,9 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
 - Structure MIME : `mixed[ related[ alternative(texte, html), images CID ], pièces jointes ]`.
 - Pièces jointes n°1 : `qr-code.png` et `graduation.ics` (aucune pièce jointe pour n°2 et n°3).
 - Gabarits par type : `invitation`, `magazine`, `sondage` (`.html` + `.txt`, sur `base.html`). Le gabarit `sondage.html` contient le questionnaire (formulaire HTML, voir [sondage-satisfaction](sondage-satisfaction.md)).
+- Pied de page commun (`base.html` et les trois `.txt`) : adresse de MDE, mention propre au type, phrase « Cet email
+  est envoyé automatiquement, merci de ne pas y répondre. » (ajoutée le 2026-11-06 : envoi prévu depuis
+  `noreply@mde.ci`, Google Workspace, à confirmer en production), lien « Vos données personnelles ».
 - Boutons de l’email → page publique `/i/<lien>/pratique#agenda` ou `#itineraire`.
 - Expéditeur : `Parametres.expediteur` (défaut « Flex’Checking · MDE Business School ») `<DEFAULT_FROM_EMAIL>`
   (`DEFAULT_FROM_EMAIL` doit donc être une adresse seule) ;
@@ -87,7 +90,8 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   `ENVOI_IMPOSSIBLE` si le serveur SMTP échoue ; journal `EMAIL_TEST` (catégorie Email).
 
 ## Tests
-`test_emails.py` (échec après 3 relances, échappement, lien en clair, boutons vers infos pratiques),
+`test_emails.py` (échec après 3 relances, échappement, lien en clair, boutons vers infos pratiques, mention
+« ne pas répondre » dans les trois emails),
 `test_emargement.py` (magazine unique), `test_analytique.py` (file indisponible, relance),
 `test_suivi_emails.py` (9 : compteurs, droits, renvoi groupé, magazine désactivé, email de test, SMTP
 indisponible), `test_sondage.py` (envoi, renvoi et aperçu du n°3), `test_invites.py`

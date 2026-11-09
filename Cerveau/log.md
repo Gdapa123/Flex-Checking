@@ -973,3 +973,27 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `docker-compose.prod.yml`, `Cerveau/operations/deployment.md`
 - **Validation :** `docker compose -f docker-compose.prod.yml config --quiet` sans erreur ; option `disable: true` présente dans la configuration résolue. Pas encore appliqué sur le serveur.
 - **Risques ou limites :** plus aucun contrôle de santé pour beat (un beat bloqué ne serait pas signalé par Docker). Ports 80/443 toujours injoignables depuis Internet (blocage côté Infomaniak, en cours de traitement par l'utilisateur).
+
+## [2026-11-05] documentation | /wiki-maj : 11 pages revérifiées sur `9c6a8ba`
+
+- **Contexte :** le contrôle automatique signalait 11 pages dont les sources (`backend/requirements.txt`, `docker-compose.prod.yml`) ont changé avec `bfb237a` (kombu figé en 5.6.2) et `9c6a8ba` (contrôle de santé de celery-beat désactivé).
+- **Modifications :** [risques-et-dette](project/risques-et-dette.md) : R12 complété (dépendances transitives non figées, cas kombu) et R27 complété (écarts du premier déploiement réel : deux corrigés, ports 80/443 encore bloqués, limite « beat sans contrôle de santé ») ; [deployment](operations/deployment.md) : kombu figé dans la ligne celery ; [integrations](architecture/integrations.md) : versions redis-py / kombu ; [deploiement-infomaniak](operations/deploiement-infomaniak.md) §10.3 : `celery-beat` et `proxy` sans contrôle de santé, c'est normal ; résumé de R27 dans l'index. Les autres pages (system-overview, ADR-009, ADR-014, exports-rapports, deploiement-vps-facile, scope, non-functional-requirements) sont revérifiées sans changement de contenu ; seuls `verifie` et `commit` sont mis à jour.
+- **Fichiers concernés :** `backend/requirements.txt`, `docker-compose.prod.yml` (lus) ; 11 pages du wiki, `Cerveau/index.md`.
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier, 0 avertissement.
+- **Risques ou limites :** aucun code modifié. R27 reste ouvert tant que les ports 80/443 ne sont pas joignables.
+
+## [2026-11-06] correction | Curseur renvoyé au premier champ à chaque frappe dans les fenêtres
+
+- **Contexte :** constaté en production le 2026-11-06 (espace super admin) : à chaque caractère saisi dans un formulaire en fenêtre, le curseur revenait sur le premier champ.
+- **Modifications :** `useFocusTrap` avait `onFermer` dans les dépendances de son effet ; la plupart des appelants (24 occurrences de `onFermer={() => …}`) passent une fonction recréée à chaque rendu, donc chaque frappe relançait l'effet, qui replaçait le focus sur le premier élément focalisable. `onFermer` est désormais lu via une référence ; l'effet ne dépend plus que de `actif` et `ref`. Corrige d'un coup `PanneauLateral`, `Dialogue` et les fenêtres du scan et du sondage. Test ajouté : `frontend/tests/focusDialogue.test.jsx`.
+- **Fichiers concernés :** `frontend/src/components/ui/useFocusTrap.js`, `frontend/tests/focusDialogue.test.jsx`, `Cerveau/testing/test-cases.md`
+- **Validation :** le nouveau test échoue sans la correction (2 échecs sur 4) et passe avec ; `npm run lint` OK ; `npm test` 77/77 (18 fichiers) ; `npm run build` OK. Non vérifié dans un vrai navigateur ni en production (correction non commitée, non déployée).
+- **Risques ou limites :** aucun changement d'interface ni d'API. Les emails non reçus en production (même date) sont un problème distinct, en cours de diagnostic sur le serveur.
+
+## [2026-11-06] fonctionnalité | Mention « merci de ne pas répondre » dans les emails
+
+- **Contexte :** les emails partiront de `noreply@mde.ci` (compte Google Workspace, SMTP `smtp.gmail.com`, réponses neutralisées par un filtre ou une réponse automatique Gmail, côté MDE) ; la configuration du serveur est faite par l'utilisateur et n'est pas encore confirmée en production.
+- **Modifications :** phrase « Cet email est envoyé automatiquement, merci de ne pas y répondre. » ajoutée au pied de page de `base.html` (donc emails n°1, n°2, n°3 en HTML) et aux trois versions texte. Test paramétré `test_mention_ne_pas_repondre`. Page [emails](features/emails.md) complétée.
+- **Fichiers concernés :** `backend/templates/emails/base.html`, `backend/templates/emails/invitation.txt`, `backend/templates/emails/magazine.txt`, `backend/templates/emails/sondage.txt`, `backend/apps/noyau/tests/test_emails.py`, `Cerveau/features/emails.md`
+- **Validation :** `ruff check` et `ruff format --check` OK ; `pytest` : suite complète verte (MySQL Docker local) ; le nouveau test échoue sans la modification des gabarits. Rendu non vérifié dans une vraie messagerie.
+- **Risques ou limites :** aucune adresse de contact n'est indiquée (non fournie) ; non commité, non déployé. L'exemple `mail.infomaniak.com` de `infra/vps/installer.sh` et du guide reste à remplacer une fois l'envoi Google Workspace confirmé.

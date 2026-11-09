@@ -14,4 +14,5 @@ INFOS PRATIQUES
 MDE Business School · Abidjan, Côte d’Ivoire
 Vos données personnelles : {{ lien_confidentialite }}
 Vous recevez cet email suite à votre inscription à la {{ nom_affiche }}.
+Cet email est envoyé automatiquement, merci de ne pas y répondre.
 {% endautoescape %}

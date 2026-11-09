@@ -40,7 +40,7 @@ Volumes : voir [test-strategy](test-strategy.md) (273 tests backend exécutés l
 `sondage` (trois questions obligatoires, lien expiré, délai dépassé pendant la saisie, appareil déjà utilisé, déjà
 répondu, indicateurs et commentaires, jeton jamais transmis aux signalements), `suiviEmails` (compteurs, échecs et
 renvoi après confirmation, email de test, emails désactivés, carte de l'email n°3), `fileHorsLigne` (2026-10-22 :
-retrait d'un « C’est moi » expiré `CHOIX_BORNE_INVALIDE` puis rejeu des suivants ; arrêt sur un autre 403), `confidentialite` (2026-10-22 : durée et contact affichés, validation des réglages 1 à 60 mois et email facultatif).
+retrait d'un « C’est moi » expiré `CHOIX_BORNE_INVALIDE` puis rejeu des suivants ; arrêt sur un autre 403), `confidentialite` (2026-10-22 : durée et contact affichés, validation des réglages 1 à 60 mois et email facultatif), `focusDialogue` (2026-11-06 : dans `PanneauLateral` et `Dialogue`, le curseur reste dans le champ en cours de saisie malgré un `onFermer` recréé à chaque rendu ; Échap appelle la dernière fonction de fermeture).
 
 ## E2E (`frontend/e2e/`)
 - `parcours.spec.js` (2 tests) : inscription → email 1 → scan par code → Présent → email 2 → tableau admin → export,

@@ -65,3 +65,12 @@ def test_boutons_agenda_et_itineraire_vers_infos_pratiques(evenement, settings):
         assert f'href="{base}#{ancre}"' in r["html"]
         assert f"{base}#{ancre}" in r["texte"]
     assert any(nom == "graduation.ics" for nom, *_ in r["pieces_jointes"])
+
+
+@pytest.mark.parametrize("type_email", [TypeEmail.INVITATION, TypeEmail.MAGAZINE, TypeEmail.SONDAGE])
+def test_mention_ne_pas_repondre(evenement, type_email):
+    # envoi depuis une adresse noreply : la mention figure dans les versions HTML et texte
+    inv = nouvel_invite(evenement)
+    r = rendre(type_email, Source.depuis_invite(inv))
+    mention = "merci de ne pas y répondre"
+    assert mention in r["html"] and mention in r["texte"]

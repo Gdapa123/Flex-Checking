@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-11-04
-commit: e3dd153
+verifie: 2026-11-05
+commit: 9c6a8ba
 sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
 ---
 
@@ -692,7 +692,7 @@ docker compose ps -a
 ```
 
 - **Si tout va bien :** `mysql`, `redis`, `django`, `celery` en `Up … (healthy)` ; `celery-beat` et `proxy`
-  en `Up` ; `migrate` en `Exited (0)` (normal : il s’arrête après son travail).
+  en `Up` sans mention de santé (ils n’ont pas de contrôle de santé : c’est normal) ; `migrate` en `Exited (0)` (normal : il s’arrête après son travail).
 - `celery` peut rester `(health: starting)` jusqu’à 1 minute : attendez et relancez la commande.
 
 ### 10.4 Vérifier le certificat HTTPS

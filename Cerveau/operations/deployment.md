@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-11-04
-commit: e3dd153
+verifie: 2026-11-05
+commit: 9c6a8ba
 sources: [backend/config/bases.py, backend/requirements.txt, docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
 ---
 
@@ -25,7 +25,7 @@ docker compose -f docker-compose.prod.yml exec django python manage.py shell -c 
 | migrate | migrations au démarrage (le service django attend sa réussite) |
 | django, celery, celery-beat (ancre `x-backend`) | volume partagé `media-data:/app/media` (exports lourds écrits par Celery, téléchargés par Django ; R17 résolu le 2026-10-22) |
 | django | Gunicorn + workers Uvicorn (`WEB_CONCURRENCY`, défaut 4), `DB_CONCURRENCE` 24, utilisateur sans privilèges `flex`, HEALTHCHECK `/api/sante/` ; `--scale django=3` possible |
-| celery | `CELERY_CONCURRENCY` (4), `--max-tasks-per-child 500`, `--max-memory-per-child 262144` (processus recyclé au-delà de 256 Mo, après sa tâche), `--without-gossip --without-mingle --without-heartbeat` (moins d'échanges via Redis ; `inspect ping` du contrôle de santé vérifié le 2026-11-03), contrôle de santé |
+| celery | kombu figé en 5.6.2 dans `backend/requirements.txt` (5.7.0 exige redis-py ≥ 6.1 et fait échouer le worker au démarrage, constaté le 2026-11-04) ; `CELERY_CONCURRENCY` (4), `--max-tasks-per-child 500`, `--max-memory-per-child 262144` (processus recyclé au-delà de 256 Mo, après sa tâche), `--without-gossip --without-mingle --without-heartbeat` (moins d'échanges via Redis ; `inspect ping` du contrôle de santé vérifié le 2026-11-03), contrôle de santé |
 | celery-beat | contrôle de santé de l'image désactivé (`healthcheck: disable`, 2026-11-05 : il interrogeait le port 8000, que beat ne sert pas, d'où un « unhealthy » permanent) ; relance des emails (5 min), purge (1 h), sondages de satisfaction (8 h puis chaque heure jusqu'à 20 h), anonymisation des données personnelles expirées (3 h 30, `anonymiser-donnees`) |
 | proxy | Caddy : HTTPS automatique sur `DOMAINE` (adresse retenue le 2026-11-04 : `inscription.mde.ci`, défaut de `docker-compose.prod.yml` et `infra/Caddyfile.prod`), sert `frontend/dist`, relaie `/api` ; en-têtes HSTS, CSP (`frame-src 'self' blob:`, sans `data:`), `Referrer-Policy same-origin` ; journaux d'accès sans `?q=` ni jeton `/sondage(s)/<jeton>` (masqués) ni Referer |
 

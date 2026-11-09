@@ -11,4 +11,5 @@ Lire le magazine : {{ lien_magazine }}{% endif %}
 MDE Business School · Abidjan, Côte d’Ivoire
 Vos données personnelles : {{ lien_confidentialite }}
 Vous recevez cet email car votre présence a été enregistrée à l’accueil.
+Cet email est envoyé automatiquement, merci de ne pas y répondre.
 {% endautoescape %}

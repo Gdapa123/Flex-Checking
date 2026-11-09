@@ -1,8 +1,8 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-04
-commit: e3dd153
+verifie: 2026-11-05
+commit: 9c6a8ba
 sources: [backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
 ---
 
@@ -127,6 +127,11 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   dépendances livrées (`npm audit --omit=dev` : 0, constaté le 2026-10-14, non relancé depuis).
 - `requirements.txt` sans hachages (`pip-compile --generate-hashes` proposé) ; `pip-audit` : Pillow passé en 13.0.0
   le 2026-10-22 à la suite d'un avis ; CI limitée à `permissions: contents: read`.
+- Dépendances transitives non figées : `celery[redis]==5.4.0` laissait pip choisir kombu 5.7.0, qui exige redis-py ≥ 6.1
+  alors que `redis==5.2.1` est figé ; le worker Celery s'arrêtait au démarrage au premier déploiement réel
+  (2026-11-04). Contournement : `kombu==5.6.2` ajouté à `backend/requirements.txt` (commit `bfb237a`). Une autre
+  dépendance transitive peut casser de la même façon tant que `requirements.txt` n'est pas un fichier verrouillé complet
+  (`pip-compile`, voir ci-dessus).
 - HSTS `preload` non activé (engagement définitif du domaine, à décider par MDE).
 - **2026-11-02** : `npm audit --omit=dev` signalait une vulnérabilité **haute** dans Zod 3 (GHSA-mrhx-c7xc-m3w5,
   épuisement mémoire sur des collections contraintes, sans correctif 3.x) : passage à **Zod 4** (`^4.6.7`), `errorMap`
@@ -262,6 +267,14 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - **Conséquence** : la première installation réelle peut révéler des écarts (pare-feu, SSH, DNS, certificat).
 - **Proposition** 📋 : première installation sur un VPS de recette, guide [deploiement-vps-facile](../operations/deploiement-vps-facile.md)
   suivi pas à pas, puis restauration d'une sauvegarde pour valider la procédure. **Statut** : ouvert.
+- **Premier déploiement réel (2026-11-04/05, VPS Lite Infomaniak, `inscription.mde.ci`)** — écarts constatés :
+  - worker Celery en échec (kombu 5.7.0 incompatible avec `redis==5.2.1`) : ✅ corrigé (`kombu==5.6.2`, `bfb237a`) ;
+  - `celery-beat` affiché « unhealthy » à tort (il héritait du HEALTHCHECK de `backend/Dockerfile`, qui interroge le
+    port 8000) : ✅ corrigé (`healthcheck: disable: true` dans `docker-compose.prod.yml`, `9c6a8ba`). Limite : un beat
+    bloqué n'est plus signalé par Docker ; seuls ses journaux (`docker compose logs celery-beat`) le montrent ;
+  - ports 80/443 injoignables depuis Internet malgré les règles du pare-feu Infomaniak (port 22 fonctionnel) : ❌ en
+    cours (support Infomaniak sollicité le 2026-11-05) ; certificat Let's Encrypt, SMTP réel, sauvegardes
+    (`activer-sauvegardes.sh`) et `mettre-a-jour.sh` restent non éprouvés.
 
 Rappel : le temps de réponse du renvoi du QR sur Vercel (R6) est inchangé au 2026-10-22.
 
