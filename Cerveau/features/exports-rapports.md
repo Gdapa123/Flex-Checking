@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-05
-commit: 9c6a8ba
+verifie: 2026-11-09
+commit: 021396e
 sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/taches.py, backend/apps/noyau/rapports.py, backend/apps/noyau/analytique.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, frontend/src/lib/telechargement.js, docker-compose.prod.yml]
 ---
 

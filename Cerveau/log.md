@@ -1081,3 +1081,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/comptes/jetons.py`, `backend/apps/comptes/apps.py`, `backend/apps/noyau/tasks.py`, `backend/apps/noyau/vues_sondage.py`, `backend/apps/noyau/logs.py`, `backend/apps/noyau/erreurs.py`, `backend/apps/noyau/tests/test_jwt.py`, `backend/apps/noyau/tests/test_sondage.py`, wiki (authentification, risques R29, exigences, cas de test, index)
 - **Validation :** `ruff` OK ; `pytest` 307 passed ; signal retiré → `test_jeton_de_rafraichissement_jamais_stocke_en_base` échoue ; Vitest 83/83 ; Playwright 7/7.
 - **Risques ou limites :** aucune reconnexion nécessaire ; sur Vercel, les textes déjà enregistrés sont vidés au prochain cron ; aucune migration (le champ reste, vide).
+
+## [2026-11-09] documentation | /wiki-maj : 20 pages revérifiées sur `021396e`
+
+- **Contexte :** `021396e` touche des fichiers cités par 20 pages (tâches, logs, erreurs, vues du sondage, tests).
+- **Modifications :** diff relu : le contenu documenté change seulement pour l’authentification, les risques (R29), les exigences et les cas de test, mis à jour dans `021396e` ; pour les autres pages, seuls `verifie` et `commit` changent.
+- **Fichiers concernés :** frontmatter des pages signalées
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier.
+- **Risques ou limites :** aucun.

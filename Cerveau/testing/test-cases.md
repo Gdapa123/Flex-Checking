@@ -2,7 +2,7 @@
 type: testing
 statut: implémenté
 verifie: 2026-11-09
-commit: 57b619d
+commit: 021396e
 sources: [frontend/tests/api.test.js, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx, frontend/e2e/accessibilite.spec.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/, frontend/tests/, frontend/e2e/]
 ---
 

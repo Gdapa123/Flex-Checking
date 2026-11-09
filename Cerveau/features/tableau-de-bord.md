@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-09
+commit: 021396e
 sources: [frontend/src/features/admin/ChoixCeremonie.jsx, frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/admin/TableauDeBord.jsx, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/lib/tempsReel.js, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/statistiques.py, backend/apps/noyau/vues_admin.py]
 ---
 
