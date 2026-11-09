@@ -1159,3 +1159,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/templates/emails/invitation.html`, `backend/templates/emails/base.html`, `backend/apps/noyau/emails.py`, `Cerveau/features/emails.md`
 - **Validation :** `ruff` OK ; `pytest` 385 passed ; rendu Chromium à 390 px (PMD, AMP) et 700 px : formule de fin à 746 px.
 - **Risques ou limites :** rendu non vérifié dans Outlook de bureau (coins arrondis et pointillés ignorés, sans gêne de lecture). Non commité.
+
+## [2026-11-09] déploiement | VPS `inscription.mde.ci` mis à jour (`99845cd`)
+
+- **Contexte :** « aide-moi à faire la mise à jour sur le VPS » ; script lancé par l’utilisateur sur le serveur.
+- **Modifications :** `infra/vps/mettre-a-jour.sh` → « ✓ Mise à jour terminée (version 99845cd) » (migration `0012_liens_ceremonie` appliquée par le service `migrate` avant Django).
+- **Validation :** depuis le poste : site 200, `/api/sante/` 200, `/api/public/emails/images/ic-check-18794E.png` 200, couleur inconnue 404, `/api/auth/moi/` sans session 401. Email de test non vérifié par l’agent.
+- **Risques ou limites :** sauvegardes automatiques peut-être toujours non activées (`sudo infra/vps/activer-sauvegardes.sh`) ; heure 12h30 → 14h30 à corriger dans l’écran Cérémonies.
