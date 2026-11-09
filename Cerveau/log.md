@@ -1034,3 +1034,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/config/settings.py`, `.env.example`, `.gitignore`, `backend/apps/noyau/tests/test_suivi_emails.py`, `backend/apps/noyau/tests/test_requetes.py`, `frontend/src/lib/useValeurDifferee.js`, `frontend/src/features/scan/ScanPoste.jsx`, `frontend/tests/valeurDifferee.test.jsx`, `frontend/playwright.config.js`, `frontend/e2e/auth.setup.js`, `frontend/e2e/sessionAdmin.spec.js`, `frontend/e2e/parcours.spec.js`, `frontend/e2e/cameraQr.spec.js`, pages du wiki (intégrations, déploiement Infomaniak, exigences non fonctionnelles, scan, tests)
 - **Validation :** `ruff` OK ; `pytest` 294 passed (MySQL Docker) ; `npm run lint` OK ; Vitest 83/83 ; build OK ; Playwright 7/7, deux exécutions de suite.
 - **Risques ou limites :** N+1 non mesurés dans les tâches Celery (actions groupées, relances, sondage, anonymisation) ; `EMAIL_TIMEOUT` s’applique à chaque échange SMTP, pas à l’envoi complet (borné par la limite Celery de 90/120 s) ; non déployé.
+
+## [2026-11-09] documentation | /wiki-maj : 28 pages revérifiées sur `c72f9ba`
+
+- **Contexte :** `c72f9ba` touche des fichiers cités par 28 pages (`backend/config/settings.py`, `ScanPoste.jsx`, dossiers de tests).
+- **Modifications :** diff relu : seuls `EMAIL_TIMEOUT` (intégrations, exigences non fonctionnelles, déploiement Infomaniak), le délai de frappe (scan) et les tests (stratégie, cas de test) changent le contenu documenté, mis à jour dans `c72f9ba` ; pour les autres pages, seuls `verifie` et `commit` changent.
+- **Fichiers concernés :** frontmatter des 28 pages signalées
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier, 0 avertissement.
+- **Risques ou limites :** aucun.
