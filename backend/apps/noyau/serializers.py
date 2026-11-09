@@ -474,7 +474,10 @@ class JournalSerializer(serializers.ModelSerializer):
         fields = ["id", "date", "auteur", "auteur_nom", "action", "categorie", "detail"]
 
     def get_auteur_nom(self, obj):
-        return obj.auteur.nom if obj.auteur else "Système"
+        if obj.auteur:
+            return obj.auteur.nom
+        # échec ou blocage de connexion : l'auteur n'est pas authentifié (peut-être pas le titulaire du compte)
+        return "Tentative de connexion" if obj.action in ("CONNEXION_ECHEC", "CONNEXION_BLOQUEE") else "Système"
 
     def get_categorie(self, obj):
         from .journal import CATEGORIES

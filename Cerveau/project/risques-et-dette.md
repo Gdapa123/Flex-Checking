@@ -288,6 +288,19 @@ Acceptés par choix documenté : R6, R9, R22, R23.
 
 Revérifiés le 2026-10-26 sur `44eceb5`, sans changement : R5, R6, R7, R9, R10, R11, R12 (Tailwind `^3.4.17`,
 Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
+## R30 — Écarts aux standards (OWASP Top 10 / ASVS 2) relevés le 2026-11-09 (sécurité, élevé) — 🟡 PARTIELLEMENT RÉSOLU
+- **Constat** ([évaluation](../analyses/evaluation-securite-2026-11-09.md)) : `djangorestframework` 3.17.2 avec 3 CVE
+  (`pip-audit`), Twisted (8) et Autobahn (1) apportés par Daphne installé en production, aucun audit de dépendances
+  en CI, échecs de connexion seulement comptés (non journalisés), aucune alerte, mots de passe fuités acceptés, pas
+  de MFA.
+- **Résolu le 2026-11-09** : DRF 3.18.2 ; Daphne dans `requirements-dev.txt` et chargé seulement s'il est installé
+  (`settings._DEVELOPPEMENT_ASGI`) ; `pip-audit -r requirements.txt` et `npm audit --omit=dev --audit-level=high`
+  bloquants en CI, `.github/dependabot.yml` ; échecs (`CONNEXION_ECHEC`) et blocages (`CONNEXION_BLOQUEE`) au journal
+  et au logger `securite` (sans email) ; alertes email aux super admins (`noyau.alertes`) ; validateur
+  `comptes.validateurs.MotDePasseNonCompromis`.
+- **Reste** : MFA des super admins (reportée par l'utilisateur) ; Twisted/Autobahn restent vulnérables dans
+  l'environnement de développement seulement.
+
 ## R29 — Jetons de rafraîchissement en clair dans la base (sécurité, élevé) — ✅ RÉSOLU le 2026-11-09
 - **Constat** : `OutstandingToken.token` (SimpleJWT, liste noire) contenait chaque jeton de rafraîchissement ;
   quiconque lisait la base (identifiants de la base, console Neon, copie de sauvegarde) pouvait rafraîchir une session

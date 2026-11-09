@@ -70,7 +70,7 @@ Backend : venv Python 3.12, `requirements-dev.txt` (mysqlclient : `PKG_CONFIG_PA
 ## Variables d’environnement (noms seulement)
 `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `APP_PUBLIC_URL`, `NUM_PROXIES`,
 `MYSQL_*`, `DB_HOST`, `DB_PORT`, `DATABASE_URL`, `DB_SSLMODE`, `DB_POOL` (Postgres : pool de connexions, actif par défaut, `0` pour le couper), `REDIS_URL`, `REDIS_CACHE_URL`, `EMAIL_*`,
-`DEFAULT_FROM_EMAIL` (adresse seule : le nom d’expéditeur vient des paramètres), `JWT_SIGNING_KEY` (facultatif, ≥ 32 caractères ; sinon dérivée de `DJANGO_SECRET_KEY` ; la changer ferme toutes les sessions), `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS`, `JWT_COOKIE_SECURE`, `CELERY_TASK_ALWAYS_EAGER`,
+`DEFAULT_FROM_EMAIL` (adresse seule : le nom d’expéditeur vient des paramètres), `VERIFIER_MOTS_DE_PASSE_FUITES` (vrai par défaut : appel HTTPS sortant vers `api.pwnedpasswords.com`), `JWT_SIGNING_KEY` (facultatif, ≥ 32 caractères ; sinon dérivée de `DJANGO_SECRET_KEY` ; la changer ferme toutes les sessions), `JWT_ACCESS_MINUTES`, `JWT_REFRESH_HOURS`, `JWT_COOKIE_SECURE`, `CELERY_TASK_ALWAYS_EAGER`,
 `LIMITE_ANONYME`, `LIMITE_COMPTE`, `LIMITE_INSCRIPTION_IP`, `WEB_CONCURRENCY`, `DB_CONCURRENCE`, `ATTENTE_MAX`,
 `EXPORT_SEUIL_ASYNCHRONE`, `CRON_SECRET` (cron Vercel du sondage, lu dans `backend/config/settings.py` ; absent de
 `.env.example`, inutile en local où Celery Beat envoie les sondages), `DEMO_MOT_DE_PASSE_*`. Modèle : `.env.example`.

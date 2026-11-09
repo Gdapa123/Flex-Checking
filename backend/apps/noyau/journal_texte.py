@@ -147,6 +147,11 @@ def decrire(e, cibles):  # noqa: C901 — table de correspondance volontairement
             return f"Mot de passe réinitialisé · {cible.nom if cible else ''}"
         case "CONNEXION":
             return "Connexion"
+        case "CONNEXION_ECHEC":
+            raison = "compte désactivé" if d.get("raison") == "compte_inactif" else "mot de passe incorrect"
+            return f"Connexion refusée · {cible.nom if cible else 'compte supprimé'} · {raison}"
+        case "CONNEXION_BLOQUEE":
+            return f"Connexion bloquée après trop d’échecs · {cible.nom if cible else 'compte supprimé'}"
         case "DECONNEXION":
             return "Déconnexion"
         case "MOT_DE_PASSE_CHANGE":

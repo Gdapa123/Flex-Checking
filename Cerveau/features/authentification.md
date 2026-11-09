@@ -80,6 +80,21 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
 - Effet du déploiement : les jetons émis avant (sans `iss`/`aud`, autre clé) sont refusés → **une reconnexion
   unique** de chaque compte, bornes comprises.
 
+## Échecs de connexion, alertes, mots de passe fuités (2026-11-09) ✅
+- Échec sur un compte existant : journal d'activité `CONNEXION_ECHEC` (raison `mot_de_passe` ou `compte_inactif`,
+  réseau IPv4 ou /64, auteur affiché « Tentative de connexion ») ; premier refus d'une série bloquée :
+  `CONNEXION_BLOQUEE` + **alerte email** aux super admins actifs (une par compte et par heure). Compte inconnu :
+  logger `securite` seulement (aucune ligne en base). Jamais d'email dans ces traces (`comptes.views._connexion_refusee`).
+- Alertes (`noyau.alertes`) : aussi à chaque **nouvelle** erreur serveur, tâche ou email (pas pour les signalements du
+  navigateur) ; 10 par heure au plus ; envoi Celery ; un échec d'envoi n'enregistre aucune erreur (pas de boucle).
+- Mot de passe choisi (`auth/mot-de-passe/`) : refusé s'il figure dans des fuites connues
+  (`comptes.validateurs.MotDePasseNonCompromis`, API Pwned Passwords par k-anonymat : 5 caractères de l'empreinte
+  SHA-1 envoyés, remplissage demandé, délai 3 s ; service injoignable → accepté et journalisé).
+  `VERIFIER_MOTS_DE_PASSE_FUITES` (vrai par défaut, faux dans les tests). Le mot de passe temporaire généré par le
+  super admin n'est pas concerné (aléatoire).
+- Preuves : `backend/apps/noyau/tests/test_securite_comptes.py` (10 tests) ; appel réel vérifié le 2026-11-09
+  (`password123` : 2 266 543 fuites ; mot de passe aléatoire : 0).
+
 ## Requêtes
 - `CookieJWTAuthentication` : lit `fc_access`, refuse compte désactivé et jeton révoqué, **vérifie le CSRF** sur
   les requêtes modifiantes ; `lib/api.js` envoie `X-CSRFToken` et appelle `/api/auth/csrf/` si besoin.

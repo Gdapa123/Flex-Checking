@@ -11,7 +11,9 @@ sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, front
 ## Sécurité
 | ID | Exigence | Mise en œuvre |
 |---|---|---|
-| ENF-S1 | Mots de passe forts et hachés | Argon2, ≥ 10 caractères, `CommonPasswordValidator` |
+| ENF-S1 | Mots de passe forts et hachés | Argon2, ≥ 10 caractères, `CommonPasswordValidator`, refus des mots de passe fuités (Pwned Passwords, k-anonymat, 2026-11-09) |
+| ENF-S15 | Dépendances sans vulnérabilité connue | `pip-audit` (production) et `npm audit --omit=dev --audit-level=high` bloquants en CI, Dependabot (2026-11-09) ; DRF 3.18.2 ; Daphne (Twisted, Autobahn) hors production |
+| ENF-S16 | Détection | échecs et blocages de connexion journalisés, alertes email aux super admins (blocage de compte, nouvelle erreur serveur) (2026-11-09) |
 | ENF-S2 | Sessions non volables par script et révocables | JWT en cookies httpOnly, CSRF, `version_session`, signature HS256 imposée avec clé propre et `iss`/`aud` exigés, jetons de rafraîchissement jamais stockés en clair ni journalisés (2026-11-09, `test_jwt.py` : `alg: none`, changement d'algorithme, contenu modifié refusés) ([authentification](../features/authentification.md)) |
 | ENF-S3 | Droits appliqués côté serveur | `CompteUtilisable` par défaut, `evenements_visibles` sur chaque queryset |
 | ENF-S4 | Limites anti-abus | voir tableau ci-dessous ; IP réelle via `NUM_PROXIES` (X-Forwarded-For non falsifiable) |

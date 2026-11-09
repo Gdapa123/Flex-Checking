@@ -13,6 +13,7 @@ CELERY_TASK_ALWAYS_EAGER = True
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 JWT_COOKIE_SECURE = False
+VERIFIER_MOTS_DE_PASSE_FUITES = False  # aucun appel réseau dans les tests (activé et simulé dans test_securite_comptes)
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 MEDIA_ROOT = BASE_DIR / "media-tests"  # noqa: F405

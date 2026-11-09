@@ -37,6 +37,8 @@ CATEGORIES = {
     "ADMIN_MOT_DE_PASSE": "Compte",
     "ADMIN_SUPPRESSION": "Compte",
     "CONNEXION": "Compte",
+    "CONNEXION_ECHEC": "Compte",
+    "CONNEXION_BLOQUEE": "Compte",
     "DECONNEXION": "Compte",
     "MOT_DE_PASSE_CHANGE": "Compte",
 }

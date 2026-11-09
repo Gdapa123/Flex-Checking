@@ -44,6 +44,10 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check . && ruff format --check .
       - run: pytest --create-db
+      # vulnérabilités connues (base PyPA / OSV) des dépendances de production : bloquant ; les outils de
+      # développement (requirements-dev.txt : Daphne, Twisted…) ne sont pas livrés et ne sont pas audités ici
+      - name: Audit des dépendances Python (pip-audit)
+        run: pip install pip-audit==2.10.1 && pip-audit -r requirements.txt --progress-spinner off
 
   backend-postgres:
     # l'environnement de test Vercel tourne sur Postgres (Neon) : la même suite y est rejouée (voir R25)
@@ -90,6 +94,9 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # vulnérabilités connues des dépendances livrées au navigateur : bloquant à partir de « high »
+      - name: Audit des dépendances npm
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npm test
       - run: npm run build
@@ -135,7 +142,8 @@ jobs:
         working-directory: backend
         run: |
           python -m venv .venv
-          .venv/bin/pip install -r requirements.txt
+          # requirements-dev.txt : Daphne sert le WebSocket du runserver (temps réel testé par Playwright)
+          .venv/bin/pip install -r requirements-dev.txt
           .venv/bin/python manage.py migrate --noinput
           .venv/bin/python manage.py seed_demo
       - name: Frontend

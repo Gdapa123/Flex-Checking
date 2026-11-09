@@ -31,8 +31,17 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 APP_PUBLIC_URL = env("APP_PUBLIC_URL", default="https://flex-checking.localhost").rstrip("/")
 
+# Daphne : runserver ASGI (WebSocket temps réel) en développement seulement (requirements-dev.txt) ; la production
+# sert l'ASGI avec Uvicorn et n'installe pas Daphne (ni Twisted, ni Autobahn)
+try:
+    import daphne  # noqa: F401
+
+    _DEVELOPPEMENT_ASGI = ["daphne"]
+except ImportError:
+    _DEVELOPPEMENT_ASGI = []
+
 INSTALLED_APPS = [
-    "daphne",  # runserver ASGI (WebSocket temps réel)
+    *_DEVELOPPEMENT_ASGI,
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
@@ -107,9 +116,12 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
+VERIFIER_MOTS_DE_PASSE_FUITES = env.bool("VERIFIER_MOTS_DE_PASSE_FUITES", default=True)
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 10}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    # mots de passe présents dans des fuites connues (Have I Been Pwned, k-anonymat) : voir comptes.validateurs
+    {"NAME": "apps.comptes.validateurs.MotDePasseNonCompromis"},
 ]
 
 LANGUAGE_CODE = "fr-fr"

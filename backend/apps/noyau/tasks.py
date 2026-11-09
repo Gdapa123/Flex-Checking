@@ -136,3 +136,11 @@ def purger():
     purger_exports()
     purger_erreurs()
     purger_jetons()
+
+
+@shared_task(ignore_result=True)
+def envoyer_alerte(sujet, texte):
+    """Email d'alerte aux super admins (voir `alertes`) ; un échec est seulement journalisé, sans nouvelle tentative."""
+    from .alertes import envoyer
+
+    return envoyer(sujet, texte)

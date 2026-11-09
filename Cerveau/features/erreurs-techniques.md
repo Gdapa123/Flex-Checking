@@ -29,6 +29,11 @@ sources: [backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/app
 - Quotas : 2 000 signatures navigateur, 5 000 autres ; conservation 30 jours (purge Celery beat horaire).
 - Ne lève jamais d’exception (ne doit pas aggraver la panne).
 
+## Alertes (2026-11-09)
+Une nouvelle signature d'erreur côté serveur, tâche ou email déclenche un email aux super admins actifs
+(`noyau.alertes.alerter`, une fois par signature et par heure, 10 alertes par heure au plus) ; jamais pour les
+signalements du navigateur (point d'accès public). Message masqué (emails, téléphones, liens de sondage, JWT).
+
 ## Écran super admin
 Filtres à traiter / résolues / toutes et par source, détail dépliable (trace, navigateur), « Résolue / Rouvrir »,
 « Tout marquer résolu », « Supprimer les résolues ». Mise à jour en temps réel.

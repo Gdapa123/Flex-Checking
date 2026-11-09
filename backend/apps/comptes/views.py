@@ -1,4 +1,5 @@
 import hashlib
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -41,6 +42,37 @@ from .throttles import (
     MotDePasseCompteThrottle,
     cle_echecs_connexion,
 )
+
+securite = logging.getLogger("securite")
+
+
+def _connexion_refusee(request, raison, compte_vise):
+    """Échec ou blocage de connexion : journal de sécurité (sans email) et, pour un compte existant, journal
+    d'activité visible du super admin. Un blocage déclenche aussi une alerte par email (une par compte et par heure)."""
+    from apps.noyau.alertes import alerter
+
+    reseau = ConnexionIpThrottle().get_ident(request)
+    securite.warning(
+        "Connexion refusée : %s, compte %s, réseau %s",
+        raison,
+        compte_vise.pk if compte_vise else "inconnu",
+        reseau,
+    )
+    if compte_vise is None:
+        return
+    if raison == "bloquee":
+        journaliser(None, "CONNEXION_BLOQUEE", compte_vise, reseau=reseau)
+        alerter(
+            f"connexion-bloquee:{compte_vise.pk}",
+            f"Connexion bloquée : {compte_vise.nom}",
+            f"Le compte « {compte_vise.nom} » ({compte_vise.get_role_display()}) est bloqué après "
+            f"{ECHECS_CONNEXION_PAR_COMPTE} échecs de connexion en une heure "
+            f"(dernier essai depuis le réseau {reseau}).\n"
+            "S’il ne s’agit pas de cette personne, quelqu’un essaie de deviner son mot de passe : "
+            "vérifiez le journal et réinitialisez le mot de passe si besoin.",
+        )
+    else:
+        journaliser(None, "CONNEXION_ECHEC", compte_vise, raison=raison, reseau=reseau)
 
 
 class MoiSerializer(serializers.ModelSerializer):
@@ -174,10 +206,16 @@ class ConnexionView(APIView):
             cle_comptee = cle + ":poste-connu"
         else:
             cle_comptee = cle
-        if limites.incrementer(cle_comptee, FENETRE_ECHECS_CONNEXION_S) > ECHECS_CONNEXION_PAR_COMPTE:
+        essais = limites.incrementer(cle_comptee, FENETRE_ECHECS_CONNEXION_S)
+        if essais > ECHECS_CONNEXION_PAR_COMPTE:
+            if essais == ECHECS_CONNEXION_PAR_COMPTE + 1:  # premier refus de la série : journalisé et signalé une fois
+                _connexion_refusee(request, "bloquee", Admin.objects.filter(email=email).first())
             return _trop_de_tentatives()
         admin = authenticate(request, username=email, password=ser.validated_data["mot_de_passe"])
         if admin is None or not admin.actif:
+            # compte désactivé : authenticate rend None sans vérifier le mot de passe (ModelBackend, is_active faux)
+            vise = admin or Admin.objects.filter(email=email).first()
+            _connexion_refusee(request, "compte_inactif" if vise and not vise.actif else "mot_de_passe", vise)
             return Response(
                 {"code": "IDENTIFIANTS_INVALIDES", "detail": "Email ou mot de passe incorrect."},
                 status=status.HTTP_401_UNAUTHORIZED,

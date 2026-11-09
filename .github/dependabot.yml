@@ -1,0 +1,35 @@
+# Mises à jour de sécurité et de version proposées automatiquement (pull requests, jamais fusionnées sans revue).
+# Les mises à jour de sécurité des dépendances vulnérables sont proposées dès la publication d'un avis ; les autres
+# chaque semaine, groupées pour limiter le bruit. La CI (tests, pip-audit, npm audit) s'exécute sur chaque proposition.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      python-mineures:
+        update-types: [minor, patch]
+    ignore:
+      # kombu figé en 5.6.2 : 5.7 exige redis-py ≥ 6.1 et casse le worker Celery (commit bfb237a)
+      - dependency-name: kombu
+        versions: [">=5.7"]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-mineures:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: monthly

@@ -74,6 +74,15 @@ def enregistrer(source, type_, message, *, lieu="", details="", navigateur=""):
                 premiere=maintenant,
                 derniere=maintenant,
             )
+            if source != SourceErreur.NAVIGATEUR:  # signalements publics : jamais d'alerte (déclenchables par tous)
+                from .alertes import alerter
+
+                alerter(
+                    f"erreur:{signature}",
+                    f"Nouvelle erreur ({SourceErreur(source).label.lower()})",
+                    f"Une nouvelle erreur technique a été enregistrée.\n\nType : {type_}\nLieu : {lieu or '—'}\n"
+                    f"Message : {message[:300]}",
+                )
     except IntegrityError:  # créée en parallèle par une autre requête : compter cette occurrence
         try:
             ErreurTechnique.objects.filter(signature=signature).update(occurrences=F("occurrences") + 1)
