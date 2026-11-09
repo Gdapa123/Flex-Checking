@@ -29,6 +29,12 @@ PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740
 - Slug : `slugify(programme)-année-<6 hex>`, jamais réattribué (vérifie aussi `AncienSlug`).
 - Validations : accueil ≤ début (la règle « date limite ≤ date » a disparu avec la saisie de la date limite).
 
+### CarteInvitation
+`evenement` (OneToOne, CASCADE, `related_name="carte_invitation"`), `nom`, `type_mime` (`image/jpeg`, `image/png`,
+`application/pdf`), `taille`, `contenu` (BinaryField, 1,8 Mo au plus), `modifie_le` ; migration `0013`. Table à
+part : la liste des cérémonies ne charge que les métadonnées (`Prefetch … only(…)`). Voir
+[ADR-016](../decisions/ADR-016-carte-invitation-en-base.md).
+
 ### AncienSlug
 Lien remplacé par une régénération : reste lisible (page pratique, agenda, renvoi du QR) mais **n’accepte plus
 d’inscription** et ne révèle jamais le nouveau lien.

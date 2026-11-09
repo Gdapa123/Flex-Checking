@@ -21,6 +21,7 @@ from apps.comptes.models import Admin
 
 from .caches import CLE_ANALYTIQUE, cle_public, cle_statistiques, invalider
 from .models import (
+    CarteInvitation,
     EmailEnvoye,
     Emargement,
     ErreurTechnique,
@@ -155,6 +156,13 @@ def _evenement(sender, instance, **kwargs):
         CLE_ANALYTIQUE,
     )
     notifier_evenement(instance.pk, ("evenement", "evenements", "statistiques"))
+
+
+@receiver([post_save, post_delete], sender=CarteInvitation)
+def _carte_invitation(sender, instance, **kwargs):
+    # la description d'agenda de la page publique (en cache) contient le lien de la carte ; écrans des admins à jour
+    invalider(cle_public(_slug(instance.evenement_id)))
+    notifier_evenement(instance.evenement_id, ("evenement", "evenements"))
 
 
 @receiver([post_save, post_delete], sender=Programme)

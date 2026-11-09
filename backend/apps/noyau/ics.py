@@ -5,6 +5,7 @@ from datetime import UTC, timedelta
 from django.conf import settings
 from django.utils import timezone
 
+from .cartes_invitation import carte_pour_agenda
 from .dates import combiner
 
 FORMAT = "%Y%m%dT%H%M%SZ"
@@ -42,21 +43,28 @@ def bornes(evenement):
 RAPPELS = ("-P1D", "-PT1H")
 
 
-def description_agenda(evenement, slug=None):
+_A_CALCULER = object()
+
+
+def description_agenda(evenement, slug=None, carte=_A_CALCULER):
+    """`carte` : résultat de `carte_pour_agenda` déjà lu (une seule requête par fichier .ics)."""
     description = (
         f"Accueil dès {evenement.heure_accueil:%H:%M}, lancement à {evenement.heure_debut:%H:%M}. "
         "Présentez votre QR code à l'accueil.\n"
         f"Itinéraire : {lien_pratique(evenement, 'itineraire', slug)}"
     )
-    if evenement.lien_carte_invitation:
-        description += f"\nCarte d'invitation : {evenement.lien_carte_invitation}"
+    if carte is _A_CALCULER:
+        carte = carte_pour_agenda(evenement, slug)
+    if carte:
+        description += f"\nCarte d'invitation : {carte[0]}"
     return description
 
 
 def ics_evenement(evenement, slug=None):
     slug = slug or evenement.slug_inscription
     debut, fin = bornes(evenement)
-    description = description_agenda(evenement, slug)
+    carte = carte_pour_agenda(evenement, slug)
+    description = description_agenda(evenement, slug, carte)
     lignes = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -73,9 +81,10 @@ def ics_evenement(evenement, slug=None):
         f"DESCRIPTION:{_echapper(description)}",
         f"URL:{settings.APP_PUBLIC_URL}/i/{slug}",
     ]
-    if evenement.lien_carte_invitation:
-        # lien validé (URLField) : ni saut de ligne ni point-virgule à échapper dans une valeur URI
-        lignes.append(f"ATTACH:{_sans_saut(evenement.lien_carte_invitation)}")
+    if carte:
+        # adresse construite ou validée (URLField) : ni saut de ligne ni point-virgule dans une valeur URI
+        lien, type_mime = carte
+        lignes.append(f"ATTACH;FMTTYPE={type_mime}:{_sans_saut(lien)}" if type_mime else f"ATTACH:{_sans_saut(lien)}")
     for declencheur in RAPPELS:
         lignes += [
             "BEGIN:VALARM",

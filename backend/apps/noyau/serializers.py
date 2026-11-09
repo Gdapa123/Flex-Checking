@@ -1,12 +1,15 @@
 from django.conf import settings
-from django.db.models import Count, OuterRef, Q, Subquery
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Count, OuterRef, Prefetch, Q, Subquery
 from rest_framework import serializers
 
 from apps.comptes.models import Admin, Role
 
 from . import statuts
+from .cartes_invitation import lien_public as lien_carte_publique
 from .models import (
     Appareil,
+    CarteInvitation,
     Civilite,
     EmailEnvoye,
     Evenement,
@@ -95,9 +98,14 @@ class AdminCourtSerializer(serializers.ModelSerializer):
 
 
 def evenements_annotes(qs):
+    # carte d'invitation : métadonnées seulement, jamais le contenu du fichier
+    carte = Prefetch(
+        "carte_invitation",
+        queryset=CarteInvitation.objects.only("id", "evenement_id", "nom", "type_mime", "taille", "modifie_le"),
+    )
     return (
         qs.select_related("programme")
-        .prefetch_related("admins")
+        .prefetch_related("admins", carte)
         .annotate(
             nb_inscrits=Count("invites", distinct=True),
             nb_presents=Count("invites", filter=Q(invites__statut__code=statuts.PRESENT), distinct=True),
@@ -118,6 +126,7 @@ class EvenementSerializer(serializers.ModelSerializer):
     nb_presents = serializers.IntegerField(read_only=True, default=0)
     statut = serializers.SerializerMethodField()
     etat_inscriptions = serializers.SerializerMethodField()
+    carte_invitation = serializers.SerializerMethodField()
 
     class Meta:
         model = Evenement
@@ -137,6 +146,7 @@ class EvenementSerializer(serializers.ModelSerializer):
             "lien_magazine",
             "lien_brochure",
             "lien_carte_invitation",
+            "carte_invitation",
             "capacite",
             "date_limite_inscription",
             "inscriptions_ouvertes",
@@ -160,6 +170,22 @@ class EvenementSerializer(serializers.ModelSerializer):
     def get_magazine_actif(self, obj):
         # même règle que l'envoi de l'email n°2 (services) et la page publique : activé ET lien renseigné
         return obj.magazine_disponible
+
+    def get_carte_invitation(self, obj):
+        try:
+            carte = obj.carte_invitation
+        except ObjectDoesNotExist:
+            # ancien lien saisi avant les fichiers : affiché, pour pouvoir le remplacer ou le retirer
+            if obj.lien_carte_invitation:
+                return {"nom": "Lien enregistré", "type": None, "taille": None, "lien": obj.lien_carte_invitation}
+            return None
+        return {
+            "nom": carte.nom,
+            "type": carte.type_mime,
+            "taille": carte.taille,
+            "lien": lien_carte_publique(obj),
+            "modifie_le": carte.modifie_le,
+        }
 
     def get_lien_inscription(self, obj):
         return f"{settings.APP_PUBLIC_URL}/i/{obj.slug_inscription}"
@@ -196,6 +222,14 @@ class EvenementSerializer(serializers.ModelSerializer):
         if accueil and debut and accueil > debut:
             raise serializers.ValidationError({"heure_accueil": "L’accueil doit commencer avant la cérémonie."})
         return attrs
+
+
+class CarteInvitationSerializer(serializers.Serializer):
+    """Envoi de la carte d'invitation : fichier en base64 (l'API n'accepte que du JSON) ; le contenu est contrôlé et
+    réencodé par `cartes_invitation.preparer`."""
+
+    nom = serializers.CharField(max_length=200, allow_blank=True, required=False, default="")
+    contenu = serializers.CharField(max_length=2_500_000, trim_whitespace=True)
 
 
 class EvenementBorneSerializer(EvenementSerializer):

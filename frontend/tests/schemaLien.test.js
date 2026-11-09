@@ -14,7 +14,7 @@ describe('liens d’une cérémonie', () => {
   );
 
   it('signale le champ fautif', () => {
-    const r = schemaLiensCeremonie.safeParse({ lienMagazine: '', lienBrochure: 'brochure', lienCarteInvitation: '' });
+    const r = schemaLiensCeremonie.safeParse({ lienMagazine: '', lienBrochure: 'brochure' });
     expect(r.success).toBe(false);
     expect(r.error.issues[0].path).toEqual(['lienBrochure']);
   });

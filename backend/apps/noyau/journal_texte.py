@@ -123,6 +123,10 @@ def decrire(e, cibles):  # noqa: C901 — table de correspondance volontairement
             return f"Lien d’inscription régénéré · {cible.nom_affiche if cible else ''}"
         case "EVENEMENT_ADMINS":
             return f"Admins affectés mis à jour · {cible.nom_affiche if cible else ''}"
+        case "CARTE_INVITATION_AJOUT":
+            return f"Carte d’invitation ajoutée · {cible.nom_affiche if cible else ''}"
+        case "CARTE_INVITATION_SUPPRESSION":
+            return f"Carte d’invitation retirée · {cible.nom_affiche if cible else ''}"
         case "INSCRIPTIONS_OUVERTURE":
             return f"Inscriptions ouvertes · {cible.nom_affiche if cible else ''}"
         case "INSCRIPTIONS_FERMETURE":

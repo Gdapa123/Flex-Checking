@@ -80,8 +80,10 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   défaut) ; un bouton sans lien est masqué.
 - Fichier .ics (`ics.ics_evenement`) : titre « Cérémonie de Graduation {programme} {année} »
   (`Evenement.nom_agenda`, aussi pour les liens Google Agenda / Microsoft 365 via `agenda.titre`), **deux rappels**
-  (la veille `-P1D` et une heure avant `-PT1H`), carte d’invitation (`Evenement.lien_carte_invitation`) en `ATTACH`
-  et dans la description. Limite : le lien Google Agenda ne permet ni rappel ni pièce jointe (Google applique les
+  (la veille `-P1D` et une heure avant `-PT1H`), carte d’invitation en `ATTACH;FMTTYPE=…` et dans la description
+  (`cartes_invitation.carte_pour_agenda` : fichier téléversé, sinon ancien lien `Evenement.lien_carte_invitation`).
+  Depuis le 2026-11-09 au soir, la carte est un **fichier** (« c’est un fichier, pas un lien ») : voir
+  [configuration-super-admin](configuration-super-admin.md) et [ADR-016](../decisions/ADR-016-carte-invitation-en-base.md). Limite : le lien Google Agenda ne permet ni rappel ni pièce jointe (Google applique les
   rappels par défaut de l’utilisateur) ; seul le lien de la carte figure dans sa description.
 - Gabarits par type : `invitation`, `magazine`, `sondage` (`.html` + `.txt`, sur `base.html`). Le gabarit `sondage.html` contient le questionnaire (formulaire HTML, voir [sondage-satisfaction](sondage-satisfaction.md)).
 - Pied de page commun (`base.html` et les trois `.txt`) : adresse de MDE, mention propre au type, phrase « Cet email

@@ -4,16 +4,19 @@
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' wss://{host}; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		# « ? » : valeur par défaut, posée seulement si la réponse n'en a pas. L'API (Django) garde ses en-têtes plus
+		# stricts (CSP « default-src 'none'; frame-ancestors 'none' », X-Frame-Options DENY, « sandbox » de la carte
+		# d'invitation) ; les pages du frontend reçoivent ceux-ci.
+		?Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' wss://{host}; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
+		?X-Frame-Options SAMEORIGIN
 		Referrer-Policy same-origin
 		Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
 		Cross-Origin-Opener-Policy same-origin
 		-Server
 	}
 
-	# corps de requête limité (aucun envoi de fichier volumineux dans l'application)
+	# corps de requête limité (seul fichier envoyé : la carte d'invitation, 1,8 Mo au plus en base64)
 	request_body {
 		max_size 5MB
 	}

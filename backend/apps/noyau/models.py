@@ -117,6 +117,25 @@ class Evenement(models.Model):
             self.save(update_fields=["slug_inscription", "modifie_le"])
 
 
+class CarteInvitation(models.Model):
+    """Carte d'invitation du programme (image ou PDF) téléversée par le super admin, jointe à l'événement d'agenda
+    des invités. Stockée en base : disponible sur toutes les installations (VPS, Vercel sans disque permanent) et
+    incluse dans les sauvegardes. Table à part : le contenu n'est jamais chargé avec la cérémonie."""
+
+    evenement = models.OneToOneField(Evenement, on_delete=models.CASCADE, related_name="carte_invitation")
+    nom = models.CharField(max_length=120)
+    type_mime = models.CharField(max_length=40)
+    taille = models.PositiveIntegerField()
+    contenu = models.BinaryField()
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    @property
+    def extension(self):
+        from .cartes_invitation import extension
+
+        return extension(self.type_mime)
+
+
 class AncienSlug(models.Model):
     """Lien d'inscription remplacé par une régénération : encore servi en lecture seule."""
 

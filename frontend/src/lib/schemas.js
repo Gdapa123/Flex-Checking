@@ -139,9 +139,8 @@ export const schemaLien = z.union([
   z.string().trim().regex(LIEN_RE, 'Lien invalide : il doit commencer par https://'),
 ]);
 
-/** Liens d'une cérémonie (SA5) et lien par défaut de la brochure (SA7). */
+/** Liens de l'email n°2 d'une cérémonie (SA5) ; la carte d'invitation est un fichier (`lib/carteInvitation.js`). */
 export const schemaLiensCeremonie = z.object({
   lienMagazine: schemaLien,
   lienBrochure: schemaLien,
-  lienCarteInvitation: schemaLien,
 });

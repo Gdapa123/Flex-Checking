@@ -19,7 +19,7 @@ from . import caches, emails, services
 from .exceptions import ErreurMetier
 from .icones_email import ICONES_EMAIL, icone_png
 from .ics import bornes, description_agenda, ics_evenement
-from .models import Evenement, Invite, Parametres, Programme, TypeEmail
+from .models import CarteInvitation, Evenement, Invite, Parametres, Programme, TypeEmail
 from .serializers import InscriptionSerializer, tokens_programme
 from .theme import deriver_tokens
 from .validation import valider_email
@@ -112,6 +112,38 @@ class EvenementPublicView(APIView):
             "magazineActif": ev.magazine_disponible,
             "etat": services.FERME if ancien else services.etat_inscriptions(ev),
         }
+
+
+class CarteInvitationView(APIView):
+    """Carte d'invitation du programme, jointe à l'événement d'agenda des invités (`ATTACH` du .ics). Aucune donnée
+    personnelle ; un ancien lien d'inscription y mène aussi (invités qui l'ont reçu par email)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={(200, "application/octet-stream"): bytes}, summary="Carte d'invitation (image ou PDF)")
+    def get(self, request, slug):
+        ev = evenement_public(slug)
+        # métadonnées d'abord : le contenu (jusqu'à 1,8 Mo) n'est lu que si le navigateur ne l'a pas déjà
+        meta = CarteInvitation.objects.filter(evenement=ev).only("pk", "type_mime", "taille", "modifie_le").first()
+        if meta is None:
+            raise Http404
+        etag = f'"carte-{meta.pk}-{int(meta.modifie_le.timestamp())}-{meta.taille}"'
+        if etag in request.headers.get("If-None-Match", ""):
+            reponse = HttpResponse(status=304)
+        else:
+            contenu = CarteInvitation.objects.filter(pk=meta.pk).values_list("contenu", flat=True).first()
+            reponse = HttpResponse(bytes(contenu), content_type=meta.type_mime)
+            nom = f"carte-invitation-{slugify(ev.programme.nom)}-{ev.annee}.{meta.extension}"
+            # image affichée ; PDF téléchargé (les lecteurs PDF des navigateurs refusent un document « sandbox »)
+            mode = "attachment" if meta.type_mime == "application/pdf" else "inline"
+            reponse["Content-Disposition"] = f'{mode}; filename="{nom}"'
+            reponse["Content-Security-Policy"] = "sandbox"  # aucun script, aucun accès au site
+        reponse["ETag"] = etag
+        # revalidé à chaque fois (réponse 304 sans relire le fichier) : une carte remplacée ou retirée n'est jamais
+        # servie depuis un cache
+        reponse["Cache-Control"] = "public, no-cache"
+        return reponse
 
 
 class ConfidentialiteView(APIView):

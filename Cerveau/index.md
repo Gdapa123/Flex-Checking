@@ -83,6 +83,7 @@ Contrôle automatique : `python3 Cerveau/outils/lint_wiki.py`.
 | [decisions/ADR-013-conservation-limitee-anonymisation.md](decisions/ADR-013-conservation-limitee-anonymisation.md) | acceptée | Données personnelles : anonymisation automatique après une durée réglable |
 | [decisions/ADR-014-migrations-expand-contract.md](decisions/ADR-014-migrations-expand-contract.md) | acceptée | Migrations : étendre (nullable / `db_default`) puis contracter ; sauvegarde avant destruction |
 | [decisions/ADR-015-images-email-par-lien.md](decisions/ADR-015-images-email-par-lien.md) | acceptée | Logo et icônes des emails servis par lien ; seules pièces jointes : QR code et .ics |
+| [decisions/ADR-016-carte-invitation-en-base.md](decisions/ADR-016-carte-invitation-en-base.md) | acceptée | Carte d’invitation téléversée en base64 (JSON) et stockée en base, pas sur disque |
 
 ## Tests
 | Page | Description |

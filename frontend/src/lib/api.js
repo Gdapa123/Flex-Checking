@@ -115,6 +115,7 @@ export const api = {
   get: (url, params, opts) => requete(url, { params, ...opts }),
   post: (url, body, opts) => requete(url, { method: 'POST', body, ...opts }),
   patch: (url, body, opts) => requete(url, { method: 'PATCH', body, ...opts }),
+  put: (url, body, opts) => requete(url, { method: 'PUT', body, ...opts }),
   delete: (url, opts) => requete(url, { method: 'DELETE', ...opts }),
 };
 

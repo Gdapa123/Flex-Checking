@@ -26,6 +26,8 @@ CATEGORIES = {
     "EVENEMENT_SUPPRESSION": "Configuration",
     "EVENEMENT_SLUG": "Configuration",
     "EVENEMENT_ADMINS": "Configuration",
+    "CARTE_INVITATION_AJOUT": "Configuration",
+    "CARTE_INVITATION_SUPPRESSION": "Configuration",
     "INSCRIPTIONS_OUVERTURE": "Configuration",
     "INSCRIPTIONS_FERMETURE": "Configuration",
     "PARAMETRES": "Configuration",

@@ -19,19 +19,20 @@ from apps.comptes.authentication import est_borne, nouvelle_version_session
 from apps.comptes.models import Admin, Role
 from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visibles
 
-from . import caches, exports, sondages, suivi_emails
+from . import caches, cartes_invitation, exports, sondages, suivi_emails
 from .analytique import analytique, technique
 from .emails import Source, rendre
 from .exceptions import ErreurMetier
 from .filtres import filtrer_par_evenement
 from .journal import CATEGORIES, journaliser
 from .journal_texte import precharger_cibles
-from .models import Evenement, Invite, JournalActivite, Parametres, Programme, TypeEmail
+from .models import CarteInvitation, Evenement, Invite, JournalActivite, Parametres, Programme, TypeEmail
 from .qr import qr_png
 from .rapports import rapport_evenement, rapport_global
 from .serializers import (
     AdminSerializer,
     ApercuEmailSerializer,
+    CarteInvitationSerializer,
     EvenementBorneSerializer,
     EvenementSerializer,
     JournalSerializer,
@@ -194,6 +195,32 @@ class EvenementViewSet(viewsets.ModelViewSet):
         ev = self.get_object()
         ev.regenerer_slug()
         journaliser(request.user, "EVENEMENT_SLUG", ev)
+        return Response(self.get_serializer(self.get_queryset().get(pk=ev.pk)).data)
+
+    @extend_schema(request=CarteInvitationSerializer, responses={200: EvenementSerializer})
+    @action(detail=True, methods=["put", "delete"], url_path="carte-invitation")
+    def carte_invitation(self, request, pk=None):
+        """Carte d'invitation du programme (image JPEG / PNG ou PDF, 1,8 Mo au plus), jointe à l'événement d'agenda
+        des invités. PUT `{nom, contenu}` (contenu en base64) la remplace ; DELETE la retire."""
+        ev = self.get_object()
+        if request.method == "DELETE":
+            supprimees, _ = CarteInvitation.objects.filter(evenement=ev).delete()
+            if supprimees or ev.lien_carte_invitation:
+                journaliser(request.user, "CARTE_INVITATION_SUPPRESSION", ev)
+        else:
+            ser = CarteInvitationSerializer(data=request.data)
+            ser.is_valid(raise_exception=True)
+            contenu, type_mime, nom = cartes_invitation.preparer(
+                ser.validated_data["contenu"], ser.validated_data["nom"]
+            )
+            CarteInvitation.objects.update_or_create(
+                evenement=ev, defaults={"nom": nom, "type_mime": type_mime, "taille": len(contenu), "contenu": contenu}
+            )
+            journaliser(request.user, "CARTE_INVITATION_AJOUT", ev, type=type_mime, taille=len(contenu))
+        if ev.lien_carte_invitation:
+            # ancien lien saisi avant les fichiers : remplacé ou retiré avec la carte, jamais de retour dans l'agenda
+            ev.lien_carte_invitation = ""
+            ev.save(update_fields=["lien_carte_invitation", "modifie_le"])
         return Response(self.get_serializer(self.get_queryset().get(pk=ev.pk)).data)
 
     @extend_schema(responses={(200, "image/png"): bytes})

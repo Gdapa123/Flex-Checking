@@ -16,6 +16,7 @@ import { useToast } from '../../components/ui/Toasts';
 import { PageSuper } from './SuperApp';
 import ErreurChargement from './ErreurChargement';
 import { CHAMP_MDE, useAdmins, useEvenements, useProgrammes } from './donnees';
+import { TYPES_ACCEPTES, preparerCarte, tailleLisible } from '../../lib/carteInvitation';
 
 // [clé, libellé, type, pleine largeur]. Pas de date limite : inscriptions ouvertes jusqu'au jour de la cérémonie.
 const CHAMPS = [
@@ -26,15 +27,10 @@ const CHAMPS = [
   ['lieu', 'Lieu', 'text', true],
   ['lienCarte', 'Lien de l’itinéraire (carte)', 'url', true],
 ];
-// liens de l'email n°2 et de l'agenda : [clé, libellé, aide]
+// liens de l'email n°2 : [clé, libellé, aide] (la carte d'invitation est un fichier : `CarteInvitation`)
 const LIENS = [
   ['lienMagazine', 'Lien du magazine de la promotion', 'Bouton « Lire le magazine » de l’email n°2.'],
   ['lienBrochure', 'Lien de la brochure Executive Education', 'Bouton de l’email n°2.'],
-  [
-    'lienCarteInvitation',
-    'Lien de la carte d’invitation du programme',
-    'Joint à l’événement d’agenda des invités (fichier .ics) et rappelé dans sa description.',
-  ],
 ];
 
 const VIDE = {
@@ -47,7 +43,6 @@ const VIDE = {
   lienCarte: '',
   lienMagazine: '',
   lienBrochure: '',
-  lienCarteInvitation: '',
   inscriptionsOuvertes: true,
   admins: [],
 };
@@ -109,7 +104,6 @@ export default function Evenements() {
     const liens = schemaLiensCeremonie.safeParse({
       lienMagazine: d.lienMagazine ?? '',
       lienBrochure: d.lienBrochure ?? '',
-      lienCarteInvitation: d.lienCarteInvitation ?? '',
     });
     if (!liens.success) {
       setErreurs(erreursParChamp(liens));
@@ -301,6 +295,7 @@ export default function Evenements() {
                   {erreurs[k] && <span className="text-[14px] font-normal text-erreur">{erreurs[k]}</span>}
                 </label>
               ))}
+              <CarteInvitation evenement={nouveau ? null : courant} onChange={() => invaliderTout(courant?.id)} />
             </div>
             <div className="rounded-[12px] border border-mde-bordure px-4">
               <Interrupteur
@@ -473,5 +468,98 @@ export default function Evenements() {
           : 'Cette cérémonie n’a aucun invité. Sa suppression est définitive.'}
       </DialogueSuppression>
     </PageSuper>
+  );
+}
+
+/** Carte d'invitation du programme : fichier (image JPEG / PNG ou PDF) joint à l'événement d'agenda des invités. */
+function CarteInvitation({ evenement, onChange }) {
+  const toast = useToast();
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const carte = evenement?.carteInvitation;
+
+  const envoyer = async (fichier) => {
+    if (!fichier) return;
+    setErreur('');
+    setEnvoi(true);
+    try {
+      const corps = await preparerCarte(fichier);
+      await api.put(`/evenements/${evenement.id}/carte-invitation/`, corps);
+      await onChange();
+      toast('Carte d’invitation enregistrée');
+    } catch (e) {
+      setErreur(e.status ? messageErreur(e) : e.message);
+    } finally {
+      setEnvoi(false);
+    }
+  };
+  const retirer = async () => {
+    setEnvoi(true);
+    try {
+      await api.delete(`/evenements/${evenement.id}/carte-invitation/`);
+      await onChange();
+      toast('Carte d’invitation retirée');
+    } catch (e) {
+      toast(messageErreur(e), 'erreur');
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 text-[15px] font-medium">
+      <span id="carte-invitation-titre">Carte d’invitation du programme</span>
+      {!evenement ? (
+        <span className="text-[14px] font-normal text-mde-texte-2">
+          Enregistrez d’abord la cérémonie, puis ajoutez la carte.
+        </span>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          {carte && (
+            <a
+              href={carte.lien}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-10 items-center gap-2 text-[14px] font-semibold text-mde-bordeaux underline underline-offset-2"
+            >
+              <Icon nom="file" className="text-[16px]" />
+              {carte.nom}
+              {carte.taille ? ` · ${tailleLisible(carte.taille)}` : ''}
+            </a>
+          )}
+          <label
+            className={`inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-champ border border-champ px-3 text-[14px] font-semibold hover:bg-fond ${envoi ? 'pointer-events-none opacity-60' : ''}`}
+          >
+            <Icon nom={carte ? 'refresh' : 'plus'} className="text-[16px]" />
+            {envoi ? 'Envoi…' : carte ? 'Remplacer le fichier' : 'Choisir un fichier'}
+            <input
+              type="file"
+              accept={TYPES_ACCEPTES.join(',')}
+              aria-labelledby="carte-invitation-titre"
+              className="sr-only"
+              disabled={envoi}
+              onChange={(e) => {
+                envoyer(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {carte && (
+            <Bouton variante="secondaire" taille="sm" icone="trash" disabled={envoi} onClick={retirer}>
+              Retirer la carte
+            </Bouton>
+          )}
+        </div>
+      )}
+      <span className="text-[14px] font-normal text-mde-texte-2">
+        Image JPEG ou PNG, ou PDF, 1,8 Mo au plus (une image plus lourde est réduite automatiquement). Jointe à
+        l’événement d’agenda des invités (fichier .ics) et rappelée dans sa description.
+      </span>
+      {erreur && (
+        <span role="alert" className="text-[14px] font-normal text-erreur">
+          {erreur}
+        </span>
+      )}
+    </div>
   );
 }
