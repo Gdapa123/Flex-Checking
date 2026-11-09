@@ -1,8 +1,8 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-09
+commit: ebaf617
 sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/.nvmrc, frontend/.npmrc, frontend/tests/fileHorsLigne.test.js, backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/, frontend/vite.config.js, frontend/package.json, frontend/playwright.config.js, frontend/tests/, .github/workflows/ci.yml]
 ---
 

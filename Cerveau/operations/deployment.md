@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-11-05
-commit: 9c6a8ba
+verifie: 2026-11-09
+commit: ebaf617
 sources: [backend/config/bases.py, backend/requirements.txt, docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
 ---
 

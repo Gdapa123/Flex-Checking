@@ -2,7 +2,7 @@
 type: feature
 statut: implémenté
 verifie: 2026-11-09
-commit: f0eaa1f
+commit: ebaf617
 sources: [backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py]
 ---
 

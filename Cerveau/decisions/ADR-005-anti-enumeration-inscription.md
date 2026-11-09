@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-09
+commit: ebaf617
 sources: [PLAN.md, README.md, backend/apps/noyau/vues_public.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/features/invite/EtatCarte.jsx]
 ---
 

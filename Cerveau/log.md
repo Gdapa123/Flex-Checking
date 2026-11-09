@@ -1014,3 +1014,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/e2e/cameraQr.spec.js`, `frontend/e2e/fixtures/qr-lien-piege.mjpeg`, `Cerveau/operations/securite-accueil.md`, `Cerveau/project/risques-et-dette.md`, `Cerveau/api/endpoints.md`, `Cerveau/features/hors-ligne.md`, `Cerveau/specifications/functional-requirements.md`, `Cerveau/specifications/non-functional-requirements.md`, `Cerveau/testing/test-strategy.md`, `Cerveau/testing/test-cases.md`, `Cerveau/architecture/components.md`
 - **Validation :** `ruff` OK ; `pytest` 290 passed (MySQL Docker) ; `npm run lint` OK ; Vitest 81/81 ; build OK ; Playwright 5/5 (accessibilité, parcours, temps réel, douchette, caméra).
 - **Risques ou limites :** correction DNS (SPF, DKIM, DMARC) hors dépôt, à faire par l’administrateur de `mde.ci` ; le lien entre le SPF invalide et les emails non reçus du 2026-11-06 reste une hypothèse ; caméra testée dans Chromium de bureau seulement (pas sur un vrai téléphone).
+
+## [2026-11-09] documentation | /wiki-maj : 23 pages revérifiées sur `ebaf617`
+
+- **Contexte :** après `f0eaa1f` et `ebaf617`, `lint_wiki.py` signalait 23 pages dont des fichiers sources avaient changé.
+- **Modifications :** diff relu (`git diff 107d1f8..ebaf617`) : les pages réellement touchées (scan, hors-ligne, emails, endpoints, exigences, tests, composants, risques, sécurité de l’accueil) avaient été mises à jour dans `ebaf617` ; les autres (ADR-004/005/008/010/011, inscription, sondage, données personnelles, configuration, intégrations, déploiements) ne décrivent rien de modifié : seuls `verifie` et `commit` changent.
+- **Fichiers concernés :** frontmatter des 23 pages signalées, `Cerveau/index.md`
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 53 pages, 0 erreur, 0 page à revérifier, 0 avertissement.
+- **Risques ou limites :** aucun.

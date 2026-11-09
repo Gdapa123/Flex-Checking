@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-10-26
-commit: 44eceb5
+verifie: 2026-11-09
+commit: ebaf617
 sources: [PLAN.md, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/ScanPoste.jsx, backend/apps/noyau/vues_scan.py]
 ---
 

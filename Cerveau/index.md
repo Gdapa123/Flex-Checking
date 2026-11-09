@@ -1,14 +1,14 @@
 ---
 type: index
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-09
+commit: ebaf617
 ---
 
 # Flex’Checking — index du wiki
 
 Point d’entrée de la documentation. L’agent lit cette page en premier pour répondre à une question, puis les
 pages pertinentes, puis vérifie dans le code. Toutes les pages ont été revérifiées le 2026-10-26 sur le commit `44eceb5` (commits `d91d426` et `7e0e071` du
-2026-10-22 compris) ; les pages touchées par la mise à niveau de Node.js (commit `d220011`) ont été revérifiées sur ce commit. Les pages touchées par le pool de connexions Postgres et la correction du rafraîchissement de session (`43f99c5`) ont été revérifiées sur `2523cbb`. Les pages d’inscription (placeholders, `2365b1f`) et du sondage (questionnaire dans l’email n°3) ont été revérifiées sur `bed9942`, et 30 pages (fonctionnalités, architecture, API, ADR, opérations, spécifications, tests) ont été alignées sur ce commit (`3106714`) ; les 31 pages signalées après `115df80` et `107d1f8` ont été revérifiées le 2026-11-03 sur `107d1f8`  ; les 13 pages touchées par `e3dd153` (domaine `inscription.mde.ci`, allègement mémoire Docker) ont été revérifiées le 2026-11-04 ; le champ `commit` de chaque page fait foi.
+2026-10-22 compris) ; les pages touchées par la mise à niveau de Node.js (commit `d220011`) ont été revérifiées sur ce commit. Les pages touchées par le pool de connexions Postgres et la correction du rafraîchissement de session (`43f99c5`) ont été revérifiées sur `2523cbb`. Les pages d’inscription (placeholders, `2365b1f`) et du sondage (questionnaire dans l’email n°3) ont été revérifiées sur `bed9942`, et 30 pages (fonctionnalités, architecture, API, ADR, opérations, spécifications, tests) ont été alignées sur ce commit (`3106714`) ; les 31 pages signalées après `115df80` et `107d1f8` ont été revérifiées le 2026-11-03 sur `107d1f8`  ; les 13 pages touchées par `e3dd153` (domaine `inscription.mde.ci`, allègement mémoire Docker) ont été revérifiées le 2026-11-04 ; les 23 pages signalées après `f0eaa1f` et `ebaf617` (QR codes malveillants, mention « ne pas répondre », curseur des fenêtres) ont été revérifiées le 2026-11-09 sur `ebaf617` ; le champ `commit` de chaque page fait foi.
 
 ## Règles
 | Page | Description |

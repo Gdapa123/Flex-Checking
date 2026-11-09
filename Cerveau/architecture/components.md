@@ -1,8 +1,8 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-09
+commit: ebaf617
 sources: [backend/apps, frontend/src, backend/Dockerfile]
 ---
 
