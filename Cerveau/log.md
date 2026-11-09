@@ -1151,3 +1151,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `8d7753a` poussé sur `main` (frontend `flex-checking` redéployé au push, « Ready ») ; migration `0012_liens_ceremonie` appliquée à la base Neon avec l’URL non poolée (`vercel env pull` dans un fichier privé hors dépôt, supprimé aussitôt) **avant** le code ; backend `flex-checking-api` déployé par `vercel deploy --prod --scope mde-it` (« Ready »).
 - **Validation :** en ligne : `/api/sante/` 200 ; `/api/public/emails/images/ic-check-18794E.png` 200 (`image/png`, `Cache-Control: public, max-age=31536000, immutable`) ; couleur inconnue 404 ; `/api/auth/moi/` sans session 401 ; frontend 200 et proxy `/api` 200. Emails n°1 et n°2 non envoyés en ligne.
 - **Risques ou limites :** VPS `inscription.mde.ci` non mis à jour (la migration s’y appliquera à la mise à jour) ; heure 12h30 → 14h30 à corriger dans l’écran Cérémonies.
+
+## [2026-11-09] fonctionnalité | Email n°1 en « billet d’entrée », centré et justifié
+
+- **Contexte :** capture de l’email n°1 en ligne : « mail mal organisé, justifie et centre », puis « les autres formats de mail sont bien mais le premier […] n’est pas très intéressant ».
+- **Modifications :** `invitation.html` refait en billet (bandeau programme, QR encadré, pastille du code, pointillés, infos centrées, boutons) ; salutation centrée, message justifié, formule de fin centrée ; en-tête centré pour le seul email n°1 (`emails.rendre` : `entete_centre`, `base.html`). Emails n°2 et n°3 inchangés (modification essayée puis annulée à la demande).
+- **Fichiers concernés :** `backend/templates/emails/invitation.html`, `backend/templates/emails/base.html`, `backend/apps/noyau/emails.py`, `Cerveau/features/emails.md`
+- **Validation :** `ruff` OK ; `pytest` 385 passed ; rendu Chromium à 390 px (PMD, AMP) et 700 px : formule de fin à 746 px.
+- **Risques ou limites :** rendu non vérifié dans Outlook de bureau (coins arrondis et pointillés ignorés, sans gêne de lecture). Non commité.

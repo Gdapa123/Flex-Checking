@@ -68,9 +68,13 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   bureau) affiche le texte de remplacement du logo ; le QR code, lui, reste intégré.
 - Structure MIME : `mixed[ related[ alternative(texte, html), QR code CID sans nom de fichier ], pièces jointes ]`.
 - Pièces jointes n°1 : **seulement** `qr-code.png` et `graduation.ics` (aucune pièce jointe pour n°2 et n°3).
-- Email n°1 compact (2026-11-09) : message, QR code (132 px) et code de secours côte à côte, mise en garde courte,
-  infos pratiques, boutons « Agenda » / « Itinéraire », puis la formule de fin (texte après `{qr_code}`, par défaut
-  « À très bientôt ! », sans signature) **en bas de l’email**. Mesuré à 390 px de large : formule de fin à 715 px.
+- Email n°1 en **billet d’entrée** (2026-11-09, refait à la demande : « pas très intéressant », « justifie et
+  centre ») : tout centré, en-tête compris (`entete_centre`, l’en-tête des n°2 et n°3 reste aligné à gauche) ;
+  salutation centrée, message justifié ; carte « BILLET D’ENTRÉE · {PROGRAMME} {année} » (bandeau `primary_soft`),
+  QR code 140 px encadré de la couleur du programme, code de secours en pastille, pointillés, date / heure / lieu
+  centrés, boutons « Agenda » / « Itinéraire » ; mise en garde courte sous la carte ; formule de fin (texte après
+  `{qr_code}`, par défaut « À très bientôt ! », sans signature) **en bas**, couleur du programme. Mesuré à 390 px
+  de large : formule de fin à 746 px.
 - Email n°2 (2026-11-09) : deux boutons, « Lire le magazine » (`Evenement.lien_magazine_effectif`) et « Brochure
   Executive Education » (`Evenement.lien_brochure`, sinon `Parametres.lien_brochure_defaut`, `https://mde.ci` par
   défaut) ; un bouton sans lien est masqué.

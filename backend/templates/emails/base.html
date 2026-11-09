@@ -33,10 +33,10 @@
   <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
   <table role="presentation" class="conteneur" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#F6F7F8;border:1px solid #EAECEE;border-radius:16px;overflow:hidden;" bgcolor="#F6F7F8">
     <!-- En-tête : dégradé de la couleur principale, liseré secondaire -->
-    <tr><td class="pad-x police entete" bgcolor="{{ t.primary }}" style="background-color:{{ t.primary }};background-image:linear-gradient(165deg,{{ t.gradient_dark }} 0%,{{ t.primary }} 55%,{{ t.gradient_light }} 100%);padding:20px 24px 28px 24px;color:{{ t.on_primary }};">
-      <img src="{{ logo_src }}" width="120" height="36" alt="Flex’Checking · MDE Business School" style="display:block;width:120px;height:36px;">
-      <div class="titre police" style="margin-top:12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.08;font-weight:800;letter-spacing:-1px;color:{{ t.on_primary }};">{{ titre }}</div>
-      <div style="margin-top:10px;width:56px;height:4px;line-height:4px;font-size:4px;background:{{ t.secondary }};border-radius:2px;">&nbsp;</div>
+    <tr><td {% if entete_centre %}align="center" {% endif %}class="pad-x police entete" bgcolor="{{ t.primary }}" style="background-color:{{ t.primary }};background-image:linear-gradient(165deg,{{ t.gradient_dark }} 0%,{{ t.primary }} 55%,{{ t.gradient_light }} 100%);padding:20px 24px 28px 24px;color:{{ t.on_primary }};{% if entete_centre %}text-align:center;{% endif %}">
+      <img src="{{ logo_src }}" width="120" height="36" alt="Flex’Checking · MDE Business School" style="display:block;width:120px;height:36px;{% if entete_centre %}margin:0 auto;{% endif %}">
+      <div class="titre police" style="margin-top:12px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.08;font-weight:800;letter-spacing:-1px;color:{{ t.on_primary }};{% if entete_centre %}text-align:center;{% endif %}">{{ titre }}</div>
+      <div style="margin:10px {% if entete_centre %}auto{% else %}0{% endif %} 0 {% if entete_centre %}auto{% else %}0{% endif %};width:56px;height:4px;line-height:4px;font-size:4px;background:{{ t.secondary }};border-radius:2px;">&nbsp;</div>
     </td></tr>
     <tr><td class="pad-x contenu" style="padding:12px 12px 20px 12px;">
       {% block contenu %}{% endblock %}

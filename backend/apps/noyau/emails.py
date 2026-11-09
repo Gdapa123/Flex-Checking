@@ -265,6 +265,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
     }
     if est_invitation:
         contexte["qr_src"] = image("qr", qr_png(source.qr_token))
+        contexte["entete_centre"] = True  # email n°1 « billet » : tout est centré
     gabarit = modele[3]
     html = render_to_string(f"emails/{gabarit}.html", contexte)
 
