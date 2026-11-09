@@ -1066,3 +1066,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** frontmatter des pages signalées
 - **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier.
 - **Risques ou limites :** aucun.
+
+## [2026-11-09] déploiement | Mise en ligne Vercel du durcissement JWT (`57b619d`)
+
+- **Contexte :** accord de l’utilisateur pour commiter, pousser et déployer, reconnexion unique acceptée.
+- **Modifications :** `57b619d` et la revérification du wiki poussés (`f76e789..e5c24d1`) ; frontend `flex-checking` redéployé au push (« Ready ») ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
+- **Validation :** en ligne : `/api/sante/` 200 ; `/api/auth/moi/` avec un jeton `alg: none` → 401 ; frontend `/connexion` 200. Connexion réelle non testée en ligne (mot de passe des comptes en ligne non utilisé).
+- **Risques ou limites :** toutes les sessions Vercel ouvertes avant le déploiement sont refusées une fois ; VPS `inscription.mde.ci` non mis à jour.
