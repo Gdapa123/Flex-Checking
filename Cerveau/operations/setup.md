@@ -2,7 +2,7 @@
 type: operations
 statut: implémenté
 verifie: 2026-11-09
-commit: c72f9ba
+commit: 57b619d
 sources: [backend/config/bases.py, .gitignore, README.md, docker-compose.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, frontend/.nvmrc, .env.example, infra/certs.sh, infra/Caddyfile, backend/apps/noyau/management/commands/seed_demo.py, backend/config/settings.py]
 ---
 

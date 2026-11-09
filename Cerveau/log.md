@@ -1058,3 +1058,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/config/settings.py`, `.env.example`, `backend/apps/noyau/tests/test_jwt.py`, wiki (authentification, ADR-002, exigences non fonctionnelles, installation, cas de test)
 - **Validation :** `ruff` OK ; `pytest` 302 passed (dont 8 de `test_jwt.py`) ; retirer le durcissement fait échouer 4 tests ; `npm run e2e` 7/7.
 - **Risques ou limites :** au déploiement, toutes les sessions ouvertes sont refusées une fois (reconnexion des comptes et des bornes) : à éviter un jour de cérémonie. Non commité, non déployé.
+
+## [2026-11-09] documentation | /wiki-maj : pages revérifiées sur `57b619d`
+
+- **Contexte :** `57b619d` modifie `backend/config/settings.py` et ajoute `test_jwt.py`, cités par plusieurs pages.
+- **Modifications :** diff relu : seul le bloc `SIMPLE_JWT` change le contenu documenté (authentification, ADR-002, exigences, installation, cas de test, mis à jour dans `57b619d`) ; pour les autres pages, seuls `verifie` et `commit` changent.
+- **Fichiers concernés :** frontmatter des pages signalées
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 page à revérifier.
+- **Risques ou limites :** aucun.
