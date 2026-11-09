@@ -1,6 +1,8 @@
-# Mises à jour de sécurité et de version proposées automatiquement (pull requests, jamais fusionnées sans revue).
-# Les mises à jour de sécurité des dépendances vulnérables sont proposées dès la publication d'un avis ; les autres
-# chaque semaine, groupées pour limiter le bruit. La CI (tests, pip-audit, npm audit) s'exécute sur chaque proposition.
+# Mises à jour proposées automatiquement (pull requests, jamais fusionnées sans revue), chaque semaine, groupées pour
+# limiter le bruit. La CI (tests, pip-audit, npm audit) s'exécute sur chaque proposition.
+# Versions majeures exclues des mises à jour de routine : ce sont des migrations à planifier (Django 6, Tailwind 4,
+# Vite 8, ESLint 10…), qui cassaient l'installation (ex. @eslint/js 10 exige eslint 10). Une faille dans une
+# dépendance reste détectée par pip-audit / npm audit en CI et par les alertes de sécurité de GitHub.
 version: 2
 updates:
   - package-ecosystem: pip
@@ -16,6 +18,8 @@ updates:
       # kombu figé en 5.6.2 : 5.7 exige redis-py ≥ 6.1 et casse le worker Celery (commit bfb237a)
       - dependency-name: kombu
         versions: [">=5.7"]
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /frontend
     schedule:
@@ -23,8 +27,14 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
+      # ESLint et ses extensions évoluent ensemble (dépendances croisées) : une seule proposition
+      eslint:
+        patterns: ["eslint", "eslint-*", "@eslint/*"]
       npm-mineures:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

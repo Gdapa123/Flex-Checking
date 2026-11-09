@@ -30,7 +30,7 @@ sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/test
 ## Intégration continue (`.github/workflows/ci.yml`)
 À chaque push sur `main` et chaque pull request : backend (ruff + pytest sur MySQL 8 + `pip-audit -r requirements.txt` bloquant depuis le 2026-11-09), backend sur Postgres 17
 (`backend-postgres`, pytest seul, `DATABASE_URL` + `DB_SSLMODE=disable`, depuis le 2026-11-02), frontend (`npm audit --omit=dev --audit-level=high` bloquant depuis le 2026-11-09, lint, Vitest,
-build), puis e2e (MySQL + Redis ; venv installé avec `requirements-dev.txt` pour Daphne depuis le 2026-11-09, mots de passe de démo éphémères masqués, traces Playwright en artefact si échec). Dependabot (`.github/dependabot.yml`, 2026-11-09) : pip et npm chaque semaine (mineures groupées, `kombu` ≥ 5.7 ignoré), actions GitHub et Docker chaque mois.
+build), puis e2e (MySQL + Redis ; venv installé avec `requirements-dev.txt` pour Daphne depuis le 2026-11-09, mots de passe de démo éphémères masqués, traces Playwright en artefact si échec). Dependabot (`.github/dependabot.yml`, 2026-11-09) : pip et npm chaque semaine (mineures groupées, ESLint groupé, **versions majeures ignorées** depuis le 2026-11-09 : migrations à planifier, `kombu` ≥ 5.7 ignoré), actions GitHub et Docker chaque mois.
 Python 3.12, Node.js 24 (`node-version-file: frontend/.nvmrc`, `check-latest: true` : dernier correctif 24.x ; minimum 24.22.1 imposé par `engines`) ; actions GitHub en v7 (`checkout`, `setup-python`, `setup-node`, `upload-artifact`),
 qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertissement d’obsolescence).
 

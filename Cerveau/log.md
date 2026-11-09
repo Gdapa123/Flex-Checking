@@ -1112,3 +1112,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `flex-checking-api` déployé par `vercel deploy --prod --scope mde-it` depuis `backend/` (« Ready », alias `https://flex-checking-api.vercel.app`) ; frontend déjà redéployé au push de `f739344`. Aucune migration.
 - **Validation :** en ligne : `/api/sante/` 200, `/api/auth/csrf/` 204, connexion avec un compte inconnu → 401 `IDENTIFIANTS_INVALIDES` (chemin de journalisation des échecs exécuté sans erreur serveur), `/api/auth/moi/` sans session → 401. Alertes email et contrôle Pwned Passwords non déclenchés en ligne.
 - **Risques ou limites :** VPS `inscription.mde.ci` non mis à jour ; résultat de la CI GitHub non consulté (`gh` absent du poste).
+
+## [2026-11-09] correction | Dependabot : versions majeures exclues, ESLint groupé
+
+- **Contexte :** aperçu Vercel en échec sur la branche `dependabot/npm_and_yarn/frontend/eslint/js-10.0.1` (`npm install` code 1) : `@eslint/js` 10.0.1 exige `eslint` ^10 (peerDependencies), le projet est en `eslint` 9.39. `main` et la production non touchés. Dependabot avait aussi ouvert des montées majeures (Django 6.1, django-filter 26, django-redis 7, gunicorn 26, Tailwind 4, Vite 8, eslint-plugin-react-hooks 7).
+- **Modifications :** `.github/dependabot.yml` : `version-update:semver-major` ignoré pour pip et npm (migrations à planifier) ; groupe `eslint` (`eslint`, `eslint-*`, `@eslint/*`) pour des montées cohérentes.
+- **Fichiers concernés :** `.github/dependabot.yml`, `Cerveau/testing/test-strategy.md`
+- **Validation :** YAML relu par `yaml.safe_load` ; cause vérifiée par `npm view @eslint/js@10.0.1 peerDependencies`.
+- **Risques ou limites :** les pull requests majeures déjà ouvertes restent ouvertes (à fermer dans GitHub) ; une faille dans une version majeure reste signalée par `pip-audit` / `npm audit` en CI. Non commité.
