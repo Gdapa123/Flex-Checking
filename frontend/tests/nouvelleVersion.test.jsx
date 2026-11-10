@@ -24,7 +24,9 @@ describe('rechargement après une mise à jour du site', () => {
     expect(rechargerSiNouvelleVersion(evenement, { stockage, recharger, maintenant: 1_030_000 })).toBe(false);
     expect(recharger).toHaveBeenCalledOnce();
     expect(evenement.preventDefault).not.toHaveBeenCalled();
-    expect(rechargerSiNouvelleVersion({ preventDefault() {} }, { stockage, recharger, maintenant: 1_070_000 })).toBe(true);
+    expect(rechargerSiNouvelleVersion({ preventDefault() {} }, { stockage, recharger, maintenant: 1_070_000 })).toBe(
+      true,
+    );
   });
 
   it('stockage indisponible : aucun rechargement', () => {
@@ -36,5 +38,37 @@ describe('rechargement après une mise à jour du site', () => {
     const recharger = vi.fn();
     expect(rechargerSiNouvelleVersion({ preventDefault() {} }, { stockage, recharger })).toBe(false);
     expect(recharger).not.toHaveBeenCalled();
+  });
+});
+
+describe('page chargée à la demande pendant le rechargement', () => {
+  it('reste en chargement au lieu de planter quand Vite a annulé l’erreur', async () => {
+    const { render, screen } = await import('@testing-library/react');
+    const { Suspense } = await import('react');
+    const { pageDifferee } = await import('../src/lib/nouvelleVersion');
+    const Page = pageDifferee(() => Promise.resolve(undefined)); // import annulé par `preventDefault`
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <Suspense fallback={<p>Chargement</p>}>
+        <Page />
+      </Suspense>,
+    );
+    await new Promise((r) => setTimeout(r, 30));
+    expect(screen.getByText('Chargement')).toBeTruthy();
+    expect(erreur).not.toHaveBeenCalled();
+    erreur.mockRestore();
+  });
+
+  it('affiche la page quand le module arrive', async () => {
+    const { render, screen } = await import('@testing-library/react');
+    const { Suspense } = await import('react');
+    const { pageDifferee } = await import('../src/lib/nouvelleVersion');
+    const Page = pageDifferee(() => Promise.resolve({ default: () => <p>Page chargée</p> }));
+    render(
+      <Suspense fallback={<p>Chargement</p>}>
+        <Page />
+      </Suspense>,
+    );
+    expect(await screen.findByText('Page chargée')).toBeTruthy();
   });
 });

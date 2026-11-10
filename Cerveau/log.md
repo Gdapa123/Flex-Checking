@@ -1282,3 +1282,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur (« Mise à jour terminée (version 4474e46) ») ; Caddyfile inchangé.
 - **Validation :** Playwright 10/10 en local sur `4474e46` ; en ligne : `/api/sante/` OK, nouvelle version servie, contrôle de sécurité en lecture seule 33/33.
 - **Risques ou limites :** sauvegardes du VPS toujours à activer.
+
+## [2026-11-10] correction | Rechargement après mise à jour : plus de fausse erreur « a._result.default »
+
+- **Contexte :** erreur technique signalée depuis un iPhone (10/11, 14h03, `index-D6PV3r4h.js`). Version retrouvée en reconstruisant les commits : `ebcfcf7` ; pile décodée avec la carte de code source : `React.lazy` (`return a._result.default`) dans `useRoutes`. Cause : `lib/nouvelleVersion.js` (1c0c98e) annule l'erreur de chargement (`preventDefault` sur `vite:preloadError`) et recharge la page ; Vite résout alors l'import **sans module**, et `React.lazy` lève une erreur, signalée juste avant le rechargement.
+- **Modifications :** `pageDifferee(importer)` (dans `lib/nouvelleVersion.js`) remplace `lazy` pour les 11 pages de `App.jsx` : import sans module → promesse jamais résolue, l'écran de chargement reste affiché jusqu'au rechargement. Test renommé `tests/nouvelleVersion.test.jsx` (+2 tests).
+- **Fichiers concernés :** `frontend/src/lib/nouvelleVersion.js`, `frontend/src/App.jsx`, `frontend/tests/nouvelleVersion.test.jsx`
+- **Validation :** ESLint OK, Vitest 107/107, build OK, Playwright 10/10 ; essai sur le site construit (`vite preview`, Chromium) avec le fichier de `/confidentialite` refusé une fois : page rechargée puis affichée, aucune erreur signalée. WebKit non installé localement.
+- **Risques ou limites :** l'erreur déjà enregistrée peut être marquée « Résolue » une fois cette version déployée.

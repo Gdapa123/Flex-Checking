@@ -1,24 +1,25 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireRole } from './features/auth/RequireRole';
 import Spinner from './components/ui/Spinner';
+import { pageDifferee } from './lib/nouvelleVersion';
 
-const Inscription = lazy(() => import('./features/invite/InscriptionPage'));
-const Confirmation = lazy(() => import('./features/invite/ConfirmationPage'));
-const Pratique = lazy(() => import('./features/invite/PratiquePage'));
-const Sondage = lazy(() => import('./features/invite/SondagePage'));
-const Confidentialite = lazy(() => import('./features/invite/ConfidentialitePage'));
-const ConnexionAdmin = lazy(() => import('./features/auth/ConnexionAdmin'));
-const ConnexionSuper = lazy(() => import('./features/auth/ConnexionSuper'));
+const Inscription = pageDifferee(() => import('./features/invite/InscriptionPage'));
+const Confirmation = pageDifferee(() => import('./features/invite/ConfirmationPage'));
+const Pratique = pageDifferee(() => import('./features/invite/PratiquePage'));
+const Sondage = pageDifferee(() => import('./features/invite/SondagePage'));
+const Confidentialite = pageDifferee(() => import('./features/invite/ConfidentialitePage'));
+const ConnexionAdmin = pageDifferee(() => import('./features/auth/ConnexionAdmin'));
+const ConnexionSuper = pageDifferee(() => import('./features/auth/ConnexionSuper'));
 // espaces protégés : leur code (public, sans donnée) se télécharge pendant la vérification de la session
 // (voir RequireRole `precharger`) plutôt qu'après, ce qui évite un aller-retour réseau à l'ouverture
 const chargerAdmin = () => import('./features/admin/AdminApp');
 const chargerSuper = () => import('./features/super/SuperApp');
 const chargerScan = () => import('./features/scan/ScanApp');
-const AdminApp = lazy(chargerAdmin);
-const SuperApp = lazy(chargerSuper);
-const ScanApp = lazy(chargerScan);
-const Introuvable = lazy(() => import('./features/auth/Introuvable'));
+const AdminApp = pageDifferee(chargerAdmin);
+const SuperApp = pageDifferee(chargerSuper);
+const ScanApp = pageDifferee(chargerScan);
+const Introuvable = pageDifferee(() => import('./features/auth/Introuvable'));
 
 function Chargement() {
   return (

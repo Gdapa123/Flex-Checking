@@ -1,3 +1,5 @@
+import { lazy } from 'react';
+
 /**
  * Onglet ouvert avant une mise à jour du site : les fichiers de l'ancienne version (`/assets/<nom>-<empreinte>.js`)
  * n'existent plus, l'ouverture d'une page chargée à la demande (confirmation, espace admin…) échoue. Vite signale
@@ -29,3 +31,10 @@ export function installerRechargementVersion() {
     }),
   );
 }
+
+/**
+ * `React.lazy` compatible avec ce rechargement : quand Vite a annulé l'erreur (`preventDefault`), l'import se résout
+ * sans module ; la page reste alors sur l'écran de chargement jusqu'au rechargement, au lieu de lever
+ * « undefined is not an object (evaluating 'a._result.default') » (erreur signalée sur iPhone le 2026-11-10).
+ */
+export const pageDifferee = (importer) => lazy(() => importer().then((module) => module ?? new Promise(() => {})));
