@@ -431,7 +431,9 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
         <div className="flex flex-wrap items-center gap-3 p-4">
           <div
             data-fw="1"
-            className={`flex h-11 max-w-[360px] flex-[1_1_240px] items-center gap-2.5 rounded-moyen border px-3 ${mde ? 'border-mde-champ' : 'border-champ'}`}
+            // min-w-0 et champ en « w-0 » : la largeur naturelle du champ (environ 20 caractères, variable selon les
+            // polices du système) ne pousse plus la barre hors de l'écran à 320–375 px (constaté sur Linux en CI)
+            className={`flex h-11 min-w-0 max-w-[360px] flex-[1_1_240px] items-center gap-2.5 rounded-moyen border px-3 ${mde ? 'border-mde-champ' : 'border-champ'}`}
           >
             <Icon nom="search" className="text-[18px] text-texte-2" />
             <input
@@ -440,7 +442,7 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               onChange={(e) => setRecherche(e.target.value)}
               placeholder="Nom, email, téléphone, code…"
               title="Recherche par nom, prénom, email, téléphone, entreprise ou code à 4 chiffres"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-texte outline-none"
+              className="w-0 min-w-0 flex-1 border-0 bg-transparent text-[15px] text-texte outline-none"
             />
             {isFetching && !isLoading && <Spinner taille={14} className="text-texte-2" />}
           </div>

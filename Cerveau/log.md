@@ -1290,3 +1290,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/lib/nouvelleVersion.js`, `frontend/src/App.jsx`, `frontend/tests/nouvelleVersion.test.jsx`
 - **Validation :** ESLint OK, Vitest 107/107, build OK, Playwright 10/10 ; essai sur le site construit (`vite preview`, Chromium) avec le fichier de `/confidentialite` refusé une fois : page rechargée puis affichée, aucune erreur signalée. WebKit non installé localement.
 - **Risques ou limites :** l'erreur déjà enregistrée peut être marquée « Résolue » une fois cette version déployée.
+
+## [2026-11-10] correction | CI rouge : barre de recherche des invités trop large sur Linux à 320–375 px
+
+- **Contexte :** job « Parcours complet et accessibilité (Playwright) » en échec depuis `4474e46` (nouveau `responsive.spec.js`), vert en local. Rapporteur `github` ajouté à `playwright.config.js` (`7c994de`) pour lire l'échec dans les annotations publiques du job : `/super/invites` et `/admin/evenements/<id>/invites` à 320 et 375 px, barre de recherche 347 px de large (page 380 px).
+- **Modifications :** `GestionInvites` : `min-w-0` sur la barre et `w-0` sur le champ (sa largeur naturelle, environ 20 caractères, dépend des polices du système : plus large sous Linux) ; attente de `document.fonts.ready` avant chaque mesure du test.
+- **Fichiers concernés :** `frontend/src/features/invites/GestionInvites.jsx`, `frontend/e2e/responsive.spec.js`, `frontend/playwright.config.js`
+- **Validation :** ESLint et Prettier OK, Vitest 107/107, Playwright `responsive.spec.js` + `parcours.spec.js` 4/4 en local ; CI à confirmer.
+- **Risques ou limites :** aucun.
