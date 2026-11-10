@@ -1245,3 +1245,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/noyau/services.py`, `models.py`, `serializers.py`, `suivi_emails.py`, `statistiques.py`, `vues_invites.py`, `migrations/0015_email_2_toujours_envoye.py`, `backend/templates/emails/magazine.html`, `frontend/src/features/super/Programmes.jsx`, tests `test_emargement.py`, `test_invites.py`, `test_suivi_emails.py`, `test_super_admin.py`, `test_corrections_invitation.py`
 - **Validation :** ruff OK, pytest complet OK, Vitest 105/105, ESLint OK, `makemigrations --check` OK, Playwright 8/8 (parcours inscription → scan → email n°2 compris).
 - **Risques ou limites :** un objet ou corps n°2 personnalisé dans Paramètres qui parle du magazine reste tel quel (à relire par le super admin si une cérémonie n'a pas de magazine).
+
+## [2026-11-10] documentation | Déploiement Vercel de ebcfcf7 (migration 0015 sur Neon)
+
+- **Contexte :** email n°2 envoyé à tout invité présent.
+- **Modifications :** `ebcfcf7` poussé (frontend `flex-checking` redéployé au push, « Ready ») ; `0015_email_2_toujours_envoye` appliquée sur Neon avant le code (URL non poolée, fichier de variables privé supprimé aussitôt) ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
+- **Validation :** `/api/sante/` OK ; contrôle de sécurité en lecture seule 33/33.
+- **Risques ou limites :** VPS à mettre à jour (`infra/vps/mettre-a-jour.sh` ; pas de changement Caddy, pas de redémarrage du proxy nécessaire).
