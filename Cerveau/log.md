@@ -1223,3 +1223,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/noyau/models.py`, `backend/apps/noyau/migrations/0014_objet_email_1.py`, `backend/apps/noyau/tests/test_inscription.py`
 - **Validation :** ruff OK, `makemigrations --check` : aucun changement, pytest complet OK.
 - **Risques ou limites :** à migrer sur Neon et sur le VPS ; un objet déjà personnalisé dans Paramètres n'est pas modifié.
+
+## [2026-11-10] documentation | Déploiement Vercel de 25beeef (migration 0014 sur Neon)
+
+- **Contexte :** objet de l'email n°1, rechargement des onglets après mise à jour, retrait de la mention de date limite.
+- **Modifications :** `25beeef` poussé (frontend `flex-checking` redéployé au push, « Ready ») ; `0014_objet_email_1` appliquée sur Neon (URL non poolée, fichier de variables privé supprimé aussitôt) ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
+- **Validation :** `/api/sante/` OK ; ancien fichier `/assets/…` → 404 `text/plain` ; contrôle de sécurité en lecture seule 33/33.
+- **Risques ou limites :** VPS encore à mettre à jour (`infra/vps/mettre-a-jour.sh`, `caddy validate`, `docker compose restart proxy`). Projet Vercel « frontend » créé par erreur le 2026-11-10 (deploy depuis `frontend/` sans lien) : suppression à confirmer par l'utilisateur.
