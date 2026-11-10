@@ -1,9 +1,9 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/config/bases.py, backend/requirements.txt, docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [infra/vps/mettre-a-jour.sh, infra/vps/installer.sh, backend/apps/noyau/migrations/0015_email_2_toujours_envoye.py, backend/config/bases.py, backend/requirements.txt, docker-compose.yml, frontend/package.json, frontend/.npmrc, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/emails.py, docker-compose.prod.yml, infra/Caddyfile.prod, backend/Dockerfile, backend/Dockerfile.vercel, backend/gunicorn.conf.py, frontend/vercel.json, backend/vercel.json, .vercelignore, infra/charge/README.md, README.md, backend/config/settings.py, backend/apps/noyau/vues_sondage.py]
 ---
 
 # Déploiement
@@ -27,7 +27,7 @@ docker compose -f docker-compose.prod.yml exec django python manage.py shell -c 
 | django | Gunicorn + workers Uvicorn (`WEB_CONCURRENCY`, défaut 4), `DB_CONCURRENCE` 24, utilisateur sans privilèges `flex`, HEALTHCHECK `/api/sante/` ; `--scale django=3` possible |
 | celery | kombu figé en 5.6.2 dans `backend/requirements.txt` (5.7.0 exige redis-py ≥ 6.1 et fait échouer le worker au démarrage, constaté le 2026-11-04) ; `CELERY_CONCURRENCY` (4), `--max-tasks-per-child 500`, `--max-memory-per-child 262144` (processus recyclé au-delà de 256 Mo, après sa tâche), `--without-gossip --without-mingle --without-heartbeat` (moins d'échanges via Redis ; `inspect ping` du contrôle de santé vérifié le 2026-11-03), contrôle de santé |
 | celery-beat | contrôle de santé de l'image désactivé (`healthcheck: disable`, 2026-11-05 : il interrogeait le port 8000, que beat ne sert pas, d'où un « unhealthy » permanent) ; relance des emails (5 min), purge (1 h), sondages de satisfaction (8 h puis chaque heure jusqu'à 20 h), anonymisation des données personnelles expirées (3 h 30, `anonymiser-donnees`) |
-| proxy | Caddy : HTTPS automatique sur `DOMAINE` (adresse retenue le 2026-11-04 : `inscription.mde.ci`, défaut de `docker-compose.prod.yml` et `infra/Caddyfile.prod`), sert `frontend/dist`, relaie `/api` ; en-têtes HSTS, CSP (`frame-src 'self' blob:`, sans `data:`), `Referrer-Policy same-origin` ; journaux d'accès sans `?q=` ni jeton `/sondage(s)/<jeton>` (masqués) ni Referer |
+| proxy | Caddy : HTTPS automatique sur `DOMAINE` (adresse retenue le 2026-11-04 : `inscription.mde.ci`, défaut de `docker-compose.prod.yml` et `infra/Caddyfile.prod`), sert `frontend/dist`, relaie `/api` ; en-têtes HSTS, CSP (`frame-src 'self' blob:`, sans `data:`), `Referrer-Policy same-origin` ; CSP et `X-Frame-Options SAMEORIGIN` posés en valeur par défaut (`?`, depuis le 2026-11-09) : l'API garde ses propres en-têtes (`X-Frame-Options: DENY`, CSP de `noyau.middleware`) ; bloc `handle /assets/*` (depuis le 2026-11-10) : fichier absent → 404 (jamais la page d'entrée), `Cache-Control immutable` d'un an seulement pour un fichier existant ; journaux d'accès sans `?q=` ni jeton `/sondage(s)/<jeton>` (masqués) ni Referer |
 
 Image backend (`backend/Dockerfile`, depuis le 2026-10-22) : étape `construction` (compilateurs, `mysqlclient`) →
 `base` (Python 3.12 + `libmariadb3`, environnement `/opt/venv` copié) → cible `prod` (`flex-checking-backend:prod`,
@@ -42,9 +42,26 @@ seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais
 [deploiement-infomaniak](deploiement-infomaniak.md) ; version simplifiée avec les scripts `infra/vps/` :
 [deploiement-vps-facile](deploiement-vps-facile.md).
 
+**Après un changement de `infra/Caddyfile.prod`** : `infra/vps/mettre-a-jour.sh` ne recrée pas le conteneur Caddy
+(seul le fichier monté change). Sur le serveur, valider puis redémarrer le proxy (procédure suivie le 2026-11-10 ;
+`COMPOSE_FILE=docker-compose.prod.yml` est écrit dans `.env` par `infra/vps/installer.sh`, sinon ajouter
+`-f docker-compose.prod.yml`) :
+```bash
+docker compose run --rm --no-deps proxy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose restart proxy
+```
+État du VPS `inscription.mde.ci` d'après `log.md` : à jour en `e75bba3` (2026-11-10) ; sauvegardes automatiques
+(`sudo infra/vps/activer-sauvegardes.sh`) **pas encore activées**.
+
 ## Test en ligne — Vercel ([ADR-007](../decisions/ADR-007-environnement-test-vercel.md))
 - Frontend https://flex-checking.vercel.app (projet `flex-checking`) ; `.vercelignore` n’envoie que `frontend/`.
 - Backend https://flex-checking-api.vercel.app (projet `flex-checking-api`, `backend/Dockerfile.vercel`, `fra1`), base Neon.
+- Mise en ligne (pratique constatée dans `log.md`, 2026-11-09 et 2026-11-10) : le frontend `flex-checking` est
+  redéployé automatiquement au push sur `main` ; le backend se déploie à la main par
+  `vercel deploy --prod --scope mde-it` **depuis `backend/`** (sans `--scope`, refus « Not authorized »). Une migration
+  s'applique sur Neon avec l'URL **non poolée**, **avant** le déploiement du code (0012 à 0015 ainsi, du 2026-11-09 au
+  2026-11-10). **Ne jamais lancer `vercel deploy` depuis `frontend/`** : le 2026-11-10 cela a créé par erreur un
+  projet Vercel « frontend » (supprimé ensuite).
 - Temps de réponse mesurés le 2026-10-26 (`curl`, avant le pool) : route sans base ≈ 0,16 s sur une connexion
   réutilisée, `/api/sante/` (un `SELECT 1`) 0,6 à 1,1 s, premier appel après inactivité 5,2 s (démarrage de la
   fonction). L'écart venait de l'ouverture d'une connexion chiffrée vers Neon à chaque requête : pool de
@@ -58,7 +75,9 @@ seule (le code construit `« {expediteur} <DEFAULT_FROM_EMAIL> »`). **Ne jamais
   restituées par `vercel env pull` ; les migrations 0008 à 0011 ont été appliquées avec l'URL non poolée de Neon
   (0010 et 0011 le 2026-10-22, avant le déploiement du code).
 - En-têtes de sécurité et cache des assets définis dans `frontend/vercel.json` (CSP avec `frame-src 'self' blob:`,
-  `Referrer-Policy: same-origin`, identiques à `infra/Caddyfile.prod`).
+  `Referrer-Policy: same-origin`, identiques à `infra/Caddyfile.prod`) ; depuis le 2026-11-09 limités aux pages
+  (`source: "/((?!api/).*)"`) pour ne pas écraser les en-têtes de l'API relayée. Un ancien fichier `/assets/…` répond
+  déjà 404 (`assets/` exclu de la réécriture vers la page d'entrée).
 - Crons du sondage : `backend/vercel.json`, quatre entrées vers la même vue avec des chemins distincts
   (`/api/taches-planifiees/sondages/?passage=8h` à `0 8 * * *`, `12h`, `16h` et `20h` depuis le 2026-11-02, heures UTC) ; le
   paramètre `passage` n'est pas lu par `vues_sondage.CronSondagesView`, il sert seulement à éviter que Vercel fusionne

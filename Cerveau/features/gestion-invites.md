@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-03
-commit: 107d1f8
-sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/features/invites/PanneauAjout.jsx, backend/apps/noyau/vues_invites.py, backend/apps/noyau/filtres.py, backend/apps/noyau/taches.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/test_invites.py]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/features/invites/PanneauAjout.jsx, backend/apps/noyau/vues_invites.py, backend/apps/noyau/filtres.py, backend/apps/noyau/taches.py, backend/apps/noyau/models.py, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/serializers.py]
 ---
 
 # Gestion des invités (A4–A6, SA9)
@@ -15,11 +15,16 @@ Un seul composant, `GestionInvites`, sert à l’admin (une cérémonie, univers
 - **Indicateurs-filtres** : Tous, Inscrits non présents, Présents, Invitations à renvoyer (email n°1 en ÉCHEC).
 - **Recherche** (différée 300 ms) : nom, prénom, email, entreprise, code ; une saisie numérique de ≥ 3 chiffres
   cherche dans le téléphone (espaces ignorés) ou le code. 6 mots maximum, tous requis.
-- **Filtres** : statut, mode d’émargement, magazine (envoyé / non, masqué si désactivé).
+- **Filtres** : statut, mode d’émargement, magazine (envoyé / non). Le filtre, la colonne « Email 2 » et le bouton
+  de renvoi du n°2 dépendent de `evenement.magazineActif`, **toujours vrai** depuis le 2026-11-10
+  (`EvenementSerializer.get_magazine_actif`) : ils sont donc toujours affichés.
 - **Tri** serveur (`filtres.TRIS`) : menu « Trier par » + en-têtes cliquables ; seul le critère principal change de
   sens, égalités par nom A→Z ; dernier tri mémorisé sur l’appareil.
 - **Pagination** 25 / 50 / 100. Tout l’état est dans l’URL (`useUrlState`), y compris la fiche ouverte (`fiche=`).
 - Vue tableau (≥ lg) ou cartes (mobile). Rafraîchi en temps réel (5 s en secours).
+- Petit écran (2026-11-10, `4474e46`, `97aad10`) : menu « Trier par » rétrécissable (`min-w-0 flex-1`) et barre de
+  recherche contenue (`min-w-0`, champ `w-0 flex-1`) : plus de débordement horizontal de 320 à 375 px ; contrôlé par
+  `frontend/e2e/responsive.spec.js`.
 
 ## Actions
 | Action | Où | Droits | Détail |
@@ -57,5 +62,5 @@ Fiche, QR code (PNG servi par l’API, `Cache-Control: private`) et code de seco
 ## Tests
 `test_invites.py` (compteurs, recherche, filtres et tris, ajout, modification et historique, actions groupées,
 export CSV/XLSX, tâches > 50, neutralisation des formules, purge, renvoi groupé sans doublon < 1 h et limité par
-heure, `test_renvoi_magazine_refuse_si_desactive`) ; `test_suppressions.py` ; `test_durcissement.py`
+heure, `test_renvoi_magazine_possible_sans_lien_mais_pas_avant_la_presence`) ; `test_suppressions.py` ; `test_durcissement.py`
 (`test_renvoi_du_sondage_ne_revele_pas_qui_a_repondu`) ; `test_sondage.py` (`test_suivi_et_renvoi_du_sondage` : renvoi individuel de l’email n°3 refusé hors fenêtre).

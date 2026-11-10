@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/fileHorsLigne.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_durcissement.py]
 ---
 
@@ -57,3 +57,8 @@ réglages la restreint de nouveau ; le frontend renvoie toute route hors `/scan`
     résiduel de codes devinables reste ouvert (R19 de [risques-et-dette](../project/risques-et-dette.md)) ; le
     blocage de la borne après 10 codes faux a été écarté (déni de service possible).
 - Mise en œuvre revérifiée au commit `44eceb5` (voir aussi [hors-ligne](../features/hors-ligne.md)).
+
+- Revérifiée au commit `93646d7` (2026-11-10) : authentification, permissions, vues du scan et frontend du scan
+  inchangés depuis `f55527e`. Les nouvelles actions de `vues_admin.py` (`carte_invitation`, PUT/DELETE) et les
+  nouvelles routes publiques de `urls.py` (carte d'invitation, images des emails, sans compte ni donnée personnelle)
+  ne déclarent pas `autorise_borne` : la session borne reste limitée à la liste blanche décrite ci-dessus.

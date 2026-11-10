@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: c72f9ba
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invites/GestionInvites.jsx, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 
@@ -40,3 +40,9 @@ Les deux routes exigent `EstSuperAdmin` (403 pour un admin). L'interface masque 
   ne repasse pas l'invité présent (résultat `ANNULE_DEPUIS`, voir [scan-emargement](../features/scan-emargement.md)) ;
   les motifs d'annulation sont effacés à l'anonymisation des données personnelles
   ([donnees-personnelles](../features/donnees-personnelles.md)).
+
+- Revérifiée au commit `93646d7` (2026-11-10), sans changement de décision : `AnnulationView` et
+  `AnnulerPresenceView` toujours en `EstSuperAdmin`. Changements des sources sans rapport avec l'annulation :
+  email n°2 envoyé à tout invité présent (`services.emarger`, tests adaptés, voir [ADR-004](ADR-004-email-2-une-seule-fois.md)),
+  inscriptions ouvertes jusqu'au jour J (`services.etat_inscriptions`), barre de recherche de `GestionInvites.jsx`
+  contenue sur petit écran (`97aad10`). `test_annulation_puis_reemargement_sans_second_magazine` existe toujours.

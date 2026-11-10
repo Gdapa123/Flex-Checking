@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/vues_invites.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/urls.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/rapports.py, backend/apps/noyau/logs.py, backend/apps/noyau/temps_reel.py, backend/config/settings.py, backend/vercel.json, backend/templates/emails/sondage.html, backend/templates/emails/sondage.txt, backend/apps/noyau/tests/test_sondage.py, frontend/src/App.jsx, frontend/src/lib/signalement.js, frontend/src/lib/tempsReel.js, infra/Caddyfile.prod, frontend/src/features/invite/SondagePage.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/features/super/Analyses.jsx]
 ---
 
@@ -34,6 +34,8 @@ Dès que le lien n'est plus `OUVERT` (répondu ou expiré), l'API ne renvoie plu
 `infra/Caddyfile.prod`, signalements du navigateur (`signalement.normaliserLieu` → `/sondage/:jeton`).
 
 ## Questionnaire (page publique `/sondage/<jeton>`)
+Page chargée à la demande par `pageDifferee` (`App.jsx`, 2026-11-10) : un onglet ouvert avant une mise à jour du site
+se recharge au lieu d’afficher une erreur ([authentification](authentification.md)).
 1. Satisfaction générale : 1 à 5 étoiles (Décevante → Excellente).
 2. Accueil à l'arrivée : 1 à 5 étoiles.
 3. « Recommanderiez-vous MDE Business School à un proche ? » : 0 à 10 (sert au NPS).
@@ -108,7 +110,8 @@ lien est ouvert est renvoyé et compté, qu'il ait répondu ou non.
 - **A3** (tableau de bord admin) : carte « Satisfaction des participants » (`CarteSatisfaction.jsx`) — état (à
   venir, en cours, clos, désactivé), réponses et taux, moyennes sur 5, NPS et libellé, répartition des notes,
   promoteurs / passifs / détracteurs, 20 derniers commentaires. Temps réel (sujet `sondage`).
-- **Super admin** : Analyses › onglet « Satisfaction » (cumul et tableau par cérémonie).
+- **Super admin** : Analyses › onglet « Satisfaction » (cumul et tableau par cérémonie) ; sur téléphone, onglets sur
+  toute la largeur (2026-11-10, `4474e46`).
 - **Rapport PDF** de la cérémonie : section « Satisfaction des participants » dès le premier envoi
   (`rapports._section_satisfaction`).
 - États de la carte (`sondages.etat`) : `DESACTIVE` (aucun envoi et programme désactivé), `A_VENIR` (aucun envoi

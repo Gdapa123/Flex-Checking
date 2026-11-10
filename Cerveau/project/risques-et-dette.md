@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/apps/noyau/validation.py, backend/templates/emails/invitation.html, backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/noyau/services.py, backend/apps/noyau/middleware.py, frontend/src/features/super/Programmes.jsx, infra/vps/sauvegarde.sh, infra/vps/activer-sauvegardes.sh, backend/templates/emails/invitation.html, backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
 ---
 
 # Risques, limitations et dette technique
@@ -99,6 +99,12 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
   mention « conformément au RGPD » est remplacée par « conformément à la loi ivoirienne n° 2013-450 sur la
   protection des données personnelles ». **Reste** : la case elle-même ne nomme toujours ni l'email n°2 ni le
   sondage (constaté le 2026-10-26) ; formalités ARTCI à vérifier par MDE. **Statut** : ouvert (atténué).
+- **Complément (2026-11-10, `230cf6d`)** : la nouvelle politique (texte de MDE, `ConfidentialitePage.jsx`) annonce en
+  plus l’usage des données « pour vous informer de nos prochains événements et de nos actualités », avec un droit de
+  refus « en contactant MDE Business School » ; ce consentement passe par la même case unique de l’inscription (texte
+  inchangé, `InscriptionPage.jsx`), et aucun email ne contient de lien de désinscription (phrase retirée à la demande
+  de l’utilisateur). L’ARTCI n’est plus citée sur la page. À trancher par MDE (consentement distinct pour la
+  prospection : à confirmer selon la loi 2013-450).
 
 ## R9 — Unicité « un avis par appareil » contournable (faible)
 - Repose sur un cookie et un identifiant de navigateur (pas d'IP, voir ADR-012) : un appareil nettoyé peut
@@ -153,6 +159,9 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - **Résolution** : la vue s'appuie sur `suivi_emails.magazine_disponible` (même règle que le renvoi groupé de A7) et
   répond `MAGAZINE_INDISPONIBLE` si le magazine est désactivé. Preuve : `test_invites.py`
   (`test_renvoi_magazine_refuse_si_desactive`).
+- **Caduc depuis le 2026-11-10 (`ebcfcf7`)** : l’email n°2 part pour tout invité présent ; le renvoi (fiche et A7) ne
+  vérifie plus que la présence (`MAGAZINE_INDISPONIBLE` = invité pas encore présent), `suivi_emails.magazine_disponible`
+  est supprimé. Test remplacé par `test_renvoi_magazine_possible_sans_lien_mais_pas_avant_la_presence`.
 
 ## R15 — Petits écarts d'affichage et d'en-têtes (faible) — 🟡 partiellement résolu le 2026-11-02
 - Renvoi groupé d'invitations : la réponse contient `ignores`, mais le frontend ne l'affiche pas (« renvoyée à 0
@@ -166,8 +175,12 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
 - `.env.example` ne mentionne pas `CRON_SECRET`, lu par `settings.py` (utile seulement sur Vercel).
 - **Traité le 2026-11-02** : le renvoi groupé affiche les invités ignorés (« N ignoré(s), déjà envoyée il y a moins
   d'une heure ») ou « Aucune invitation renvoyée… » (`GestionInvites.jsx`) ; `CRON_SECRET` ajouté à `.env.example`.
-- **Reste** : email n°3 hors liste et export (choix produit à confirmer) ; `X-Frame-Options` laissé tel quel (Caddy
-  `SAMEORIGIN` + CSP `frame-ancestors 'self'`, Django `DENY` pour l'API ; la CSP prime dans les navigateurs actuels).
+- **Reste** : email n°3 hors liste et export (choix produit à confirmer ; revérifié le 2026-11-10 : `invites_annotes`
+  n’annote toujours que `email1` et `email2`).
+- **`X-Frame-Options` ✅ résolu le 2026-11-09** (`40d0682`, `9f0036b`) : Caddy ne pose plus `SAMEORIGIN` et sa CSP que
+  si la réponse n’en a pas (`?` dans `infra/Caddyfile.prod`), `frontend/vercel.json` limite ses en-têtes aux pages ;
+  l’API garde `DENY`, `/api/sante/` compris (`SanteMiddleware`, `test_api_jamais_affichee_dans_un_cadre`) ; vérifié en
+  ligne sur Vercel et, le 2026-11-10, sur le VPS (voir [log](../log.md)).
 
 ## R16 — Sondage sur Vercel : présences validées tard (faible, test uniquement) — 🟡 atténué le 2026-11-02
 - Deux crons (8 h et 12 h) au lieu des passages horaires de Beat jusqu'à 20 h : un sondage non parti à 12 h attend
@@ -277,6 +290,11 @@ Chaque entrée est une **observation vérifiée dans le code**, sauf mention « 
     certificat Let's Encrypt obtenu par Caddy, `https://inscription.mde.ci` répond (constat de l'utilisateur, non
     revérifié par l'agent). Restent non éprouvés : envoi SMTP réel (emails non reçus le 2026-11-06, diagnostic en
     cours), sauvegardes (`activer-sauvegardes.sh`), `mettre-a-jour.sh`.
+- **Revérifié le 2026-11-10** : `mettre-a-jour.sh` est désormais éprouvé (six mises à jour consignées du 2026-11-09 au
+  2026-11-10, de `99845cd` à `e75bba3`, migrations `0012` à `0015` appliquées par le service `migrate`). Limite constatée :
+  le script ne redémarre pas le proxy quand seul `infra/Caddyfile.prod` change (`caddy validate` puis
+  `docker compose restart proxy` à la main, 2026-11-10). Restent : sauvegardes non activées (R31) ; envoi SMTP réel non
+  vérifié par l’agent.
 
 Rappel : le temps de réponse du renvoi du QR sur Vercel (R6) est inchangé au 2026-10-22.
 
@@ -324,6 +342,48 @@ Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
   SPF/DKIM/DMARC sur `mde.ci` : constat DNS du 2026-11-09 — **SPF invalide** (mot `spf1` isolé → `permerror`, risque de
   rejet de nos propres emails), DMARC `p=none`, DKIM Google absent du sélecteur par défaut (détail et correction dans la fiche). Le code à 4 chiffres était déjà limité
   (`MAX_CODES_INVALIDES`, `vues_scan`).
+
+## R31 — Sauvegardes du VPS non activées alors que la politique annonce des sauvegardes chiffrées (exploitation et conformité, élevé)
+- **Constat** : la politique de confidentialité publiée le 2026-11-10 (`ConfidentialitePage.jsx`, section 6) affirme
+  « nos sauvegardes sont elles aussi chiffrées ». Les scripts existent (`infra/vps/sauvegarde.sh` : `mysqldump` chiffré
+  AES-256 par `gpg`, 14 jours gardés ; `infra/vps/activer-sauvegardes.sh` : phrase de chiffrement et tâche de 2 h 30),
+  mais le journal les indique **non activés** sur `inscription.mde.ci` à chaque mise à jour du 2026-11-09 au 2026-11-10
+  (dernière : `e75bba3`). Aucune restauration n’a été éprouvée.
+- **Conséquence** : une panne du disque ou une erreur de manipulation ferait perdre les inscriptions ; la page publique
+  décrit une mesure qui n’est pas en place.
+- **À faire** 📋 (humain, sur le VPS) : `sudo infra/vps/activer-sauvegardes.sh`, phrase recopiée dans le coffre de MDE,
+  puis essai de `infra/vps/restaurer.sh` sur une copie. **Statut** : ouvert.
+
+## R32 — Politique de confidentialité sans durée de conservation ni contact (conformité, moyen)
+- **Constat** (`230cf6d`, 2026-11-10) : `ConfidentialitePage.jsx` est désormais un texte statique en sept sections ;
+  elle n’affiche plus la durée de conservation (`Parametres.duree_conservation_mois`), ni l’adresse de contact
+  (`contact_donnees`), ni l’ARTCI. L’anonymisation automatique continue de s’appliquer.
+- **Incohérences laissées** : l’écran Paramètres du super admin affirme toujours « Ces informations figurent sur la
+  politique de confidentialité » (`Parametres.jsx`, section « Données personnelles ») ; `/api/public/confidentialite/`
+  (`vues_public.ConfidentialiteView`) n’est plus appelé par le frontend (route gardée, testée par
+  `test_page_de_confidentialite_publique`) ; les droits s’exercent « en contactant MDE Business School » sans adresse.
+- **Conséquence** : l’information des personnes sur la durée de conservation et le moyen d’exercer leurs droits (loi
+  n° 2013-450) n’est plus donnée par la page ; à confirmer par MDE. Signalé à l’utilisateur le 2026-11-10 (journal).
+- **Options** : réafficher la durée et le contact dans le texte de MDE (lecture de l’API existante), ou corriger le
+  libellé de Paramètres et retirer la route. **Statut** : ouvert, à trancher.
+
+## R33 — Champs gardés en base sans effet, à contracter plus tard (dette, faible)
+- `Programme.magazine_actif` (`models.py`) n’a plus d’effet depuis le 2026-11-10 (`ebcfcf7`) : l’email n°2 part pour
+  tout présent ; le champ reste lu et écrit par `ProgrammeSerializer` et mis à vrai par `seed_demo`, l’interrupteur
+  est retiré de `Programmes.jsx`. Le nom `magazineActif` a désormais trois sens dans l’API : valeur stockée sans effet
+  (programme), toujours `true` (`EvenementSerializer.get_magazine_actif`, statistiques), lien du magazine disponible
+  (page publique, `Evenement.magazine_disponible`).
+- `Evenement.date_limite_inscription` (`DateField` non nullable) n’est plus saisie : alignée sur `date` à chaque
+  enregistrement (`Evenement.save`, depuis `8d7753a`).
+- **Proposition** : supprimer ces colonnes dans une version ultérieure, selon [ADR-014](../decisions/ADR-014-migrations-expand-contract.md)
+  (code qui ne les lit plus d’abord, migration destructive ensuite, sauvegarde avant). **Statut** : ouvert.
+- Corollaire (journal, 2026-11-10) : un objet ou un corps de l’email n°2 personnalisé dans Paramètres qui parle du
+  magazine n’est pas modifié par la migration `0015` ; à relire par le super admin pour une cérémonie sans magazine.
+
+## R34 — Disque du poste de développement presque plein (outillage, faible)
+- Constaté au journal le 2026-11-10 : Docker indisponible faute de place (Caddy non testé en local) et un échec
+  `ENOSPC` de Playwright sur `sessionAdmin.spec.js` (réussi à la relance). Sans effet sur la production ; la CI GitHub
+  (verte depuis `97aad10`) reste le contrôle de référence. **Statut** : ouvert (libérer de l’espace sur le poste).
 
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface

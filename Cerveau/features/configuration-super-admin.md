@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/config/settings.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/super/SuperApp.jsx, frontend/src/features/super/VueGlobale.jsx, frontend/src/features/super/Analyses.jsx, frontend/src/features/super/Programmes.jsx, frontend/src/features/super/Evenements.jsx, frontend/src/features/super/Comptes.jsx, frontend/src/features/super/Parametres.jsx, frontend/src/features/super/Journal.jsx, backend/apps/noyau/journal.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/serializers.py, backend/apps/noyau/urls.py]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/config/settings.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/super/SuperApp.jsx, frontend/src/features/super/VueGlobale.jsx, frontend/src/features/super/Analyses.jsx, frontend/src/features/super/Programmes.jsx, frontend/src/features/super/Evenements.jsx, frontend/src/features/super/Comptes.jsx, frontend/src/features/super/Parametres.jsx, frontend/src/features/super/Journal.jsx, backend/apps/noyau/journal.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/serializers.py, backend/apps/noyau/urls.py, backend/apps/noyau/cartes_invitation.py, frontend/src/lib/carteInvitation.js, backend/apps/noyau/tests/test_carte_invitation.py, backend/apps/noyau/tests/test_super_admin.py]
 ---
 
 # Espace super admin (configuration globale)
@@ -15,9 +15,9 @@ Lien d’évitement « aller au contenu » (`LienEvitement`, cible `main#contenu
 | Écran | Route | Contenu |
 |---|---|---|
 | SA2 Vue globale | `/super` | cérémonies à venir, inscrits cumulés, présents du jour, comptes (« Aucun / N mot(s) de passe temporaire(s) ») ; tableau de toutes les cérémonies, actions en boutons icônes (tableau de bord, configurer) |
-| Analyses | `/super/analyses` | onglets **Activité** (par programme, année, mode, entreprise, inscriptions/jour ; taux de présence sur les cérémonies terminées seulement), **Satisfaction** (`GET /api/analytique/sondages/`, super admin : réponses, taux de réponse, note globale et accueil, NPS, tableau par cérémonie avec état du sondage — [sondage-satisfaction](sondage-satisfaction.md)) et **Technique** (trafic, erreurs, santé, emails 24 h) ; rapport PDF global — [exports-rapports](exports-rapports.md) |
-| SA3/SA4 Programmes | `/super/programmes/:id?` | nom, couleurs (sélecteur + hexa), tokens dérivés, **contrôles de contraste WCAG**, aperçu en direct (formulaire, cadre de visée, email), lien magazine + activation email n°2, **activation email n°3 / sondage** (`sondageActif`, vrai par défaut), désactivation, suppression |
-| SA5 Cérémonies | `/super/evenements/:id?` (`nouveau`) | programme actif, date, heures, capacité, lieu, lien carte (plus de date limite depuis le 2026-11-09), liens de l’email n°2 (magazine de la promotion, brochure Executive Education), **carte d’invitation du programme en fichier** (JPEG, PNG ou PDF, 1,8 Mo au plus ; image plus lourde réduite dans le navigateur, `lib/carteInvitation.js` ; « Choisir un fichier », « Remplacer le fichier », « Retirer la carte » ; disponible une fois la cérémonie enregistrée ; `PUT`/`DELETE evenements/<id>/carte-invitation/`, journal `CARTE_INVITATION_AJOUT` / `_SUPPRESSION`), inscriptions ouvertes, admins affectés, lien et QR d’inscription (PNG), **régénération du lien**, suppression ; garde « Quitter sans enregistrer ? » |
+| Analyses | `/super/analyses` | onglets **Activité** (par programme, année, mode, entreprise, inscriptions/jour ; taux de présence sur les cérémonies terminées seulement), **Satisfaction** (`GET /api/analytique/sondages/`, super admin : réponses, taux de réponse, note globale et accueil, NPS, tableau par cérémonie avec état du sondage — [sondage-satisfaction](sondage-satisfaction.md)) et **Technique** (trafic, erreurs, santé, emails 24 h) ; rapport PDF global — [exports-rapports](exports-rapports.md). Sur téléphone (2026-11-10, `4474e46`) : onglets sur toute la largeur, sans icône ; noms de programme du graphique « par programme » coupés au tiret sur deux lignes (`TickProgramme`) |
+| SA3/SA4 Programmes | `/super/programmes/:id?` | nom, couleurs (sélecteur + hexa), tokens dérivés, **contrôles de contraste WCAG**, aperçu en direct (formulaire, cadre de visée, email), lien magazine par défaut (l’interrupteur « Envoyer l’email n°2 » est **retiré** le 2026-11-10 : l’email n°2 part pour tout invité présent, `magazineActif` n’a plus d’effet), **activation email n°3 / sondage** (`sondageActif`, vrai par défaut), désactivation, suppression |
+| SA5 Cérémonies | `/super/evenements/:id?` (`nouveau`) | programme actif, date, heures, capacité, lieu, lien carte (plus de date limite depuis le 2026-11-09), liens de l’email n°2 (magazine de la promotion, brochure Executive Education), **carte d’invitation du programme en fichier** (JPEG, PNG ou PDF, reconnus à leur contenu, 1,8 Mo au plus ; image plus lourde réduite dans le navigateur, `lib/carteInvitation.js` ; côté serveur `cartes_invitation.preparer` : images réencodées par Pillow sans métadonnées, redressées selon l’EXIF, 2400 px de côté au plus, refus `CARTE_INVALIDE` ; « Choisir un fichier », « Remplacer le fichier », « Retirer la carte » ; disponible une fois la cérémonie enregistrée ; `PUT`/`DELETE evenements/<id>/carte-invitation/`, journal `CARTE_INVITATION_AJOUT` / `_SUPPRESSION`), inscriptions ouvertes, admins affectés, lien et QR d’inscription (PNG), **régénération du lien**, suppression ; garde « Quitter sans enregistrer ? ». Champs larges du formulaire sur toute la ligne quel que soit le nombre de colonnes (`gridColumn: 1 / -1`, 2026-11-10) |
 | SA9 Invités | `/super/invites` | [gestion-invites](gestion-invites.md) en univers MDE |
 | SA6 Comptes | `/super/admins` | création (mot de passe temporaire affiché une fois — [ADR-003](../decisions/ADR-003-comptes-mot-de-passe-temporaire.md)), modification, réinitialisation, désactivation, suppression, matrice d’affectation aux cérémonies à venir ; actions de ligne en boutons icônes avec libellé accessible et info-bulle |
 | SA7 Paramètres | `/super/parametres` | lien par défaut de la **brochure Executive Education** (`lienBrochureDefaut`, `https://mde.ci`, 2026-11-09) ; modèles des emails n°1, n°2 et **n°3 · sondage** (onglets ; variables insérables dont `{lien_sondage}` ; aperçu HTML serveur `POST /api/parametres/apercu-email/` différé 400 ms, une réponse périmée n’écrase pas une saisie plus récente), durée d’affichage du scan, son, vibration ; section **Données personnelles** (2026-10-22) : durée de conservation `dureeConservationMois` (1–60 mois, défaut 12) et contact `contactDonnees` (email), validés par `schemaDonneesPersonnelles` (Zod) et `ParametresSerializer`, lien vers `/confidentialite` ; **raccourcir** la durée ouvre un dialogue de confirmation qui annonce la date limite (`moisAvant`, miroir de `donnees_personnelles.mois_avant`) et l’anonymisation définitive dès la nuit suivante — voir [donnees-personnelles](donnees-personnelles.md) ; enregistrement journalisé `PARAMETRES` (durée comprise, pas le contact) |
@@ -37,12 +37,14 @@ Lien d’évitement « aller au contenu » (`LienEvitement`, cible `main#contenu
   paramètres → le dernier enregistrement l'emporte sans avertissement (R20 de
   [risques-et-dette](../project/risques-et-dette.md)).
 - Programme désactivé : impossible de l’affecter à une **nouvelle** cérémonie ou de changer vers lui.
-- Magazine activé sans lien → 400.
+- Lien de magazine du programme facultatif (chaque cérémonie peut avoir le sien) ; sans aucun lien, l’email n°2 part
+  sans le bouton du magazine. Liens (magazine, brochure) validés par `validation.valider_lien` / `schemaLien` (http(s),
+  sans espace ni caractère de contrôle).
 - Son propre compte : ni désactivation, ni changement de rôle, ni suppression. Dernier super admin protégé.
 - Suppressions en cascade : nom à retaper (`?confirmation=`) si l’objet contient des données.
 - Lecture des programmes et cérémonies ouverte aux admins (listes), écriture réservée au super admin.
 
 ## Tests
-`test_super_admin.py`, `test_suppressions.py`, `test_analytique.py`, `test_sondage.py`, `test_durcissement.py`
+`test_super_admin.py`, `test_carte_invitation.py` (16 : formats, réencodage, EXIF, 2400 px, remplacement et retrait, droits, ETag), `test_suppressions.py`, `test_analytique.py`, `test_sondage.py`, `test_durcissement.py`
 (modèles d'emails, désactivation, caractères de contrôle) (backend) ;
-`frontend/tests/analyses.test.jsx`.
+`frontend/tests/analyses.test.jsx`, `carteInvitation.test.js`, `schemaLien.test.js` ; e2e `carteInvitation.spec.js`, `responsive.spec.js` (débordement à plusieurs largeurs d’écran).

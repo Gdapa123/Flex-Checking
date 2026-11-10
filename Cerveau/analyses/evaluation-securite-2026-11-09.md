@@ -1,9 +1,9 @@
 ---
 type: analyse
 statut: partiel
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/config/settings.py, backend/requirements.txt, backend/requirements-dev.txt, backend/apps/comptes/views.py, backend/apps/comptes/validateurs.py, backend/apps/noyau/alertes.py, backend/apps/noyau/erreurs.py, .github/workflows/ci.yml, .github/dependabot.yml]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/config/settings.py, backend/requirements.txt, backend/requirements-dev.txt, backend/apps/comptes/views.py, backend/apps/comptes/validateurs.py, backend/apps/noyau/alertes.py, backend/apps/noyau/erreurs.py, .github/workflows/ci.yml, .github/dependabot.yml, backend/apps/noyau/middleware.py, infra/Caddyfile.prod, frontend/vercel.json, frontend/playwright.config.js]
 ---
 
 # Évaluation de sécurité au regard des standards (2026-11-09)
@@ -39,3 +39,20 @@ Exploitation en retrait le jour de l'évaluation ; les écarts traitables dans l
 
 ## Suites
 Corrections du 2026-11-09 : voir [log](../log.md) et [risques R30](../project/risques-et-dette.md).
+
+## Suivi 2026-11-10
+Évaluation ci-dessus inchangée (instantané du 2026-11-09). Points qui ont évolué depuis, vérifiés dans le code et
+`log.md` :
+- **En-têtes de l'API (A05)** : `X-Frame-Options SAMEORIGIN` et la CSP du site étaient imposés à l'API par le proxy.
+  `infra/Caddyfile.prod` les pose désormais en valeur par défaut (`?`), `frontend/vercel.json` limite ses en-têtes
+  aux pages (`/((?!api/).*)`), et `noyau.middleware` ajoute `X-Frame-Options: DENY` à `/api/sante/` (commits
+  `40d0682`, `9f0036b`). Contrôle en lecture seule (33 points) à 33/33 sur Vercel et sur le VPS d'après `log.md`.
+- **VPS `inscription.mde.ci`** : mis à jour (dernière version consignée `e75bba3`, 2026-11-10) — l'écart « VPS non
+  mis à jour » est levé. **Sauvegardes automatiques toujours pas activées** (`sudo infra/vps/activer-sauvegardes.sh`),
+  restauration toujours non testée (R27).
+- **Dependabot** : montées de version majeures exclues pour pip et npm, ESLint groupé (`7cdbcfc`) ; les failles
+  restent détectées par `pip-audit` / `npm audit` en CI et les alertes GitHub.
+- **CI** : Playwright rapporte aussi au format `github` (annotations, `frontend/playwright.config.js`) ; nouveau
+  test `frontend/e2e/responsive.spec.js` ; CI verte depuis `97aad10` d'après `log.md`.
+- Inchangés : MFA reportée, SPF / DMARC de `mde.ci` (R28), Redis sans mot de passe et images non épinglées (R22),
+  plan d'incident, ARTCI, test d'intrusion.

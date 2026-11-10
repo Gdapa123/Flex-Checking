@@ -1,9 +1,9 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-11-09
-commit: f55527e
-sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, .gitignore, .github/workflows/ci.yml]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, frontend/src/lib/nouvelleVersion.js, backend/apps/noyau/services.py, infra/vps/mettre-a-jour.sh, .gitignore, .github/workflows/ci.yml]
 ---
 
 # Déploiement sur un VPS Infomaniak, pas à pas
@@ -22,6 +22,9 @@ et Caddy (le site en HTTPS). Aucune modification du code n’est nécessaire.
 > ⚠️ Statut : procédure **pas encore exécutée** de bout en bout. Les menus Infomaniak viennent de leur
 > documentation officielle (voir la section Sources) ; un libellé peut légèrement différer à l’écran.
 > Les chiffres de dimensionnement sont à confirmer par le test de charge (étape 13).
+> Le VPS de production `inscription.mde.ci` a depuis été installé avec les scripts de
+> [deploiement-vps-facile](deploiement-vps-facile.md) (en ligne depuis le 2026-11-05, mis à jour en `e75bba3` le
+> 2026-11-10 d'après `log.md`) ; ce guide détaillé reste la référence pas à pas, non rejouée en entier.
 
 ## Parcours en un coup d’œil
 
@@ -771,10 +774,10 @@ Créez d’abord une **cérémonie de test** dans l’interface. Faites chaque c
 | Contrôle | Comment | Si tout va bien |
 |---|---|---|
 | Santé | Terminal du Mac : `curl -s https://<DOMAINE>/api/sante/` | réponse JSON positive (Django et base joignables) |
-| HTTPS, en-têtes | navigateur : cadenas ; Mac : `curl -sI https://<DOMAINE>` | lignes `strict-transport-security` et `content-security-policy` |
+| HTTPS, en-têtes | navigateur : cadenas ; Mac : `curl -sI https://<DOMAINE>` puis `curl -sI https://<DOMAINE>/api/sante/` | page : `strict-transport-security`, `content-security-policy`, `x-frame-options: SAMEORIGIN` ; API : `x-frame-options: DENY` (Caddy ne pose ses valeurs par défaut `?` que si Django n'en envoie pas) |
 | Email de test | Admin › **Suivi des emails** › envoyer un email de test | email reçu ; dans ses en-têtes, `spf=pass` et `dkim=pass` |
-| Inscription → email n°1 | s’inscrire via le lien public de la cérémonie de test | email avec QR code et invitation calendrier (`.ics`) |
-| Scan → email n°2 | ouvrir `https://<DOMAINE>/scan` sur un téléphone, scanner le QR | caméra active (grâce au HTTPS), passage enregistré, email n°2 reçu |
+| Inscription → email n°1 | s’inscrire via le lien public de la cérémonie de test | email avec QR code et invitation calendrier (`.ics`) en pièces jointes ; logo et icônes affichés (chargés depuis `https://<DOMAINE>/api/public/emails/images/…`, donc depuis `APP_PUBLIC_URL`) |
+| Scan → email n°2 | ouvrir `https://<DOMAINE>/scan` sur un téléphone, scanner le QR | caméra active (grâce au HTTPS), passage enregistré, email n°2 reçu (envoyé à tout invité passé « Présent », une seule fois ; boutons magazine / brochure seulement si les liens sont renseignés) |
 | Temps réel | tableau de bord ouvert sur un autre appareil pendant le scan | mention « En direct », chiffres mis à jour sans recharger |
 | Sondage (email n°3) | le lendemain de l’émargement de test, après 8 h | email du sondage reçu (envoyé par Celery beat) |
 | Export lourd | export CSV ou Excel d’une liste de **plus de 50** invités | fichier téléchargé (volume `media-data`) |
@@ -1013,6 +1016,17 @@ docker image prune -f
 - **Si `git pull` refuse (« Your local changes would be overwritten ») :** quelqu’un a modifié un fichier sur
   le serveur. Ne forcez rien : notez le message et demandez au développeur.
 - Le site installé sur les téléphones (PWA) se met à jour au chargement suivant (page d’entrée en `no-cache`).
+  Un onglet resté ouvert sur l'ancienne version qui demande un fichier `/assets/…` supprimé reçoit une 404
+  (bloc `handle /assets/*` de `infra/Caddyfile.prod`) et se recharge de lui-même (`frontend/src/lib/nouvelleVersion.js`).
+- **Si la mise à jour change `infra/Caddyfile.prod` :** `docker compose up -d` ne recrée pas le conteneur Caddy
+  (seul le fichier monté change ; `infra/vps/mettre-a-jour.sh` non plus). Validez puis redémarrez le proxy :
+
+  ```bash
+  docker compose run --rm --no-deps proxy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  docker compose restart proxy
+  ```
+
+  « Valid configuration » attendu avant le redémarrage (procédure suivie le 2026-11-10).
 
 ## Veille de sécurité (une fois par mois, et dès qu’une alerte paraît)
 

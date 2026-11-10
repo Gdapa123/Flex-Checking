@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: 0941335
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/cartes_invitation.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0013_carte_invitation.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/ics.py, frontend/src/lib/carteInvitation.js, frontend/src/features/super/Evenements.jsx, backend/apps/noyau/tests/test_carte_invitation.py, frontend/e2e/carteInvitation.spec.js]
 ---
 
@@ -47,3 +47,12 @@ mise à jour aussitôt (`temps_reel._carte_invitation` : cache vidé, sujets `ev
 - ➕ Rien à configurer ; le fichier suit la cérémonie (supprimé avec elle).
 - ➖ Taille limitée à 1,8 Mo (un PDF plus lourd doit être compressé avant envoi).
 - ➖ La base grossit d’au plus 1,8 Mo par cérémonie.
+
+## Vérification (2026-11-10, `93646d7`)
+Conforme au code committé dans `40d0682` : `cartes_invitation.py` (`TAILLE_MAX` 1 800 000, `PIXELS_MAX` 40 Mpx,
+`COTE_MAX` 2400, type reconnu au contenu, `ImageOps.exif_transpose`, profil ICC gardé, PNG trop lourd converti en
+JPEG, qualité 88 puis 80/70/60), `EvenementViewSet.carte_invitation` (PUT/DELETE, journal `CARTE_INVITATION_AJOUT` /
+`CARTE_INVITATION_SUPPRESSION`, ancien lien effacé), `CarteInvitationView` (ETag/304, `public, no-cache`, CSP
+`sandbox`, PDF en pièce jointe), `ics.carte_pour_agenda` (une requête par .ics), miroir `lib/carteInvitation.js`.
+`DATA_UPLOAD_MAX_MEMORY_SIZE` n'est pas redéfini : valeur par défaut de Django (2,5 Mo). Les commits suivants
+(`25beeef`, `ebcfcf7`, `4474e46`, `e75bba3`) ne modifient pas la carte.

@@ -1,9 +1,9 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, frontend/src/App.jsx, backend/Dockerfile]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/config/settings.py, backend/config/asgi.py, backend/config/concurrence.py, backend/gunicorn.conf.py, docker-compose.yml, docker-compose.prod.yml, infra/Caddyfile, infra/Caddyfile.prod, frontend/vite.config.js, frontend/vercel.json, backend/vercel.json, backend/apps/noyau/logs.py, backend/apps/noyau/middleware.py, frontend/src/App.jsx, frontend/src/main.jsx, frontend/src/lib/nouvelleVersion.js, backend/Dockerfile]
 ---
 
 # Vue d’ensemble du système
@@ -44,8 +44,8 @@ Détail : [components](components.md).
 ## Couches frontend (`frontend/src/`)
 | Couche | Où |
 |---|---|
-| Entrée et routes | `main.jsx` (QueryClient, `FiletErreur`, signalement), `App.jsx` (routes paresseuses, `RequireRole` ; code des espaces protégés préchargé pendant `/auth/moi/` : `chargerAdmin`, `chargerScan`, `chargerSuper`) |
-| Bibliothèque | `lib/` : `api.js`, `tempsReel.js`, `format.js`, `schemas.js`, `agenda.js`, `telechargement.js`, `useUrlState.js`, `useTitre.js`, `signalement.js` |
+| Entrée et routes | `main.jsx` (QueryClient, `FiletErreur`, signalement), `App.jsx` (routes paresseuses via `pageDifferee` de `lib/nouvelleVersion.js` au lieu de `React.lazy` directement, 2026-11-10 ; `RequireRole` ; code des espaces protégés préchargé pendant `/auth/moi/` : `chargerAdmin`, `chargerScan`, `chargerSuper`) |
+| Bibliothèque | `lib/` : `api.js`, `tempsReel.js`, `format.js`, `schemas.js`, `agenda.js`, `carteInvitation.js`, `telechargement.js`, `useUrlState.js`, `useTitre.js`, `signalement.js`, `nouvelleVersion.js` (installé par `main.jsx` : sur `vite:preloadError`, un onglet ouvert avant une mise à jour se recharge une fois, pas plus d’une fois par minute) |
 | Thème | `theme/tokens.js`, `theme/ThemeScope.jsx`, `styles/tokens.css` (seul fichier de couleurs) |
 | Primitives UI | `components/ui/` (Bouton, Champ, Segmente, Dialogue, PanneauLateral, Toasts…) |
 | Espaces | `features/invite`, `scan`, `admin`, `invites` (partagé admin/super), `super`, `auth` |
@@ -59,7 +59,9 @@ Détail : [components](components.md).
 - **Aucune donnée personnelle** dans le journal, les logs, les messages WebSocket, les QR codes. Les logs masquent
   aussi la recherche `?q=` et le jeton du sondage (`logs.masquer_jetons`, filtre `regexp` de `infra/Caddyfile.prod`).
 - **En-têtes** : `Referrer-Policy: same-origin` (Django, Caddy prod, `frontend/vercel.json`), `X-Frame-Options: DENY`
-  côté Django (`SAMEORIGIN` côté Caddy prod) ; API en JSON uniquement (parseur multipart retiré) ; seule exception, `POST public/sondages/<jeton>/reponse/` (formulaire de l'email n°3, sans authentification).
+  sur toute l’API, y compris `/api/sante/` servi par `noyau/middleware.py` (2026-11-09) ; dans `infra/Caddyfile.prod`, CSP et
+  `X-Frame-Options SAMEORIGIN` sont posés avec le préfixe `?` (seulement si la réponse n’en a pas : l’API garde les siens) ;
+  dans `frontend/vercel.json`, les en-têtes du site s’appliquent à `/((?!api/).*)` ; API en JSON uniquement (parseur multipart retiré) ; seule exception, `POST public/sondages/<jeton>/reponse/` (formulaire de l'email n°3, sans authentification).
 
 ## Environnements
 | Environnement | Base | Redis / Celery | Fichier |
@@ -68,5 +70,8 @@ Détail : [components](components.md).
 | Dev sans Docker | MySQL/Redis du compose | Celery eager possible | README §2 |
 | Test en ligne | Postgres Neon (`DATABASE_URL`) | **non** ; sondage puis anonymisation déclenchés par quatre crons Vercel (8 h, 12 h, 16 h et 20 h, `backend/vercel.json`, secret `CRON_SECRET`) | Vercel, `backend/Dockerfile.vercel` |
 | Production | MySQL (journaux binaires 7 jours) | oui ; image backend en plusieurs étapes, sans compilateur (`backend/Dockerfile`, cible `prod`) ; journaux des conteneurs plafonnés | `docker-compose.prod.yml` |
+
+**Mise à jour du site (prod)** : `infra/Caddyfile.prod` sert `/assets/*` dans un bloc `handle` dédié (cache un an si le
+fichier existe, **404** sinon, jamais la page d’entrée) ; la page d’entrée, `sw.js` et le manifeste restent en `no-cache`.
 
 Voir [deployment](../operations/deployment.md).

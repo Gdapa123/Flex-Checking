@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-03
-commit: 107d1f8
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/temps_reel.py, backend/apps/noyau/consumers.py, frontend/src/lib/tempsReel.js, README.md]
 ---
 
@@ -35,3 +35,8 @@ aucune donnée personnelle dans les messages ; repli automatique sur l’interro
   [temps-reel](../features/temps-reel.md).
 - Au 2026-10-26 (`7e0e071`) : le message de service `session_fermee` (identifiant du jeton déconnecté, aucune
   donnée d’invité) ferme la seule connexion de la session déconnectée, sans remettre en cause le principe.
+
+- Au 2026-11-10 (revérifié au commit `93646d7`) : seul changement, le signal `temps_reel._carte_invitation`
+  (`40d0682`, [ADR-016](ADR-016-carte-invitation-en-base.md)) vide le cache de la page publique et annonce les sujets
+  `evenement` et `evenements`, sans donnée ; `consumers.py`, `tempsReel.js` et le README sont inchangés. Principe
+  inchangé.

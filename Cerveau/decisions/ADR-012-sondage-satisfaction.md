@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/sondages.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/suivi_emails.py, backend/config/settings.py, backend/vercel.json]
 ---
 
@@ -63,3 +63,11 @@ aléatoire (décision 6 préservée) ; l'envoi ouvre malgré tout un onglet « m
   (celui d'un autre invité) : risque faible, accepté.
 - Corollaire : deux invités qui utilisent le **même téléphone** ne peuvent pas répondre tous les deux (le second
   reçoit `APPAREIL_DEJA_UTILISE`) ; accepté (R23 de [risques-et-dette](../project/risques-et-dette.md)).
+
+## Vérification (2026-11-10, `93646d7`)
+Décisions 1 à 6 toujours conformes : `sondages.py`, `vues_sondage.py`, `tasks.py` et `backend/vercel.json` sont
+inchangés depuis `f55527e` ; dans `suivi_emails.py`, le renvoi groupé du sondage (`renvoyer_echecs` : liens ouverts,
+invités encore Présents) et `_verifier_disponible` (`sondage_actif`) sont inchangés, et le nouvel écran « Invités à
+contacter » (`a_contacter`, `8d7753a`) ignore les échecs « Sondage non envoyé » (lien clos ou présence annulée).
+`RenvoiEmailView` garde `sondage_renvoyable`. Les changements de `models.py` (liens de la cérémonie,
+`CarteInvitation`, objets et corps par défaut des emails n°1 et n°2) ne touchent pas l'email n°3.

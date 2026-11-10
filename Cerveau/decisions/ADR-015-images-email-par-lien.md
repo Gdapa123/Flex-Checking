@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: 7cdbcfc
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/emails.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/icones_email.py, backend/apps/noyau/urls.py, backend/templates/emails/base.html, backend/templates/emails/invitation.html, backend/apps/noyau/tests/test_corrections_invitation.py]
 ---
 
@@ -28,7 +28,7 @@ plus de `qr-code.png` et `graduation.ics`.
 
 ## Décision
 Option 3 : `emails.url_image_publique` → `GET /api/public/emails/images/<nom>.png` (`vues_public.ImageEmailView`),
-noms fermés (`logo-blanc-<empreinte>`, `logo-rouge-<empreinte>` : `emails.nom_logo`, l’empreinte change avec le fichier pour ne pas rester un an en cache ; `ic-<icône connue>-<RRGGBB>` avec une couleur d’un programme ou des gabarits seulement, `vues_public.couleurs_des_emails`), limite de débit propre `images_email` (3000/min) pour ne pas épuiser la limite anonyme partagée avec l’inscription,, `Cache-Control: public, max-age=31536000,
+noms fermés (`logo-blanc-<empreinte>`, `logo-rouge-<empreinte>` : `emails.nom_logo`, l’empreinte change avec le fichier pour ne pas rester un an en cache ; `ic-<icône connue>-<RRGGBB>` avec une couleur d’un programme ou des gabarits seulement, `vues_public.couleurs_des_emails`), limite de débit propre `images_email` (3000/min) pour ne pas épuiser la limite anonyme partagée avec l’inscription, `Cache-Control: public, max-age=31536000,
 immutable`. Le QR code reste intégré (CID, sans nom de fichier) pour rester lisible hors ligne ; il est aussi joint
 (`qr-code.png`) avec `graduation.ics`. L’aperçu (super admin, A7) garde des data URI.
 
@@ -42,3 +42,12 @@ immutable`. Le QR code reste intégré (CID, sans nom de fichier) pour rester li
   du logo et masque les icônes ; le contenu reste lisible.
 - ➖ Les images dépendent de la disponibilité de l’application (`APP_PUBLIC_URL`) : un email ancien ouvert alors
   que le domaine a changé perd ses icônes.
+
+## Vérification (2026-11-10, `93646d7`)
+La décision est conforme au code committé (`8d7753a`, `40d0682`) : `emails.url_image_publique`, `emails.nom_logo`
+(empreinte SHA-256 de 8 caractères), image intégrée sans nom de fichier (`Content-Disposition: inline`), QR code seul
+en CID ; `vues_public.ImageEmailView` (motif `IMAGE_EMAIL`, icônes de `icones_email.ICONES_EMAIL`, couleurs de
+`couleurs_des_emails` mises en cache 60 s, logo actuel servi pour une empreinte périmée), `ImageEmailThrottle`
+(portée `images_email`) ; test `test_corrections_invitation.py`. Depuis, l'email n°2 (`magazine.html`,
+`ebcfcf7`) emploie les mêmes icônes par lien (badge « Présent » `check`, bouton « Lire le magazine » `external` ;
+le bouton brochure n'a pas d'icône).

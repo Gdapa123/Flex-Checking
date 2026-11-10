@@ -1,9 +1,9 @@
 ---
 type: operations
 statut: partiel
-verifie: 2026-11-09
-commit: f55527e
-sources: [frontend/src/lib/schemas.js, frontend/src/features/scan/ScanPoste.jsx, backend/apps/noyau/validation.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/templates/emails/invitation.html, backend/templates/emails/invitation.txt]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [frontend/src/lib/schemas.js, backend/templates/emails/magazine.html, frontend/src/features/scan/ScanPoste.jsx, backend/apps/noyau/validation.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/templates/emails/invitation.html, backend/templates/emails/invitation.txt]
 ---
 
 # Sécurité de l’accueil : QR codes malveillants
@@ -49,8 +49,13 @@ mises à jour faites avant le jour J.
 - Avant l’événement, vérifier qu’**aucun autocollant** n’a été collé par-dessus le QR code.
 
 ## Faux emails d’invitation (« quishing ») 📋
-- L’email n°1 rappelle désormais aux invités que le QR code sert uniquement à l’accueil, que MDE ne demande ni
-  paiement ni mot de passe, et nomme le seul site officiel (`APP_PUBLIC_URL`).
+- L’email n°1 rappelle aux invités que le QR code n’est pas à scanner eux-mêmes, que MDE ne demande ni
+  paiement ni mot de passe, et nomme le seul site officiel (`site_officiel`, tiré de `APP_PUBLIC_URL`). Depuis
+  le billet d’entrée compact du 2026-11-09, la version HTML le dit en une ligne sous le QR code (« QR code et
+  agenda (.ics) joints. Inutile de le scanner vous-même : jamais de paiement ni de mot de passe demandé. Site
+  officiel : … ») ; la version texte garde « sert uniquement à l’accueil ».
+- Les liens de l’email n°2 (magazine, brochure) saisis par le super admin n’acceptent qu’une adresse `http(s)://`
+  sans espace ni caractère de contrôle (`validation.valider_lien`, miroir `schemas.schemaLien`).
 - **À faire par l’administrateur du domaine `mde.ci`** : corriger SPF, activer DKIM, durcir DMARC, pour que les
   imitations arrivent en spam et que nos vrais emails soient acceptés. Constat DNS public du 2026-11-09 (`dig`) :
   - **SPF invalide** ❌ : l’enregistrement TXT de `mde.ci` contient un mot `spf1` isolé

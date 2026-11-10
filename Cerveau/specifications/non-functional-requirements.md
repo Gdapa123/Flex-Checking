@@ -1,9 +1,9 @@
 ---
 type: specification
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, backend/apps/noyau/tasks.py, backend/apps/noyau/emails.py, backend/apps/noyau/donnees_personnelles.py, .gitignore, .github/workflows/ci.yml, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/config/settings.py, backend/config/bases.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/logs.py, infra/Caddyfile.prod, frontend/vercel.json, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [docker-compose.yml, frontend/e2e/responsive.spec.js, frontend/playwright.config.js, frontend/src/lib/nouvelleVersion.js, frontend/src/App.jsx, frontend/src/main.jsx, backend/apps/noyau/tests/test_securite.py, backend/apps/noyau/cartes_invitation.py, backend/apps/noyau/vues_public.py, docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, backend/apps/noyau/tasks.py, backend/apps/noyau/emails.py, backend/apps/noyau/donnees_personnelles.py, .gitignore, .github/workflows/ci.yml, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/config/settings.py, backend/config/bases.py, backend/config/concurrence.py, backend/apps/noyau/middleware.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/logs.py, infra/Caddyfile.prod, frontend/vercel.json, infra/charge/README.md, frontend/e2e/accessibilite.spec.js]
 ---
 
 # Exigences non fonctionnelles
@@ -18,8 +18,8 @@ sources: [docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, front
 | ENF-S3 | Droits appliqués côté serveur | `CompteUtilisable` par défaut, `evenements_visibles` sur chaque queryset |
 | ENF-S4 | Limites anti-abus | voir tableau ci-dessous ; IP réelle via `NUM_PROXIES` (X-Forwarded-For non falsifiable) |
 | ENF-S5 | Pas de fuite de données personnelles | QR = jeton anonyme ; journal, logs (filtres `MasquerDonneesPersonnelles`, `MasquerParametresUrl`), WebSocket et erreurs sans email ni téléphone ; jeton du lien de sondage masqué dans les journaux (`logs.JETON_SONDAGE_RE`, filtre de `infra/Caddyfile.prod`) |
-| ENF-S6 | En-têtes de sécurité | CSP stricte (`frame-src 'self' blob:`, sans `data:`), HSTS (prod), `nosniff`, `Referrer-Policy: same-origin` (Django, Caddy, `frontend/vercel.json`), `Permissions-Policy` (caméra même site), COOP, `X-Frame-Options` (`DENY` pour l'API, `SAMEORIGIN` pour le frontend) ; API en `no-store`. Écart trouvé le 2026-11-09 (contrôle en ligne) : Caddy et `frontend/vercel.json` imposaient `SAMEORIGIN` et leur CSP aux réponses de l'API, masquant celles de Django ; corrigé (`?` dans `infra/Caddyfile.prod`, source `/((?!api/).*)` dans `vercel.json`) ; vérifié en ligne sur Vercel après déploiement : `DENY` sur l'API ; `/api/sante/` (réponse directe du middleware de santé) reçoit désormais aussi `DENY` |
-| ENF-S7 | Entrées durcies | QR codes étrangers (2026-11-09) : format exact exigé des deux côtés (`validation.est_qr_token`, `schemas.natureQr`), jamais envoyés, mis en file ni ouverts, voir [sécurité de l’accueil](../operations/securite-accueil.md) ; caractères de contrôle refusés (étendu le 2026-11-09 au `qrToken`, étendu le 2026-10-22 au nom du programme, aux objets des emails n°1-3, au `poste` du scan, aux motifs d'annulation ; commentaire du sondage : `sans_controle_multiligne`, sauts de ligne et tabulation admis, miroir Zod `CONTROLE_MULTILIGNE_RE`), variables d'email remplacées en une seule passe, corps JSON non-objet ignoré, identifiants non numériques → 400, .ics échappé, formules neutralisées |
+| ENF-S6 | En-têtes de sécurité | CSP stricte (`frame-src 'self' blob:`, sans `data:`), HSTS (prod), `nosniff`, `Referrer-Policy: same-origin` (Django, Caddy, `frontend/vercel.json`), `Permissions-Policy` (caméra même site), COOP, `X-Frame-Options` (`DENY` pour l'API, `SAMEORIGIN` pour le frontend) ; API en `no-store`. Écart trouvé le 2026-11-09 (contrôle en ligne) : Caddy et `frontend/vercel.json` imposaient `SAMEORIGIN` et leur CSP aux réponses de l'API, masquant celles de Django ; corrigé (`?` dans `infra/Caddyfile.prod`, source `/((?!api/).*)` dans `vercel.json`) ; vérifié en ligne sur Vercel après déploiement : `DENY` sur l'API ; `/api/sante/` (réponse directe de `middleware.SanteMiddleware`, que `XFrameOptionsMiddleware` n'atteint pas) reçoit désormais aussi `DENY` (`9f0036b`, `test_securite.py::test_api_jamais_affichee_dans_un_cadre` : `/api/sante/`, `/api/auth/csrf/`, `/api/evenements/`) ; vérifié sur le VPS le 2026-11-10 après redémarrage du proxy (`DENY` sur `/api/sante/`, `SAMEORIGIN` sur la page, contrôle de sécurité en lecture seule 33/33, voir [log](../log.md)) |
+| ENF-S7 | Entrées durcies | QR codes étrangers (2026-11-09) : format exact exigé des deux côtés (`validation.est_qr_token`, `schemas.natureQr`), jamais envoyés, mis en file ni ouverts, voir [sécurité de l’accueil](../operations/securite-accueil.md) ; caractères de contrôle refusés (étendu le 2026-11-09 au `qrToken`, étendu le 2026-10-22 au nom du programme, aux objets des emails n°1-3, au `poste` du scan, aux motifs d'annulation ; commentaire du sondage : `sans_controle_multiligne`, sauts de ligne et tabulation admis, miroir Zod `CONTROLE_MULTILIGNE_RE`), variables d'email remplacées en une seule passe, liens de cérémonie (magazine, brochure, carte) limités à `http(s)` sans espace ni caractère de contrôle des deux côtés (`validation.valider_lien`, `schemas.schemaLien`, 2026-11-09), carte d'invitation reconnue au contenu (JPEG, PNG, PDF), images réencodées sans métadonnées, 1,8 Mo au plus (`cartes_invitation.TAILLE_MAX`), corps JSON non-objet ignoré, identifiants non numériques → 400, .ics échappé, formules neutralisées |
 | ENF-S8 | Documentation API réservée | `/api/docs/` et `/api/schema/` : super admin seulement |
 | ENF-S10 | Poste public (borne) | session restreinte côté serveur, mot de passe de l'hôte pour les réglages ([ADR-010](../decisions/ADR-010-mode-borne-serveur.md)) |
 | ENF-S11 | Pas de confusion d'identité par Unicode | emails ASCII uniquement (collation insensible aux accents) |
@@ -47,6 +47,7 @@ Toutes les limites par IP comptent une IPv4 ou un **préfixe IPv6 /64** (`thrott
 | renvoi automatique (doublon d’inscription) | 3/h par adresse et cérémonie |
 | codes invalides au scan | 30 en 10 min par compte et cérémonie ; **10** en session borne (`MAX_CODES_INVALIDES_BORNE`) |
 | signalement d’erreur navigateur | 30/min |
+| images des emails (logo, icônes, `/api/public/emails/images/`) | 3 000/min par IP (`LIMITE_IMAGES_EMAIL`, limite propre pour ne pas épuiser la limite anonyme, 2026-11-09) |
 | rapports PDF | 30/h par compte |
 | page publique du sondage | 60/h par IP |
 | email de test (A7) | 10/h par compte |
@@ -88,6 +89,7 @@ Les limites sensibles (connexion, renvoi, codes, mot de passe) et les limites pa
 | WebSocket | reconnexion progressive, rechargement complet |
 | Réseau au scan | file IndexedDB, synchronisation |
 | Erreur imprévue | message neutre, détail chez le super admin |
+| Mise à jour du site pendant qu'un onglet est ouvert | les fichiers `/assets/*` de l'ancienne version répondent 404 au lieu de la page d'entrée HTML (bloc `handle /assets/*` de `infra/Caddyfile.prod`, cache d'un an pour un fichier existant seulement ; Vercel : `assets/` hors réécriture de `frontend/vercel.json`) ; l'onglet recharge la page une fois (`lib/nouvelleVersion.rechargerSiNouvelleVersion` sur `vite:preloadError`, au plus une fois par minute, `sessionStorage`) ; les 11 pages chargées à la demande passent par `pageDifferee` (`App.jsx`) : écran de chargement jusqu'au rechargement, plus de fausse erreur `React.lazy` (`1c0c98e`, `a55a65c`, 2026-11-10 ; `frontend/tests/nouvelleVersion.test.jsx`). Sans `sessionStorage` : pas de rechargement automatique |
 | Conteneurs | `restart: unless-stopped`, contrôles de santé (`/api/sante/` indépendant de l’en-tête Host) |
 
 ## Accessibilité
@@ -97,7 +99,15 @@ dialogues, `aria-live` pour toasts et résultats de scan, cibles ≥ 44 px, cont
 
 ## Compatibilité
 Mobile d’abord (invité, scan), PWA installable, HTTPS obligatoire pour la caméra hors localhost ; emails
-compatibles Gmail / Outlook (tables, PNG, pas de SVG).
+compatibles Gmail / Outlook (tables, PNG, pas de SVG ; logo et icônes servis par lien, QR code intégré,
+[ADR-015](../decisions/ADR-015-images-email-par-lien.md)).
+
+Affichage sur tout écran de 320 à 1920 px (2026-11-10, `4474e46`) : `frontend/e2e/responsive.spec.js` ouvre 18 écrans
+à 7 largeurs (320, 375, 414, 768, 1024, 1280, 1920 px) puis le poste de scan, l'ajout d'invité et la fiche invité à
+5 largeurs (320, 375, 768, 1024, 1440 px), et échoue si la page défile horizontalement ou si un élément dépasse ou est
+coupé (conteneurs défilants admis) ; mesures après `document.fonts.ready` (`7c994de`) ; la barre de recherche des invités, plus
+large avec les polices de Linux, débordait en CI à 320–375 px : corrigée (`97aad10`). Contrôle géométrique seulement : pas de revue visuelle ; confirmation et
+sondage non couverts (accessibles seulement après une inscription ou avec un jeton).
 
 ## Localisation
 Français uniquement, fuseau `Africa/Abidjan`, formats « 18h42 », « Samedi 14 novembre 2026 », écriture « Inscrit·e ».

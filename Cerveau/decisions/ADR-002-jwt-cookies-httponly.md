@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [PLAN.md, backend/apps/comptes/authentication.py, backend/apps/comptes/views.py, backend/apps/comptes/permissions.py, backend/apps/noyau/consumers.py, backend/config/settings.py, frontend/src/lib/api.js]
 ---
 
@@ -48,3 +48,9 @@ révoquer toutes les sessions d’un compte.
 ## Conséquences
 - ➕ jetons inaccessibles au JavaScript ; même cookie pour le WebSocket ; révocation immédiate.
 - ➖ CSRF à gérer (`lib/api.js`) ; `JWT_COOKIE_SECURE=0` nécessaire en HTTP local hors localhost.
+
+## Vérification (2026-11-10, `93646d7`)
+Décision toujours appliquée, sans changement : `authentication.py`, `views.py`, `permissions.py` et `consumers.py`
+n'ont pas changé depuis `f55527e`. Seuls ajouts dans les sources : limite de débit `images_email` dans
+`settings.py` ([ADR-015](ADR-015-images-email-par-lien.md)) et méthode `api.put` dans `lib/api.js` (même gestion du
+CSRF et du rafraîchissement que les autres méthodes, utilisée par la carte d'invitation, [ADR-016](ADR-016-carte-invitation-en-base.md)).

@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/features/invite/LienInvalide.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/invite/Presentation.jsx, frontend/src/features/invite/ConfirmationPage.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/PratiquePage.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_dates_inscription.py, frontend/tests/schemas.test.js]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, backend/apps/noyau/serializers.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/features/invite/LienInvalide.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/invite/Presentation.jsx, frontend/src/features/invite/ConfirmationPage.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/PratiquePage.jsx, frontend/src/lib/schemas.js, frontend/src/lib/agenda.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_corrections_invitation.py, frontend/tests/presentation.test.jsx, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/tests/test_dates_inscription.py, frontend/tests/schemas.test.js]
 ---
 
 # Inscription des invités (espace public)
@@ -15,11 +15,18 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
 1. `/i/<slug>` charge `GET /api/public/evenements/<slug>/` (mis en cache 30 s, invalidé à chaque changement).
    - 404 → `LienInvalide` (palette MDE, lien vers mde.ci ; titre et texte paramétrables depuis `bd4f807`, réutilisé
      par la page du sondage).
-   - `etat` ≠ `OUVERT` → `EtatCarte` : `FERME`, `DATE_LIMITE`, `COMPLET`.
+   - `etat` ≠ `OUVERT` → `EtatCarte` : `FERME`, `DATE_LIMITE`, `COMPLET`. Depuis le 2026-11-09, `DATE_LIMITE`
+     s'intitule « Les inscriptions sont closes » (ouvertes « jusqu'au <date>, jour de la cérémonie », calculé sur
+     `ev.date`) ; le champ public `dateLimiteInscription` est supprimé.
+   - Autres champs publics ajoutés : `agenda.titre` (`Evenement.nom_agenda`, « Cérémonie de Graduation {programme}
+     {année} », repris par `lib/agenda.js` pour les liens Google Agenda / Microsoft 365) et `brochureActive`
+     (2026-11-10) ; `magazineActif` vaut désormais `Evenement.magazine_disponible` (lien du magazine de la
+     cérémonie, sinon du programme).
 2. **Guide des étapes** (`Presentation.jsx`) : bloc « Comment ça se passe ? » **replié par défaut** au-dessus du
    formulaire (bouton `aria-expanded`), toujours 3 étapes depuis le 2026-11-10 : la 3ᵉ annonce l'email reçu après le scan, « magazine et brochure », « brochure » seule ou « email de bienvenue » selon `magazineActif` (lien du magazine) et `brochureActive` (lien de brochure de la cérémonie, sinon défaut des Paramètres) de `GET /api/public/evenements/<slug>/`. Depuis
    le 2026-11-09 le formulaire s’affiche directement ; l’ancien écran intermédiaire « Commencer mon inscription »
-   (`?etape=formulaire`) est supprimé.
+   (`?etape=formulaire`) est supprimé. La mention « Inscriptions ouvertes jusqu’au jour de la cérémonie… » a été
+   retirée du guide le 2026-11-10 (`6394775`).
 3. **Formulaire** : civilité, nom, prénom, email, téléphone (+225), entreprise, fonction, consentement —
    **tous obligatoires**. Chaque champ a son libellé visible et le reprend en placeholder ; le téléphone
    affiche en plus l’aide « 10 chiffres, par exemple 07 12 34 56 78 ». Validation Zod au fil de l’eau, erreurs visibles après sortie du champ ou envoi ;
@@ -37,7 +44,8 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
 - Verrou `select_for_update` sur l’événement → la capacité est garantie même en concurrence.
 - Ordre des refus : fermé → cérémonie passée (code `DATE_LIMITE`) → complet (`etat_inscriptions`). Depuis le
   2026-11-09, inscriptions ouvertes **jusqu’au jour de la cérémonie inclus**, dans la limite des places : la date
-  limite n’est plus saisie (colonne `date_limite_inscription` conservée, alignée sur `date` par `Evenement.save`).
+  limite n’est plus saisie (colonne `date_limite_inscription` conservée, alignée sur `date` par `Evenement.save`) ;
+  `etat_inscriptions` compare à `Evenement.date`, message « Les inscriptions sont closes : la cérémonie a eu lieu. »
 - Consentement obligatoire (400 `CONSENTEMENT`).
 - Email normalisé en minuscules ; code à 4 chiffres tiré par `secrets` parmi les codes libres ; jusqu’à 20
   essais en cas de collision (puis 503 `CODE_INDISPONIBLE`) ; `CODES_EPUISES` à 10 000.
@@ -60,6 +68,13 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
 | entreprise, fonction | 2 à 120 caractères | `ChampsProfessionnelsObligatoires` / `schemaInviteComplet` |
 | tous | refus des caractères de contrôle (sauts de ligne…) | `sans_controle` |
 
+## Carte d'invitation (public)
+`GET /api/public/evenements/<slug>/carte-invitation/` (`vues_public.CarteInvitationView`, 2026-11-09) : fichier
+téléversé par le super admin (image ou PDF, voir [configuration-super-admin](configuration-super-admin.md)), joint à
+l'événement d'agenda ; ancien lien accepté ; 404 sans carte ; `ETag` + `Cache-Control: public, no-cache` (304 sans
+relire le contenu) ; `Content-Security-Policy: sandbox` ; PDF en téléchargement, image affichée. Aucune donnée
+personnelle.
+
 ## Renvoi du QR
 `POST /renvoi-qr/` : réponse **toujours identique** (202, « Si cette adresse est inscrite… »), limites
 3/h par email **et par cérémonie** (clé hachée sur l’identifiant de l’événement : un lien régénéré ne multiplie
@@ -72,7 +87,9 @@ momentanément saturé » ; 5xx → message neutre.
 ## Tests
 `backend/apps/noyau/tests/test_inscription.py` (états, doublon, renvois limités, validation, unicité des codes,
 .ics, champs obligatoires) ; `test_audit_securite.py` (`test_inscription_et_renvoi_refusent_les_adresses_non_ascii`) ;
-`test_dates_inscription.py` (pas de date future, migration 0008) ; `frontend/tests/schemas.test.js` (dont
+`test_dates_inscription.py` (pas de date future, migration 0008) ; `test_corrections_invitation.py`
+(`test_page_publique_titre_d_agenda`, `test_page_publique_annonce_magazine_et_brochure`) ;
+`test_carte_invitation.py` (carte publique) ; `frontend/tests/presentation.test.jsx` (3ᵉ étape selon les liens) ; `frontend/tests/schemas.test.js` (dont
 adresses non ASCII), `confirmation.test.jsx`, `agenda.test.js` ; e2e `parcours.spec.js`.
 
 ## Limites

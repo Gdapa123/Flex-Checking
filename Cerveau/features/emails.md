@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/apps/noyau/tests/test_corrections_invitation.py, backend/apps/noyau/vues_public.py, backend/templates/emails/invitation.html, backend/templates/emails/magazine.html, backend/apps/noyau/adresses.py, backend/apps/noyau/tests/test_a_contacter.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/apps/noyau/tests/test_corrections_invitation.py, backend/apps/noyau/vues_public.py, backend/templates/emails/invitation.html, backend/templates/emails/magazine.html, backend/apps/noyau/adresses.py, backend/apps/noyau/tests/test_a_contacter.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/migrations/0014_objet_email_1.py, backend/apps/noyau/migrations/0015_email_2_toujours_envoye.py, backend/apps/noyau/cartes_invitation.py, backend/apps/noyau/tests/test_suivi_emails.py, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/tests/test_emargement.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
 ---
 
 # Emails n°1 (invitation), n°2 (magazine) et n°3 (sondage)
@@ -77,7 +77,11 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   de large : formule de fin à 746 px.
 - Email n°2 (2026-11-09) : deux boutons, « Lire le magazine » (`Evenement.lien_magazine_effectif`) et « Brochure
   Executive Education » (`Evenement.lien_brochure`, sinon `Parametres.lien_brochure_defaut`, `https://mde.ci` par
-  défaut) ; un bouton sans lien est masqué.
+  défaut) ; un bouton sans lien est masqué. Depuis le 2026-11-10 (`ebcfcf7`, gabarit `magazine.html`) : sans lien
+  de magazine, la carte s’intitule « Executive Education » (brochure seule) ; sans aucun lien, la carte disparaît ;
+  le pré-en-tête ne mentionne le magazine que si son lien existe. Objet et corps par défaut changés (migration
+  `0015_email_2_toujours_envoye`, anciens textes remplacés seulement s’ils n’avaient pas été personnalisés) :
+  objet « Bienvenue à la cérémonie de Graduation {programme} {annee} », corps sans mention du magazine ni « ce soir ».
 - Fichier .ics (`ics.ics_evenement`) : titre « Cérémonie de Graduation {programme} {année} »
   (`Evenement.nom_agenda`, aussi pour les liens Google Agenda / Microsoft 365 via `agenda.titre`), **deux rappels**
   (la veille `-P1D` et une heure avant `-PT1H`), carte d’invitation en `ATTACH;FMTTYPE=…` et dans la description
@@ -114,17 +118,19 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
 - Renvoi groupé : seuls les invités dont le **dernier** envoi du type est en échec ; n°2 et n°3 : seulement les
   invités encore présents ; n°3 : seulement si le lien est encore ouvert (24 h), **que l’invité ait répondu ou non**
 (anonymat, `suivi_emails.renvoyer_echecs`) ; refus
-  `MAGAZINE_INDISPONIBLE` / `SONDAGE_INDISPONIBLE` si l’email est désactivé pour le programme ; journal
+  `SONDAGE_INDISPONIBLE` si le sondage est désactivé pour le programme (le n°2 n’est plus jamais refusé depuis le
+  2026-11-10 : `suivi_emails.magazine_disponible` supprimé, bloc `MAGAZINE.actif` toujours vrai) ; journal
   `EMAIL_RENVOI`. Email de test : objet préfixé « [Test] », envoi SMTP synchrone (`message.send()`), 502
   `ENVOI_IMPOSSIBLE` si le serveur SMTP échoue ; journal `EMAIL_TEST` (catégorie Email).
 
 ## Tests
 `test_emails.py` (échec après 3 relances, échappement, lien en clair, boutons vers infos pratiques, mention
 « ne pas répondre » dans les trois emails),
-`test_emargement.py` (magazine unique), `test_analytique.py` (file indisponible, relance),
-`test_suivi_emails.py` (9 : compteurs, droits, renvoi groupé, magazine désactivé, email de test, SMTP
-indisponible), `test_a_contacter.py` (30 : causes SMTP, adresses douteuses, invités à contacter, nombre de requêtes), `test_sondage.py` (envoi, renvoi et aperçu du n°3), `test_invites.py`
-(`test_renvoi_magazine_refuse_si_desactive`), `test_durcissement.py` (`test_modeles_d_email_enregistres`,
+`test_emargement.py` (magazine unique, `test_email_2_envoye_meme_sans_magazine`), `test_analytique.py` (file indisponible, relance),
+`test_suivi_emails.py` (compteurs, droits, renvoi groupé, `test_magazine_toujours_disponible_meme_sans_lien`,
+email de test, SMTP indisponible), `test_corrections_invitation.py` (agenda, pièces jointes, formule de fin,
+boutons du n°2, n°2 sans lien ou brochure seule, textes par défaut du n°2, images, liens refusés), `test_a_contacter.py` (46 cas collectés le 2026-11-10, paramétrages compris : causes SMTP, adresses douteuses, invités à contacter, nombre de requêtes), `test_sondage.py` (envoi, renvoi et aperçu du n°3), `test_invites.py`
+(`test_renvoi_magazine_possible_sans_lien_mais_pas_avant_la_presence`), `test_durcissement.py` (`test_modeles_d_email_enregistres`,
 `test_variables_remplacees_en_une_seule_passe`, `test_message_id_stable_par_envoi`,
 `test_relance_d_une_tentative_perdue`, `test_renvoi_du_sondage_ne_revele_pas_qui_a_repondu`) ;
 `frontend/tests/suiviEmails.test.jsx`.

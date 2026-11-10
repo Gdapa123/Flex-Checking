@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: 021396e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/taches.py, backend/apps/noyau/rapports.py, backend/apps/noyau/analytique.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, frontend/src/lib/telechargement.js, docker-compose.prod.yml]
 ---
 
@@ -11,7 +11,7 @@ sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/a
 ## Exports tableur
 | Export | Route | Droits | Colonnes |
 |---|---|---|---|
-| Invités d’une cérémonie (vue filtrée) | `GET /evenements/<id>/invites/export/?format=` | admin | événement, civilité, prénom, NOM, email, téléphone, entreprise, fonction, statut, code, source, inscrit le, présent le, mode, email 1, email 2 (pas de colonne pour l’email n°3) |
+| Invités d’une cérémonie (vue filtrée) | `GET /evenements/<id>/invites/export/?format=` | admin | événement, civilité, prénom, NOM, email, téléphone, entreprise, fonction, statut, code, source, inscrit le, présent le, mode, email 1, email 2 (pas de colonne pour l’email n°3 ; depuis le 2026-11-10 l’email n°2 part pour tout invité présent, la colonne « Email 2 » est donc renseignée pour tout invité passé à Présent depuis ce changement, même sans lien de magazine) |
 | Sélection | `POST /evenements/<id>/invites/actions-groupees/` `{action: EXPORTER, ids}` | admin | idem |
 | Tous les invités | `GET /invites/export/` ou `/exports/invites/` | super admin | idem |
 | Présences | `/exports/presences/` | super admin | heure, mode, poste, appareil, « émargé par » |

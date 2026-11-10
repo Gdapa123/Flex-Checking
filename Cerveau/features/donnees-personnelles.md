@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/donnees_personnelles.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/tasks.py, backend/config/settings.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/serializers.py, backend/apps/noyau/journal.py, backend/apps/noyau/journal_texte.py, backend/apps/noyau/emails.py, backend/templates/emails/base.html, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/invite/InscriptionPage.jsx, frontend/src/features/super/Parametres.jsx, frontend/src/features/super/Journal.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/tests/confidentialite.test.jsx]
 ---
 
@@ -19,7 +19,8 @@ traçabilité. Voir [ADR-013](../decisions/ADR-013-conservation-limitee-anonymis
    des données personnelles » au lieu du RGPD.
 2. Chaque email (n°1, n°2, n°3) se termine par un lien « Vos données personnelles » vers cette page.
 3. Le super admin règle dans **Paramètres › Données personnelles** la durée de conservation (1 à 60 mois, 12 par
-   défaut) et l'adresse de contact affichée sur la page.
+   défaut) et l'adresse de contact (aide de l'écran : « Adresse à laquelle les invités exercent leurs droits ») ;
+   depuis le 2026-11-10 ni l'une ni l'autre n'est plus affichée sur la page publique (voir ci-dessous).
 4. Chaque nuit (Celery Beat, 3 h 30) — ou au cron quotidien de l'environnement Vercel — les cérémonies dont la date
    est plus ancienne que la durée de conservation sont **anonymisées**.
 
@@ -45,7 +46,8 @@ invités. À revoir : la loi 2013-450 prévoit d'informer sur la durée de conse
   invalidés. Ne traite que les invités encore identifiables (`_non_anonymises`) : la passe ne fait rien (0) s'il n'y
 en a plus. Conservés : civilité, code, statut, heures et modes d'émargement (bilans chiffrés).
 - ✅ `anonymiser_donnees_expirees` ne compte que les cérémonies où au moins un invité a été anonymisé.
-- ✅ `GET /api/public/confidentialite/` (public) : `{contact, dureeConservationMois}`.
+- ✅ `GET /api/public/confidentialite/` (public) : `{contact, dureeConservationMois}` — plus appelé par
+  `ConfidentialitePage.jsx` depuis `230cf6d` (page statique, sans requête) ; point d'accès conservé.
 - ✅ `PATCH /api/parametres/` (super admin) : `dureeConservationMois` 1–60, `contactDonnees` email ou vide ;
   changement de durée journalisé (`PARAMETRES`).
 
@@ -69,13 +71,14 @@ en a plus. Conservés : civilité, code, statut, heures et modes d'émargement (
 | Deux passes simultanées | verrou `select_for_update` sur la cérémonie ; la seconde ne trouve plus d'invité identifiable et ne fait rien |
 | Invité ajouté ou corrigé après l'anonymisation | la cérémonie redevient « expirée » ; l'invité est anonymisé à la passe suivante (`anonymise_le` redaté) |
 | Durée hors bornes / contact invalide | 400 (et message sous le champ dans l'interface) |
-| Contact non renseigné | la page invite à contacter la direction des événements |
+| Contact renseigné ou non | sans effet sur la page depuis le 2026-11-10 : elle invite toujours à « contacter MDE Business School » |
 
 ## Tests
 - `backend/apps/noyau/tests/test_donnees_personnelles.py` (8 tests : calcul des mois, anonymisation et idempotence,
   durée réglable, page publique, droits, lien dans les emails, cron sans file,
   `test_invite_ajoute_apres_anonymisation_et_motifs_effaces`).
-- `frontend/tests/confidentialite.test.jsx` (page et schéma) ; audit axe de `/confidentialite`
+- `frontend/tests/confidentialite.test.jsx` (texte de MDE : 7 titres de section, refus des envois en contactant MDE,
+  aucune mention de « désinscription » ; schéma des réglages) ; audit axe de `/confidentialite`
   (`frontend/e2e/accessibilite.spec.js`).
 
 ## Limites et décisions liées

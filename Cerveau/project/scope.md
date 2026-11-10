@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-05
-commit: 9c6a8ba
-sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/vps/installer.sh, docker-compose.prod.yml, infra/Caddyfile.prod]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/vps/mettre-a-jour.sh, infra/vps/installer.sh, docker-compose.prod.yml, infra/Caddyfile.prod]
 ---
 
 # Périmètre
@@ -21,7 +21,10 @@ sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/
 - Écrans invité I1–I8 (sauf I7 « adresse déjà inscrite », retiré le 2026-11-02 : [ADR-005](../decisions/ADR-005-anti-enumeration-inscription.md)), scan S1–S12, admin A1–A7, super admin SA1–SA9 (numérotation de `PLAN.md` §2).
 - Ajouts postérieurs au plan, tous implémentés : écran de présentation des étapes avant le formulaire,
   analyses et rapports PDF, erreurs techniques (super admin), temps réel WebSocket, suppressions définitives
-  (super admin), page « Infos pratiques », environnement de test Vercel.
+  (super admin), page « Infos pratiques », environnement de test Vercel ; puis, en novembre 2026 : « Invités à
+  contacter » dans le suivi des emails (A7), carte d’invitation téléversée ([ADR-016](../decisions/ADR-016-carte-invitation-en-base.md)),
+  email n°2 envoyé à tout invité présent avec boutons selon les liens, politique de confidentialité au texte de MDE,
+  rechargement automatique des onglets ouverts après une mise à jour.
 
 ## Hors périmètre (décisions explicites)
 - Aucun compte invité.
@@ -32,9 +35,13 @@ sources: [PLAN.md, README.md, frontend/src/features/invite/EtatCarte.jsx, infra/
 - Pas de visuel de couverture dans l’email n°2 (C19).
 
 ## Inconnus ❓
-- Hébergement de production réel. Le **domaine est retenu** (2026-11-04) : `inscription.mde.ci`, valeur par défaut de
-  `docker-compose.prod.yml` et `infra/Caddyfile.prod`, exemple de `infra/vps/installer.sh`. Cible préparée : VPS Lite Infomaniak (scripts `infra/vps/`, guides [deploiement-infomaniak](../operations/deploiement-infomaniak.md)
-  et [deploiement-vps-facile](../operations/deploiement-vps-facile.md)) ; aucun serveur réel installé au 2026-11-03.
-- Fournisseur SMTP de production.
+- ~~Hébergement de production réel~~ : tranché. Domaine `inscription.mde.ci` (valeur par défaut de
+  `docker-compose.prod.yml` et `infra/Caddyfile.prod`, exemple de `infra/vps/installer.sh`) sur un VPS Lite Infomaniak
+  (scripts `infra/vps/`, guides [deploiement-infomaniak](../operations/deploiement-infomaniak.md) et
+  [deploiement-vps-facile](../operations/deploiement-vps-facile.md)) : installé les 2026-11-04/05, mis à jour par
+  `infra/vps/mettre-a-jour.sh` à chaque version (dernière consignée : `e75bba3`, 2026-11-10, voir [log](../log.md)).
+  Sauvegardes automatiques **non activées** au 2026-11-10 ([risques R31](risques-et-dette.md)).
+- Fournisseur SMTP de production : compte Google Workspace `noreply@mde.ci` (`smtp.gmail.com`) annoncé le 2026-11-06
+  (journal) ; configuration faite par l’utilisateur, non vérifiée par l’agent (à confirmer).
 - Logo officiel MDE distinct du logo Flex’Checking (Q3 posée ; le logo Flex’Checking est utilisé partout).
 - Nombre réel d’invités et de cérémonies par an.

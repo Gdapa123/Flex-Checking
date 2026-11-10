@@ -1,21 +1,21 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-10-27
-commit: bed9942
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/models.py, backend/apps/comptes/models.py, backend/apps/noyau/migrations/, backend/apps/noyau/statuts.py, backend/apps/noyau/sondages.py, backend/apps/noyau/donnees_personnelles.py, backend/apps/comptes/migrations/]
 ---
 
 # Modèle de données
 
 Base MySQL 8 utf8mb4 (Postgres sur l’environnement Vercel), stockage en UTC, fuseau d’affichage `Africa/Abidjan` (UTC+0).
-Migrations : `0001_initial` → `0011_derniere_tentative` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma, et affiche leur nombre ; la 0009 ajoute `sondage_actif`, les champs de l’email n°3, le type `SONDAGE` et les deux tables du sondage ; la 0010 les champs des données personnelles ; la 0011 `EmailEnvoye.derniere_tentative_le`), `0001_initial` et `0002_version_session` (comptes).
+Migrations : `0001_initial` → `0015_email_2_toujours_envoye` (noyau ; la 0008 supprime les invités inscrits dans le futur, sans changer le schéma, et affiche leur nombre ; la 0009 ajoute `sondage_actif`, les champs de l’email n°3, le type `SONDAGE` et les deux tables du sondage ; la 0010 les champs des données personnelles ; la 0011 `EmailEnvoye.derniere_tentative_le` ; la 0012 les liens de cérémonie (`lien_magazine`, `lien_brochure`, `lien_carte_invitation`), `Parametres.lien_brochure_defaut`, les nouveaux corps par défaut des emails n°1 et n°2 et l’alignement `date_limite_inscription = date` ; la 0013 la table `CarteInvitation` ; la 0014 l’objet par défaut de l’email n°1 ; la 0015 l’objet et le corps par défaut de l’email n°2 — les 0012, 0014 et 0015 ne remplacent un texte que s’il n’a pas été personnalisé), `0001_initial` et `0002_version_session` (comptes).
 
 ## Entités
 
 ### Programme
 `nom` (unique), `couleur_principale`, `couleur_secondaire` (#RRGGBB, mises en majuscules), `actif`,
-`magazine_actif`, `lien_magazine`, `sondage_actif` (défaut vrai), dates. Créés par la data migration `0002` : AMP `#8F1C1F/#F7941D`,
+`magazine_actif` (sans effet depuis le 2026-11-10, champ gardé selon [ADR-014](../decisions/ADR-014-migrations-expand-contract.md)), `lien_magazine` (lien par défaut des cérémonies), `sondage_actif` (défaut vrai), dates. Créés par la data migration `0002` : AMP `#8F1C1F/#F7941D`,
 PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740`.
 
 ### Evenement (cérémonie)
@@ -74,7 +74,8 @@ statut de la **dernière** ligne INVITATION. Libellés communs : `libelle_email`
 ### Parametres (singleton pk=1)
 - `duree_conservation_mois` (1–60, défaut 12) et `contact_donnees` (email, facultatif) : protection des données personnelles (migration `0010`, colonnes avec `db_default`) ; voir [donnees-personnelles](../features/donnees-personnelles.md).
 Objets et corps des emails n°1, n°2 et n°3 (`objet_email_3`, `corps_email_3` ; texte avec variables, dont `{lien_sondage}`), `duree_resultat_scan` (2 | 3 | 5 s, défaut 3),
-`son_actif`, `vibration_actif`, `expediteur` (« Flex’Checking · MDE Business School »).
+`son_actif`, `vibration_actif`, `expediteur` (« Flex’Checking · MDE Business School »), `lien_brochure_defaut` (URL, défaut `https://mde.ci`, migration `0012` : bouton brochure de l’email n°2 quand la cérémonie n’a pas de `lien_brochure`).
+Objets par défaut : n°1 « Votre inscription à la cérémonie de Graduation {programme} {annee} » (`0014`), n°2 « Bienvenue à la cérémonie de Graduation {programme} {annee} » (`0015`).
 
 ### InvitationSondage
 `invite` (OneToOne, CASCADE, `related_name="sondage"`), `jeton` (unique, `token_urlsafe(24)`), `cree_le`, `expire_le`

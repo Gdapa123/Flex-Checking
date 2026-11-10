@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [README.md, backend/Dockerfile.vercel, backend/config/settings.py, backend/config/bases.py, frontend/vercel.json, backend/vercel.json, .vercelignore, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, backend/apps/noyau/donnees_personnelles.py]
 ---
 
@@ -40,3 +40,12 @@ Besoin d’une URL de test accessible sans serveur dédié.
 - ➖ sondage : quatre passages par jour seulement (8 h, 12 h, 16 h, 20 h depuis le 2026-11-02 ; deux avant), au lieu
   de chaque heure de 8 h à 20 h avec Beat ; un secret de
   plus à gérer sur le projet `flex-checking-api`.
+
+## Vérification (2026-11-10, `93646d7`)
+Décision inchangée. Depuis `40d0682`, les en-têtes de sécurité de `frontend/vercel.json` ne s'appliquent plus à
+`/api/*` (source `/((?!api/).*)`) : ils masquaient les en-têtes plus stricts posés par l'API elle-même
+(`X-Frame-Options: DENY`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`,
+`backend/apps/noyau/middleware.py`). Nouvelles routes publiques relayées comme les autres : carte d'invitation et
+images des emails (`urls.py`, [ADR-015](ADR-015-images-email-par-lien.md), [ADR-016](ADR-016-carte-invitation-en-base.md)) ;
+la carte stockée en base convient à Vercel, sans disque permanent. `Dockerfile.vercel`, `backend/vercel.json`,
+`bases.py`, `vues_sondage.py` et `donnees_personnelles.py` sont inchangés.

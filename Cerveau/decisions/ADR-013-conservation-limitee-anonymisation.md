@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/donnees_personnelles.py, frontend/src/features/invite/ConfidentialitePage.jsx, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/models.py, backend/apps/noyau/tasks.py, backend/apps/noyau/vues_sondage.py]
 ---
 
@@ -34,3 +34,17 @@ information et droits des personnes.
   suivante (le changement de durée est journalisé ; l'interface demande une confirmation avant de la raccourcir).
 - Les anciennes sauvegardes contiennent encore les données : à chiffrer et à faire tourner (guide de déploiement).
 - Voir [donnees-personnelles](../features/donnees-personnelles.md).
+
+## Vérification (2026-11-10, `93646d7`)
+- Décisions 1, 2, 3 et 5 toujours appliquées : `donnees_personnelles.py`, `tasks.py` et `vues_sondage.py` sont
+  inchangés depuis `f55527e` (durée lue dans `Parametres.duree_conservation_mois`, `anonymiser_donnees_expirees`) ;
+  `Parametres.jsx` garde la durée (1 à 60 mois) et la confirmation avant de la raccourcir.
+- 🟡 **Décision 4 en partie seulement** depuis `230cf6d` (texte fourni par MDE le 2026-11-10) : `ConfidentialitePage.jsx`
+  n'interroge plus `GET public/confidentialite/` et n'affiche plus **ni la durée de conservation ni l'adresse de
+  contact** ; il ne mentionne plus le retrait du consentement ni l'ARTCI, et ajoute une finalité (informer des
+  prochains événements et actualités de MDE, refus possible à tout moment). La page reste reliée au consentement et
+  au pied des emails (`emails/base.html`, « Vos données personnelles »). L'anonymisation automatique continue.
+- Écarts constatés, à confirmer avec MDE : `ConfidentialiteView` renvoie encore `contact` et
+  `dureeConservationMois` sans être lue par le frontend ; dans `Parametres.jsx`, le texte « Ces informations figurent
+  sur la politique de confidentialité » et l'aide du champ « Contact données personnelles » ne correspondent plus à
+  la page publique (le contact réglé n'est affiché nulle part).

@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/config/bases.py, backend/config/settings.py, backend/config/concurrence.py, backend/config/asgi.py, backend/apps/noyau/consumers.py, docker-compose.prod.yml, infra/charge/README.md]
 ---
 
@@ -32,3 +32,8 @@ Dimensionnement : `WEB_CONCURRENCY × DB_CONCURRENCE × conteneurs < max_connect
   connexion (TLS, `channel_binding`). `DB_POOL=0` le désactive. MySQL (production) n'a pas de pool natif dans
   Django : inchangé (`CONN_MAX_AGE = 0`, base sur le réseau local du compose). Mesure locale : 100 appels de
   `/api/sante/` (dont 50 simultanés) ouvrent 10 connexions au lieu de 100.
+
+## Vérification (2026-11-10, `93646d7`)
+Décision et complément Postgres toujours conformes : `concurrence.py`, `bases.py`, `asgi.py`, `consumers.py` et
+`docker-compose.prod.yml` sont inchangés depuis `f55527e` ; seul ajout dans `settings.py`, la limite de débit
+`images_email`, sans rapport avec la file d'attente.

@@ -1,8 +1,8 @@
 ---
 type: testing
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_donnees_personnelles.py, frontend/.nvmrc, frontend/.npmrc, frontend/tests/fileHorsLigne.test.js, backend/pyproject.toml, backend/config/settings_test.py, backend/conftest.py, backend/apps/noyau/tests/, frontend/vite.config.js, frontend/package.json, frontend/playwright.config.js, frontend/tests/, .github/workflows/ci.yml]
 ---
 
@@ -11,9 +11,9 @@ sources: [backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/test
 ## Niveaux
 | Niveau | Outil | Emplacement | Volume |
 |---|---|---|---|
-| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 23 fichiers, **317 tests exécutés** le 2026-11-09 sur MySQL (294 puis 307 plus tôt le même jour) (290 plus tôt le même jour) ; 275 le 2026-11-02 sur MySQL et sur Postgres 17 ; 273 le 2026-10-27 sur MySQL (6 tests du formulaire du sondage dans l'email) ; 267 le 2026-10-26 sur MySQL et sur Postgres (`test_pool_postgres_garde_le_chiffrement` ajouté) ; 266 le 2026-10-22 après la revue de code (264 avant, 257 lors de l'audit du matin ; paramétrages compris ; 242 collectés le 2026-10-21) et le 2026-10-23, dont `test_donnees_personnelles.py`, `test_durcissement.py`, `test_audit_securite.py`, `test_dates_inscription.py`, `test_suivi_emails.py` et `test_sondage.py` ; `backend/apps/comptes/tests/` ne contient aucun test |
-| Utilitaires et composants | Vitest + Testing Library (jsdom) | `frontend/tests/` | 19 fichiers, **83 tests** exécutés le 2026-11-09 ; 73 le 2026-11-02 (dont `api.test.js` 3 : rafraîchissement de session) ; 69 le 2026-10-27 (68 le 2026-10-22 et le 2026-10-23) (dont `confidentialite.test.jsx` 2, `fileHorsLigne.test.js` 2) |
-| Parcours complet, accessibilité, affichage sur tout écran | Playwright + axe-core | `frontend/e2e/` | 10 tests (7 fichiers, dont `responsive.spec.js` 2 depuis le 2026-11-10) |
+| Règles métier, API, sécurité | pytest + pytest-django | `backend/apps/noyau/tests/` | 25 fichiers, **409 tests** collectés et exécutés le 2026-11-10 sur MySQL ; 317 le 2026-11-09 sur MySQL (294 puis 307 plus tôt le même jour) (290 plus tôt le même jour) ; 275 le 2026-11-02 sur MySQL et sur Postgres 17 ; 273 le 2026-10-27 sur MySQL (6 tests du formulaire du sondage dans l'email) ; 267 le 2026-10-26 sur MySQL et sur Postgres (`test_pool_postgres_garde_le_chiffrement` ajouté) ; 266 le 2026-10-22 après la revue de code (264 avant, 257 lors de l'audit du matin ; paramétrages compris ; 242 collectés le 2026-10-21) et le 2026-10-23, dont `test_donnees_personnelles.py`, `test_durcissement.py`, `test_audit_securite.py`, `test_dates_inscription.py`, `test_suivi_emails.py` et `test_sondage.py` ; `backend/apps/comptes/tests/` ne contient aucun test |
+| Utilitaires et composants | Vitest + Testing Library (jsdom) | `frontend/tests/` | 23 fichiers, **110 tests** exécutés le 2026-11-10 (dont `nouvelleVersion.test.jsx` 5, `presentation.test.jsx` 3) ; 83 le 2026-11-09 ; 73 le 2026-11-02 (dont `api.test.js` 3 : rafraîchissement de session) ; 69 le 2026-10-27 (68 le 2026-10-22 et le 2026-10-23) (dont `confidentialite.test.jsx` 2, `fileHorsLigne.test.js` 2) |
+| Parcours complet, accessibilité, affichage sur tout écran | Playwright + axe-core | `frontend/e2e/` | 10 tests (6 fichiers de tests + `auth.setup.js`, dont `responsive.spec.js` 2 depuis le 2026-11-10) ; en CI, rapporteur `github` : chaque échec devient une annotation du job |
 | Lint / format | ruff · ESLint (jsx-a11y, react-hooks) + Prettier | — | — |
 | Charge (manuel) | `infra/charge/charge.mjs`, `ws_charge.py` | `infra/charge/` | voir [deployment](../operations/deployment.md#tests-de-charge) |
 
@@ -37,6 +37,7 @@ qui tournent sur Node.js 24 (les v4/v5 sur Node.js 20 déclenchaient un avertiss
 ## Dernière exécution locale connue
 | Date | Contrôle | Résultat |
 |---|---|---|
+| 2026-11-10 | Journée de corrections (objets d'email, email n°2 toujours envoyé, confidentialité, affichage sur tout écran, rechargement après mise à jour, guide d'inscription) : `ruff check` + `ruff format --check`, `pytest` sur MySQL 8 (Docker), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` (après `migrate`) ; CI GitHub | ✅ ruff OK ; pytest **409** sans échec ; lint OK ; Vitest **110/110** (23 fichiers) ; build OK ; Playwright **10/10** (un premier échec `ENOSPC` — disque du poste plein — relancé avec succès) ; CI rouge de `4474e46` à `7c994de` (barre de recherche trop large sous Linux à 320–375 px, vue grâce aux annotations), **verte** depuis `97aad10`. Postgres : job CI vert |
 | 2026-11-09 | Écarts aux standards (R30) : `ruff`, `pytest` MySQL, `npm run lint`, `npm test`, `npm run build`, `npm run e2e`, `pip-audit -r requirements.txt` (sans `mysqlclient`, non compilable sur le poste), `npm audit --omit=dev` | ✅ ruff OK ; pytest **317 passed** ; lint OK ; Vitest 83/83 ; build OK ; Playwright 7/7 ; pip-audit : aucune vulnérabilité (avant : 12 dans 3 paquets) ; npm audit : 0. Démarrage simulé sans Daphne (`check --deploy`, ASGI) OK |
 | 2026-11-09 | Performance et robustesse (délai SMTP, délai de frappe, N+1) : `ruff check` + `ruff format --check`, `pytest` sur MySQL 8 (Docker), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` exécuté deux fois de suite | ✅ ruff OK ; pytest **294 passed** ; lint OK ; Vitest **83/83** (19 fichiers) ; build OK ; Playwright **7/7** deux fois (projet `setup` + 6 tests). Avant le passage à la session enregistrée : échecs « Trop de tentatives » (limite de 5 connexions/min par compte atteinte par la suite elle-même), limite laissée intacte. Postgres non relancé |
 | 2026-11-09 | QR codes malveillants (R28), après `/code-review` : `ruff check` + `ruff format --check`, `pytest` sur MySQL 8 (Docker), `npm run lint`, `npm test`, `npm run build`, `npm run e2e` (après `seed_demo`) | ✅ ruff OK ; pytest **290 passed** ; lint OK ; Vitest **81/81** (18 fichiers) ; build OK ; Playwright **5/5**, dont `cameraQr.spec.js` (fausse caméra Chromium filmant un QR code piégé, `e2e/fixtures/qr-lien-piege.mjpeg`) et le test douchette. Postgres non relancé |

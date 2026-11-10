@@ -1,14 +1,14 @@
 ---
 type: operations
 statut: implémenté
-verifie: 2026-11-09
-commit: 40d0682
-sources: [frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/auth/ConnexionAdmin.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauAjout.jsx, frontend/src/features/admin/SuiviEmails.jsx]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/auth/ConnexionAdmin.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/invites/GestionInvites.jsx, frontend/src/features/invites/PanneauAjout.jsx, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/ChoixCeremonie.jsx, backend/apps/noyau/services.py, backend/apps/noyau/vues_invites.py]
 ---
 
 # Guide des admins de cérémonie (hôtes d’accueil)
 
-Guide court à remettre aux admins (rôle « admin »). Libellés vérifiés dans l’interface le 2026-11-09.
+Guide court à remettre aux admins (rôle « admin »). Libellés vérifiés dans l’interface le 2026-11-09, revérifiés dans le code le 2026-11-10.
 
 ---
 
@@ -43,6 +43,10 @@ Vous voyez **« Vos cérémonies »** : seulement celles qui vous sont confiées
 | **Cet invité appartient à un autre événement** | ce n’est pas la bonne cérémonie : orientez-le |
 | **Code invalide** / **QR code non reconnu** | redemandez le **code à 4 chiffres** de son email, ou cherchez son nom |
 | **Enregistré, vérification à la reconnexion** | pas de réseau : c’est enregistré, rien à faire, la synchronisation est automatique |
+
+Dès qu’un invité est marqué présent (scan, code, recherche ou « Valider la présence »), il reçoit
+automatiquement l’**email n°2** (remerciement, avec les boutons magazine / brochure Executive Education quand la
+direction a renseigné les liens), une seule fois : rien à faire de votre côté.
 
 Sans QR code : utilisez **Code** (4 chiffres) ou **Rechercher** (nom).
 Plusieurs postes peuvent tourner en même temps (un nom différent par poste).

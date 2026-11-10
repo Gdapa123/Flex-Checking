@@ -1,9 +1,9 @@
 ---
 type: api
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/serializers.py, backend/apps/comptes/views.py, backend/apps/comptes/throttles.py, backend/config/settings.py, backend/vercel.json]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/apps/noyau/models.py, backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/serializers.py, backend/apps/comptes/views.py, backend/apps/comptes/throttles.py, backend/config/settings.py, backend/vercel.json]
 ---
 
 # Points d’accès de l’API
@@ -32,8 +32,8 @@ en JSON uniquement (415 sinon) ; seule exception, `POST public/sondages/<jeton>/
 ## Public (`vues_public.py`, sans authentification)
 | Méthode | Route | Détail |
 |---|---|---|
-| GET | `public/evenements/<slug>/` | infos, tokens de couleur, agenda UTC, `magazineActif`, `etat` ; 404 lien invalide ; ancien lien → `etat: FERME` |
-| POST | `public/evenements/<slug>/inscription/` | 201 `{invite:{civilite, civiliteAffichee, prenom, nom, statut}}` (aussi pour un doublon) ; 409 `FERME/DATE_LIMITE/COMPLET` ; 400 validation |
+| GET | `public/evenements/<slug>/` | infos, tokens de couleur, agenda UTC (`titre` = `Evenement.nom_agenda`), `magazineActif` (= `Evenement.magazine_disponible` : un lien de magazine effectif existe, cérémonie ou programme), `brochureActive` (lien de brochure de la cérémonie ou `Parametres.lien_brochure_defaut`, 2026-11-10), `etat` ; 404 lien invalide ; ancien lien → `etat: FERME` ; mis en cache (`caches.cle_public`) |
+| POST | `public/evenements/<slug>/inscription/` | 201 `{invite:{civilite, civiliteAffichee, prenom, nom, statut}}` (aussi pour un doublon) ; 409 `FERME/DATE_LIMITE/COMPLET` (`DATE_LIMITE` : la cérémonie a eu lieu ; inscriptions ouvertes jusqu’au jour de la cérémonie inclus) ; 400 validation |
 | POST | `public/evenements/<slug>/renvoi-qr/` | `{email}` → 202 message toujours identique ; limite par email comptée **par cérémonie** (un ancien lien ne la multiplie pas) |
 | GET | `public/evenements/<slug>/agenda.ics` | fichier iCalendar |
 | GET | `public/sondages/<jeton>/` (`vues_sondage.py`) | `{etat: OUVERT/EXPIRE/REPONDU, prenom, civilite, expireLe, evenement:{nomAffiche, programme, annee, date, tokens}}` (`prenom` et `civilite` vides si le lien n’est plus ouvert) ; `Cache-Control: no-store` ; pose le cookie httpOnly `fc_appareil` (30 jours, chemin `/api/public/sondages/`) ; 404 lien inconnu ; 60/h par IP |
@@ -65,7 +65,7 @@ en JSON uniquement (415 sinon) ; seule exception, `POST public/sondages/<jeton>/
 | GET | `invites/export/` | S | export de tous les invités |
 | GET, PATCH, DELETE | `invites/<id>/` | A (DELETE : S) | fiche, modification, suppression |
 | GET | `invites/<id>/qr.png` | A | QR PNG |
-| POST | `invites/<id>/renvoi-email/` | A | `{type: INVITATION\|MAGAZINE\|SONDAGE}` → 202 ; 409 `MAGAZINE_INDISPONIBLE` (invité non présent, ou magazine désactivé / sans lien : `suivi_emails.magazine_disponible`) ; 409 `SONDAGE_INDISPONIBLE` (sondage désactivé, lien expiré, ou dernier envoi n°3 pas en échec : `sondages.sondage_renvoyable`) ; la règle et l’envoi ne dépendent pas de la réponse de l’invité (l’admin n’apprend pas qui a répondu : un invité ayant répondu reçoit de nouveau son lien, qui affiche « déjà répondu ») |
+| POST | `invites/<id>/renvoi-email/` | A | `{type: INVITATION\|MAGAZINE\|SONDAGE}` → 202 ; 409 `MAGAZINE_INDISPONIBLE` si l’invité n’est pas présent (depuis 2026-11-10, plus de condition de magazine activé ou de lien : l’email n°2 part sans le bouton manquant) ; 409 `SONDAGE_INDISPONIBLE` (sondage désactivé, lien expiré, ou dernier envoi n°3 pas en échec : `sondages.sondage_renvoyable`) ; la règle et l’envoi ne dépendent pas de la réponse de l’invité (l’admin n’apprend pas qui a répondu : un invité ayant répondu reçoit de nouveau son lien, qui affiche « déjà répondu ») |
 | GET | `invites/<id>/historique/` | A | événements datés |
 | POST | `invites/<id>/presence/` | A | valider (MANUEL) |
 | POST | `invites/<id>/presence/annulation/` | S | annuler la présence (`{motif}` sans caractère de contrôle) |
@@ -75,20 +75,20 @@ en JSON uniquement (415 sinon) ; seule exception, `POST public/sondages/<jeton>/
 | Méthode | Route | Droits | Détail |
 |---|---|---|---|
 | CRUD | `programmes/` | lecture A, écriture S | `nom` sans caractère de contrôle ; DELETE `?confirmation=<nom>` s’il a des cérémonies (cascade) |
-| CRUD | `evenements/` | lecture A (liste : borne), écriture S | DELETE `?confirmation=<nom affiché>` s’il a des invités ; en borne, la liste utilise `EvenementBorneSerializer` (ni hôtes, ni lien d’inscription, ni réglages) |
+| CRUD | `evenements/` | lecture A (liste : borne), écriture S | champs `lienMagazine`, `lienBrochure`, `lienCarteInvitation` (ancien lien, vidé au téléversement ou retrait d’une carte), `carteInvitation` ; `dateLimiteInscription` en lecture seule (alignée sur `date` par `Evenement.save`) ; `magazineActif` toujours vrai (2026-11-10) ; DELETE `?confirmation=<nom affiché>` s’il a des invités ; en borne, la liste utilise `EvenementBorneSerializer` (ni hôtes, ni lien d’inscription, ni réglages) |
 | POST | `evenements/<id>/regenerer-slug/` | S | nouveau lien, l’ancien devient `AncienSlug` |
 | GET | `evenements/<id>/qr-inscription.png` | S | QR du lien d’inscription (action hors de la liste « lecture » de `EvenementViewSet.get_permissions`) |
 | GET | `evenements/<id>/statistiques/` | A | tableau de bord (cache 30 s) |
 | GET | `evenements/<id>/rapport/` | A | PDF (30/h) |
 | GET | `evenements/<id>/apercu-emails/` | A | HTML des trois emails (`TypeEmail.values`) avec données fictives ; utilisé par l’écran « Suivi des emails » (`SuiviEmails.jsx`) |
 | GET | `evenements/<id>/sondage/` | A | résultats du sondage : état, envoyés, réponses, taux, moyennes, NPS, répartitions, 20 commentaires anonymes |
-| GET | `evenements/<id>/suivi-emails/` | A | compteurs envoyés / en attente / en échec par email (la liste `listeEchecs` est retirée le 2026-11-09 : détail dans `aContacter`) ; `aContacter` `{total, causesEnvoi, invites: [{inviteId, nomComplet, email, telephone, statut, suggestion, action: CORRIGER\|RENVOYER, problemes: [{code, type, libelle, cote, detail?, le?}]}]}` (2026-11-09) |
-| POST | `evenements/<id>/suivi-emails/renvoyer-echecs/` | A | `{type}` : replanifie les envois dont le dernier est en échec (n°2 et n°3 : présents seulement ; n°3 : lien non expiré, que l’invité ait répondu ou non) → `{traites}` (10/h) ; 409 `MAGAZINE_INDISPONIBLE` / `SONDAGE_INDISPONIBLE` |
+| GET | `evenements/<id>/suivi-emails/` | A | compteurs envoyés / en attente / en échec par email (`actif` toujours vrai pour le n°2, `sondage_actif` du programme pour le n°3) (la liste `listeEchecs` est retirée le 2026-11-09 : détail dans `aContacter`) ; `aContacter` `{total, causesEnvoi, invites: [{inviteId, nomComplet, email, telephone, statut, suggestion, action: CORRIGER\|RENVOYER, problemes: [{code, type, libelle, cote, detail?, le?}]}]}` (2026-11-09) |
+| POST | `evenements/<id>/suivi-emails/renvoyer-echecs/` | A | `{type}` : replanifie les envois dont le dernier est en échec (n°2 et n°3 : présents seulement ; n°3 : lien non expiré, que l’invité ait répondu ou non) → `{traites}` (10/h) ; 409 `SONDAGE_INDISPONIBLE` si le sondage du programme est désactivé (`suivi_emails._verifier_disponible` ; le n°2 n’est plus jamais refusé) |
 | PUT / DELETE | `evenements/<id>/carte-invitation/` | S | PUT `{nom, contenu}` (contenu en base64, JSON uniquement) : JPEG / PNG / PDF reconnus au contenu, images réencodées (métadonnées retirées), 1,8 Mo au plus, 400 `CARTE_INVALIDE` sinon ; DELETE la retire ; renvoie la cérémonie (`carteInvitation` : `{nom, type, taille, lien, modifieLe}` ou `null`) |
 | POST | `evenements/<id>/suivi-emails/test/` | A | `{type}` : email de test **synchrone** (objet « [Test] ») vers le compte connecté → `{destinataire}` (10/h) ; 502 `ENVOI_IMPOSSIBLE` si SMTP échoue |
 | CRUD | `admins/` | S | POST renvoie `motDePasseTemporaire` une fois ; PATCH `actif: false` incrémente `version_session` (sessions fermées, elles ne revivent pas à la réactivation) |
 | POST | `admins/<id>/reinitialiser-mot-de-passe/` | S | nouveau mot de passe temporaire, sessions fermées |
-| GET, PATCH | `parametres/` | S | modèles d’emails (`objetEmail1..3` sans caractère de contrôle), scan ; enregistrés réellement depuis le 2026-10-22 (correction de `JSON_UNDERSCOREIZE`, voir [configuration-super-admin](../features/configuration-super-admin.md)) |
+| GET, PATCH | `parametres/` | S | modèles d’emails (`objetEmail1..3` sans caractère de contrôle), `lienBrochureDefaut`, scan ; enregistrés réellement depuis le 2026-10-22 (correction de `JSON_UNDERSCOREIZE`, voir [configuration-super-admin](../features/configuration-super-admin.md)) |
 | POST | `parametres/apercu-email/` | S | `{type, objet, corps, programme}` → `{objet, html, texte}` |
 | GET | `journal/` | S | `auteur` (id ou `systeme`), `categorie`, `action`, `du`, `au`, `page` (50) |
 | GET | `comptes/` | S | liste courte (filtre auteur) |

@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/comptes/views.py, backend/apps/noyau/temps_reel.py, backend/apps/noyau/consumers.py, backend/config/asgi.py, backend/apps/comptes/authentication.py, frontend/src/lib/tempsReel.js, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, backend/apps/noyau/tests/test_temps_reel.py, frontend/tests/tempsReel.test.js]
 ---
 
@@ -15,13 +15,16 @@ identifiants d’événements, jamais de données personnelles. Le navigateur in
 correspondantes (`REQUETES_PAR_SUJET`) et recharge par l’API REST, qui applique les droits.
 Depuis `bd4f807` : `statistiques` recharge aussi `suivi-emails` (écran « Suivi des emails ») ; le nouveau sujet
 `sondage` recharge `sondage` (carte satisfaction), `sondages-global` (analyses super admin) et `suivi-emails` ;
-`apercu-emails` sert toujours (aperçus affichés dans `SuiviEmails.jsx`).
+`apercu-emails` sert toujours (aperçus affichés dans `SuiviEmails.jsx`). La liste « Invités à contacter » (2026-11-09)
+fait partie de la réponse `suivi-emails` (clé `aContacter`) : elle suit donc les mêmes sujets, sans sujet nouveau.
 
 ## Serveur
 - Signaux Django (`temps_reel.py`) sur Invite, Emargement, EmailEnvoye, InvitationSondage (création/mise à jour ;
   sa suppression est couverte par celle de l’invité), ReponseSondage, JournalActivite, Evenement, Programme,
   Parametres, Admin, affectations (M2M), ErreurTechnique → `notifier()` regroupe par (groupe, type) et envoie
-  **au commit**. Les mêmes signaux invalident les caches (stats, page publique, analyses).
+  **au commit**. Les mêmes signaux invalident les caches (stats, page publique, analyses). Depuis le 2026-11-09
+  (`40d0682`), `CarteInvitation` (enregistrement et suppression, `temps_reel._carte_invitation`) invalide le cache de
+  la page publique (description d’agenda contenant le lien de la carte) et notifie `evenement` / `evenements`.
 - Groupes : `evenement.<id>`, `tous` (super admins), `compte.<id>`, `connectes`.
 - `TempsReelConsumer` (`/api/ws/`) : authentification par le cookie `fc_access`, origine vérifiée, compte actif
   et sorti du mot de passe temporaire ; un admin ne rejoint que ses événements ; fermeture à l’expiration du

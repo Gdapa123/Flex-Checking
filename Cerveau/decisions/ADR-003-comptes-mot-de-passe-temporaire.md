@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [PLAN.md, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, backend/apps/comptes/views.py, frontend/src/features/auth/ChangerMotDePasse.jsx, frontend/src/features/auth/RequireRole.jsx]
 ---
 
@@ -40,3 +40,9 @@ Renforcement du 2026-10-12 : tant que le mot de passe temporaire n’est pas cha
 ## Conséquences
 - ➕ aucune dépendance au SMTP pour les comptes ; aucun lien d’activation à sécuriser.
 - ➖ le super admin doit transmettre le mot de passe hors de l’application.
+
+## Vérification (2026-11-10, `93646d7`)
+Décision toujours appliquée : `AdminViewSet` (création, réinitialisation, désactivation), `CompteUtilisable`,
+`ChangerMotDePasseView` et le frontend (`RequireRole`, `ChangerMotDePasse`) sont inchangés depuis `f55527e`. Le seul
+changement de `vues_admin.py` est l'action `carte_invitation` de `EvenementViewSet` ([ADR-016](ADR-016-carte-invitation-en-base.md)),
+sans rapport avec les comptes.

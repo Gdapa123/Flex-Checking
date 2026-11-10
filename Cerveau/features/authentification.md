@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx, frontend/src/lib/nouvelleVersion.js, frontend/src/main.jsx, infra/Caddyfile.prod]
 ---
 
 # Authentification, sessions et droits
@@ -29,7 +29,9 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
   zéro ; le verrouillage n'intervient qu'après 20 échecs d'affilée.
 - **IPv6 regroupée par /64** (`throttles.ident_reseau`, 2026-10-14) : toutes les limites par IP (`LimiteSensible` et
   la limite anonyme globale `AnonymeThrottle`, `LIMITE_ANONYME`) comptent une adresse IPv6 par son préfixe /64 (une
-  IPv4 mappée `::ffff:…` redevient l'IPv4) ; sinon un client changerait d'adresse à chaque essai.
+  IPv4 mappée `::ffff:…` redevient l'IPv4) ; sinon un client changerait d'adresse à chaque essai. Depuis le
+  2026-11-09, les images des emails (`GET /api/public/emails/images/…`) ont leur propre limite `images_email`
+  (`LIMITE_IMAGES_EMAIL`, 3000/min par défaut) pour ne pas épuiser la limite anonyme partagée avec l'inscription.
 - Longueurs bornées : email 254, mots de passe 256 caractères (connexion, changement, vérification).
 - **Poste connu** (2026-10-14, durci le 2026-10-22) : après une connexion réussie, cookie signé `fc_poste`
   (httpOnly, 90 jours, path `/api/auth/`, empreintes des comptes, 10 au plus). Un poste connu a **son propre
@@ -141,10 +143,19 @@ déconnexion : `SANS_RAFRAICHISSEMENT` de `lib/api.js`) déclenche une tentative
 l'application après l'expiration du cookie d'accès (15 min) renouvelle la session tant que `fc_refresh` est valide
 (R26 résolu, `frontend/tests/api.test.js`).
 
+**Onglet ouvert pendant une mise à jour du site** (2026-11-10, `1c0c98e` puis `a55a65c`) : toutes les pages
+chargées à la demande d'`App.jsx` (espaces admin, scan, super admin, pages invité, connexions) passent par
+`pageDifferee` (`frontend/src/lib/nouvelleVersion.js`) au lieu de `React.lazy` direct. Quand un ancien fichier
+`/assets/…` n'existe plus, Vite émet `vite:preloadError` ; `installerRechargementVersion` (appelé dans `main.jsx`)
+recharge la page une fois (horodatage dans `sessionStorage`, pas de second rechargement en moins d'une minute, rien
+si le stockage est indisponible) et `pageDifferee` reste sur l'écran de chargement au lieu de lever l'erreur
+« a._result.default » (constatée sur iPhone). Côté VPS, `infra/Caddyfile.prod` répond 404 pour un fichier
+`/assets/*` absent au lieu de la page d'entrée. Test `frontend/tests/nouvelleVersion.test.jsx`.
+
 ## Tests
 `backend/apps/noyau/tests/test_permissions.py`, `test_securite.py`, `test_audit_securite.py` (poste connu
 infalsifiable, CSRF du rafraîchissement, borne conservée au rafraîchissement, regroupement IPv6 /64,
 `test_poste_connu_reste_limite`, `test_rafraichissements_simultanes_sans_deconnexion`), `test_durcissement.py`
 (`test_desactivation_ferme_les_sessions`), `test_temps_reel.py` (`test_deconnexion_ferme_le_temps_reel_de_la_session`),
-`frontend/tests/garde.test.jsx`, `connexion.test.js`.
+`frontend/tests/garde.test.jsx`, `connexion.test.js`, `nouvelleVersion.test.jsx`.
 Décisions : [ADR-002](../decisions/ADR-002-jwt-cookies-httponly.md), [ADR-003](../decisions/ADR-003-comptes-mot-de-passe-temporaire.md).

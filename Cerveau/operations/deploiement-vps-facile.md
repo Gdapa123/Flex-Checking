@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: partiel
-verifie: 2026-11-05
-commit: 9c6a8ba
+verifie: 2026-11-10
+commit: 93646d7
 sources: [infra/vps/commun.sh, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/activer-sauvegardes.sh, infra/vps/sauvegarde.sh, infra/vps/restaurer.sh, infra/vps/mettre-a-jour.sh, docker-compose.prod.yml, infra/Caddyfile.prod, backend/apps/comptes/models.py]
 ---
 
@@ -16,8 +16,11 @@ Le guide détaillé, avec chaque commande expliquée et tous les cas d’erreur,
 
 > Statut : les scripts d’installation, de sauvegarde, de restauration et de mise à jour ont été testés le
 > 2026-11-02 sur une copie locale (Ubuntu 24.04 en conteneur, domaine `localhost`). `preparer-serveur.sh`
-> (mise à jour du système, swap, Docker, SSH) n’a pas pu être testé hors d’un vrai serveur. Aucun VPS réel
-> n’a encore été installé avec ce guide.
+> (mise à jour du système, swap, Docker, SSH) n’a pas pu être testé hors d’un vrai serveur.
+> Depuis, le VPS de production `inscription.mde.ci` est en ligne (constat du 2026-11-05) et est mis à jour avec
+> `infra/vps/mettre-a-jour.sh` (dernière mise à jour consignée : version `e75bba3`, 2026-11-10, voir `log.md`).
+> ⚠️ Les **sauvegardes automatiques n’y sont pas encore activées** (étape 7 à faire) : à chaque mise à jour, le
+> script le signale et demande « Continuer quand même ? ».
 
 ---
 
@@ -184,6 +187,7 @@ Toujours depuis le serveur : `ssh ubuntu@IP_DU_VPS` puis `cd /opt/flex-checking`
 | Je veux… | Commande |
 |---|---|
 | **Mettre à jour** l’application (jamais le jour d’une cérémonie) | `infra/vps/mettre-a-jour.sh` |
+| Après une mise à jour qui **change `infra/Caddyfile.prod`** (le script ne recrée pas le proxy) | `docker compose run --rm --no-deps proxy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile` (doit afficher « Valid configuration »), puis `docker compose restart proxy` |
 | Faire une sauvegarde maintenant | `sudo infra/vps/sauvegarde.sh` |
 | Voir les sauvegardes | `ls -lh sauvegardes` |
 | **Restaurer** une sauvegarde (remplace les données actuelles) | `sudo infra/vps/restaurer.sh sauvegardes/flex-AAAA-MM-JJ-HHMMSS.sql.gz.gpg` |
@@ -224,7 +228,7 @@ Entrée, **Ctrl + X**, puis `docker compose up -d`. ⚠️ Ne modifiez jamais `M
 | `infra/vps/activer-sauvegardes.sh` | `sudo`, une fois | phrase `/root/.flex-sauvegarde-phrase`, lien `/usr/local/bin/flex-sauvegarde.sh`, crontab root `30 2 * * *`, première sauvegarde |
 | `infra/vps/sauvegarde.sh` | cron root / `sudo` | `mysqldump` → `gzip` → `gpg` AES-256, `sauvegardes/flex-AAAA-MM-JJ-HHMMSS.sql.gz.gpg`, purge après 14 jours |
 | `infra/vps/restaurer.sh` | `sudo` | vérifie le déchiffrement, confirmation « RESTAURER », sauvegarde de l’état actuel, restauration depuis une copie temporaire, redémarrage de django / celery |
-| `infra/vps/mettre-a-jour.sh` | utilisateur | sauvegarde (`sudo -n`), `git pull --ff-only`, site reconstruit, `docker compose build --pull`, `up -d` (migrations avant Django), contrôle de santé, `docker image prune` |
+| `infra/vps/mettre-a-jour.sh` | utilisateur | sauvegarde (`sudo -n`, sinon confirmation « Continuer quand même ? »), `git pull --ff-only`, site reconstruit, `docker compose build --pull`, `up -d` (migrations avant Django), contrôle de santé, `docker image prune` ; ne redémarre pas Caddy quand seul `infra/Caddyfile.prod` (fichier monté) change |
 
 Tous chargent `infra/vps/commun.sh`. Les mêmes choix que le [guide détaillé](deploiement-infomaniak.md)
 (étapes 5, 6, 9, 10, 11, 14), en scripts. Le mot de passe SMTP est écrit entre apostrophes dans `.env`

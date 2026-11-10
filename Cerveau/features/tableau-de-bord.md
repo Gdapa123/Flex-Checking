@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: 021396e
-sources: [frontend/src/features/admin/ChoixCeremonie.jsx, frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/admin/TableauDeBord.jsx, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/lib/tempsReel.js, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/statistiques.py, backend/apps/noyau/vues_admin.py]
+verifie: 2026-11-10
+commit: 93646d7
+sources: [frontend/src/features/admin/ChoixCeremonie.jsx, frontend/src/features/admin/EspaceEvenement.jsx, frontend/src/features/admin/TableauDeBord.jsx, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/admin/CarteSatisfaction.jsx, frontend/src/lib/tempsReel.js, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/statistiques.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/adresses.py, backend/apps/noyau/tests/test_a_contacter.py, frontend/tests/suiviEmails.test.jsx]
 ---
 
 # Espace admin : cérémonies et tableau de bord
@@ -31,7 +31,9 @@ avec indicateur « En direct », « Reconnexion… » ou « Actualisation auto �
   réel), info-bulle (tranche, arrivées, total cumulé). Présences enregistrées un autre jour : message dédié. Sans arrivée : message explicite selon le moment (avant :
   date et heure d’accueil ; jour J : « apparaît en direct » ; terminée : « aucune arrivée enregistrée »).
 - Répartition par mode (anneau + légende), arrivées par poste (8 max), inscriptions cumulées par jour.
-- Suivi des emails : n°1 envoyés / inscrits, n°2 envoyés / présents (si magazine actif), alerte « invitations à
+- Suivi des emails : n°1 envoyés / inscrits, n°2 envoyés / présents (`emails.magazineActif`, **toujours vrai** depuis le 2026-11-10 :
+  ligne toujours affichée ; le message « Email n°2 (magazine) désactivé pour ce programme » de `TableauDeBord.jsx`
+  n'apparaît plus), alerte « invitations à
   renvoyer » → lien `invites?email1=ECHEC`. L’email n°3 n’y figure pas (voir A7 et la carte Satisfaction).
 - Comparaison avec les 5 dernières éditions du même programme.
 - **Carte « Satisfaction des participants »** (`CarteSatisfaction.jsx`, 2026-10-14) : `GET /evenements/<id>/sondage/`
@@ -83,15 +85,18 @@ n°2 Magazine, **n°3 Sondage de satisfaction** (« envoyé le lendemain à 8 h,
   créée ; échec SMTP → 502 `ENVOI_IMPOSSIBLE` ; journal `EMAIL_TEST`.
 - **Aperçu** replié (`GET /evenements/<id>/apercu-emails/`, les trois types ; iframe `sandbox=""`, données fictives
   « Mme Aya Kouassi », code 4827, lien de sondage factice), chargé à l’ouverture.
-- Magazine ou sondage désactivé pour le programme : carte avec message, sans test ni aperçu (le serveur refuse
-  aussi test et renvoi : `MAGAZINE_INDISPONIBLE` / `SONDAGE_INDISPONIBLE`).
+- Sondage désactivé pour le programme : carte avec message, sans test ni aperçu (le serveur refuse aussi test et
+  renvoi : `SONDAGE_INDISPONIBLE`). Depuis le 2026-11-10 (`ebcfcf7`), la carte n°2 est toujours active
+  (`MAGAZINE.actif` vaut toujours vrai, l'email n°2 part pour tout invité présent) : le message « Le magazine est
+  désactivé… » de `SuiviEmails.jsx` n'est plus affiché (code conservé).
 
 ## Rapport PDF
 `GET /evenements/<id>/rapport/` (ReportLab, données agrégées, 30/h par compte), journalisé comme export ; inclut la
 section satisfaction une fois le sondage envoyé ([exports-rapports](exports-rapports.md)).
 
 ## Tests
-`backend/apps/noyau/tests/test_suivi_emails.py`, `test_sondage.py` ; `frontend/tests/tableauDeBord.test.jsx`,
+`backend/apps/noyau/tests/test_suivi_emails.py` (dont `test_magazine_toujours_disponible_meme_sans_lien`),
+`test_a_contacter.py`, `test_sondage.py` ; `frontend/tests/tableauDeBord.test.jsx`,
 `frontend/tests/suiviEmails.test.jsx`.
 
 Voir aussi : [gestion-invites](gestion-invites.md), [temps-reel](temps-reel.md), [exports-rapports](exports-rapports.md).

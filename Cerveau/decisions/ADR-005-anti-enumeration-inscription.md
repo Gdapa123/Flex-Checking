@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-09
-commit: ebaf617
+verifie: 2026-11-10
+commit: 93646d7
 sources: [PLAN.md, README.md, backend/apps/noyau/vues_public.py, backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/tests/test_inscription.py, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/features/invite/EtatCarte.jsx]
 ---
 
@@ -33,3 +33,13 @@ le renvoi du QR répondant toujours de la même façon. Cela permettait de véri
 - ➖ l’écran I7 n’était plus atteignable ([R2](../project/risques-et-dette.md)) : retiré de `EtatCarte.jsx` et du
   README le 2026-11-02 ; seul `PLAN.md` (source brute : I7, C8) décrit encore l’ancien comportement.
 - ❓ à confirmer avec le responsable fonctionnel : le cahier des charges exigeait I7.
+
+## Vérification (2026-11-10, `93646d7`)
+Décision toujours appliquée : `InscriptionView.post` intercepte `DEJA_INSCRIT` et rend la même réponse 201,
+`_renvoi_autorise`, `RenvoiEmailThrottle`, `LimiteIpPartagee` et `validation.valider_email` (ASCII) sont inchangés ;
+les tests `test_deja_inscrit_meme_reponse_et_invitation_renvoyee` et
+`test_inscription_et_renvoi_refusent_les_adresses_non_ascii` existent toujours. Changements des sources sans effet
+sur la décision : inscriptions ouvertes jusqu'au jour de la cérémonie inclus (`8d7753a`, état `DATE_LIMITE` et
+texte de `EtatCarte.jsx` adaptés), objet de l'email n°1 (`25beeef`), champs publics `agenda.titre`,
+`magazineActif` et `brochureActive` (`e75bba3`), vues `CarteInvitationView` et `ImageEmailView`, validateur de liens
+`valider_lien` / `schemaLien`.

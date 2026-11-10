@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
+verifie: 2026-11-10
+commit: 93646d7
 sources: [backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py]
 ---
 
@@ -50,7 +50,10 @@ synchronisés sur l’appareil (`fileHorsLigne.compterTout`).
      pas repassé présent. Affiché « Présence annulée depuis ce scan » (`ScanPoste.presenterResultat`), style
      avertissement et badge d’historique « Annulé depuis » (`composants.STYLES_RESULTAT`, `BADGES_HISTORIQUE`),
      son et vibration d’erreur (`retour.signaler`) ;
-   - `PRESENT` : statut, `present_le`, `mode_emargement`, ligne `Emargement`, journal, email n°2 éventuel.
+   - `PRESENT` : statut, `present_le`, `mode_emargement`, ligne `Emargement`, journal, email n°2 (depuis le
+     2026-11-10, `ebcfcf7` : planifié pour **tout** premier passage Présent, avec ou sans lien de magazine, sauf si un
+     email n°2 existe déjà pour l’invité — `emails.magazine_deja_parti` ; `magazineEnvoye` de la réponse vaut alors
+     vrai). Test `test_emargement.py::test_email_2_envoye_meme_sans_magazine`.
 4. Heure de passage : `date_client` si elle est entre −12 h et +2 min de l’heure serveur (scans hors ligne),
    sinon l’heure serveur.
 5. Réponse avec les compteurs `presents` / `inscrits`.

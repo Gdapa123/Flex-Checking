@@ -1313,3 +1313,17 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur (« Mise à jour terminée (version e75bba3) »).
 - **Validation :** `/api/sante/` OK ; nouveau texte du guide servi ; contrôle de sécurité en lecture seule 33/33 ; CI GitHub verte depuis `97aad10`.
 - **Risques ou limites :** sauvegardes du VPS toujours à activer.
+
+## [2026-11-10] documentation | Wiki revérifié contre le code (44 pages, `93646d7`)
+
+- **Contexte :** demande de l'utilisateur « met le wiki à jour » ; `lint_wiki.py` signalait 44 pages à revérifier (sources modifiées depuis `f55527e` et plus anciens).
+- **Modifications :** procédure `/wiki-maj` appliquée page par page (diffs réels des `sources` depuis le commit de chaque page, code actuel) ; toutes les pages à `verifie: 2026-11-10`, `commit: 93646d7`.
+  - API et architecture (`api/endpoints.md`, `architecture/*`) : champs `brochureActive`, `agenda.titre`, liens magazine/brochure/carte, `lienBrochureDefaut`, migrations 0012–0015, `CarteInvitation`, images d'email par lien, `.ics` à deux rappels (« 2 h avant » était faux), `pageDifferee`, `nouvelleVersion.js`, `X-Frame-Options` et `handle /assets/*`.
+  - Décisions : 13 ADR vérifiées, aucun statut changé ; ADR-004 (n°2 toujours envoyé), ADR-007 (en-têtes `vercel.json`), ADR-013 (décision 4 passée 🟡 : la politique n'affiche plus durée ni contact), ADR-015/016 vérifiées sur le code commité.
+  - Fonctionnalités (12 pages) : email n°2, objets par défaut, inscription jusqu'au jour J, carte d'invitation, guide (3ᵉ étape), confidentialité, corrections d'affichage, rechargement ; règle fausse retirée (« magazine activé sans lien → 400 »).
+  - Opérations : procédure Caddy (`caddy validate` puis `docker compose restart proxy`), déploiement Vercel (backend depuis `backend/`, jamais depuis `frontend/`), état du VPS, guide des admins vérifié contre les libellés ; « Suivi 2026-11-10 » dans l'évaluation de sécurité.
+  - Projet, exigences, tests : EF-29 (carte d'invitation), EF-30 (guide), EF-11 réécrit ; ENF (en-têtes, affichage 320–1920 px, rechargement) ; risques R14 caduc, R15 en partie résolu, **R31** sauvegardes du VPS non activées (élevé), **R32** durée de conservation absente de la politique, **R33** champs gardés sans effet, **R34** disque du poste plein ; `test-strategy.md` : pytest 409, Vitest 110 (23 fichiers), Playwright 10/10, CI verte depuis `97aad10`.
+- **Compléments au journal :** le projet Vercel « frontend » créé par erreur a été **supprimé** le 2026-11-10 avec l'accord de l'utilisateur ; le backend `flex-checking-api` a bien été redéployé pour `e75bba3` (« Ready »).
+- **Fichiers concernés :** 44 pages de `Cerveau/` (api, architecture, decisions, features, operations, project, specifications, testing, analyses).
+- **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 avertissement, 0 page à revérifier ; objets d'email par défaut des migrations 0014/0015 identiques à ceux de `models.py` ; connexions réussies bien journalisées (`comptes/views.py`, « CONNEXION »), comme l'affirme la politique.
+- **Risques ou limites :** écarts de code relevés, non corrigés : `Parametres.jsx` affirme encore que contact et durée « figurent sur la politique de confidentialité » ; `GET /api/public/confidentialite/` n'est plus appelé ; `magazineActif` a trois sens selon l'endpoint ; messages « magazine désactivé » devenus inutiles dans `SuiviEmails.jsx` et `TableauDeBord.jsx` ; `LIMITE_IMAGES_EMAIL` absente de `.env.example`.

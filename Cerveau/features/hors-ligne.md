@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: c72f9ba
+verifie: 2026-11-10
+commit: 93646d7
 sources: [frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/scan/fileHorsLigne.js, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/useEvenementsScan.js, frontend/src/features/auth/RequireRole.jsx, frontend/src/features/auth/useMoi.js, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/tests/test_emargement.py]
 ---
 
@@ -25,7 +25,8 @@ affiché « Enregistré, vérification à la reconnexion » (fond avertissement,
   - 5xx → conservé, on passe au suivant ;
   - autre 4xx → retiré (requête invalide).
 - Le payload contient `dateClient` : l’heure de passage réelle est conservée côté serveur (≤ 12 h).
-- L’idempotence serveur rend le rejeu sans risque ; l’email n°2 part à la synchronisation. Un passage rejoué
+- L’idempotence serveur rend le rejeu sans risque ; l’email n°2 part à la synchronisation (depuis le 2026-11-10, pour tout invité
+  passé Présent, une seule fois, avec ou sans lien de magazine). Un passage rejoué
   (plus de 120 s après coup) antérieur à une annulation de présence (comparaison à l’heure de l’appareil, rejeu
   de plus de 12 h compris) renvoie `ANNULE_DEPUIS` : l’invité n’est pas
   repassé présent ([scan-emargement](scan-emargement.md)).
