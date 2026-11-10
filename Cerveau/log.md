@@ -1207,3 +1207,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/features/invite/Presentation.jsx`
 - **Validation :** Vitest 102/102, build OK, ESLint du fichier OK.
 - **Risques ou limites :** aucun ; à déployer sur Vercel et sur le VPS.
+
+## [2026-11-10] correction | Onglet ouvert pendant une mise à jour : rechargement automatique, 404 pour les anciens fichiers
+
+- **Contexte :** erreur technique « 'text/html' is not a valid JavaScript MIME type for module script …/assets/ConfirmationPage-U1JR8BsY.js » (VPS, 10/11 11h44), juste après une mise à jour : l'onglet de l'invité demandait un fichier de l'ancienne version, supprimé ; Caddy répondait par la page d'entrée (HTML) avec `Cache-Control: immutable` d'un an.
+- **Modifications :** `infra/Caddyfile.prod` : bloc `handle /assets/*` dédié (fichier absent → 404, cache d'un an seulement pour un fichier existant, matcher `file`). Frontend : `lib/nouvelleVersion.js` (`vite:preloadError` → rechargement de la page une fois par minute au plus, `sessionStorage` dans un try/catch), installé dans `main.jsx`. Vercel servait déjà 404 (`assets/` exclu de la réécriture de `frontend/vercel.json`).
+- **Fichiers concernés :** `infra/Caddyfile.prod`, `frontend/src/lib/nouvelleVersion.js`, `frontend/src/main.jsx`, `frontend/tests/nouvelleVersion.test.js`
+- **Validation :** Vitest 105/105 (3 nouveaux tests), ESLint OK, build OK (gestionnaire présent dans le bundle). Caddy non testé en local (Docker indisponible, disque plein) : `caddy validate` à lancer sur le VPS avant le redémarrage du proxy.
+- **Risques ou limites :** un onglet sans `sessionStorage` disponible garde l'ancien comportement (erreur, à recharger à la main).

@@ -4,10 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import FiletErreur from './components/ui/FiletErreur';
+import { installerRechargementVersion } from './lib/nouvelleVersion';
 import { installerSignalement } from './lib/signalement';
 import './styles/index.css';
 
 installerSignalement();
+installerRechargementVersion();
 
 const client = new QueryClient({
   defaultOptions: {

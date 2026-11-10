@@ -40,11 +40,20 @@
 		}
 	}
 
+	# fichiers versionnés (nom avec empreinte) : mis en cache un an par les navigateurs. Fichier absent (onglet ouvert
+	# avant une mise à jour) : 404, jamais la page d'entrée (refusée comme script, et gardée un an en cache) ; la page
+	# se recharge alors d'elle-même (`frontend/src/lib/nouvelleVersion.js`)
+	handle /assets/* {
+		root * /srv/frontend
+		@existe file
+		header @existe Cache-Control "public, max-age=31536000, immutable"
+		file_server {
+			precompressed zstd gzip
+		}
+	}
+
 	handle {
 		root * /srv/frontend
-		# fichiers versionnés (nom avec empreinte) : mis en cache un an par les navigateurs
-		@versionnes path /assets/*
-		header @versionnes Cache-Control "public, max-age=31536000, immutable"
 		# page d'entrée et service worker : toujours revalidés (mise à jour immédiate après déploiement)
 		@entree path / /index.html /sw.js /registerSW.js /manifest.webmanifest
 		header @entree Cache-Control "no-cache"
