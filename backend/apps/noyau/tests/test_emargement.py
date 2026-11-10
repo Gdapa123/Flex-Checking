@@ -33,7 +33,7 @@ def test_premier_passage_present_et_magazine(client_admin, evenement):
     inv.refresh_from_db()
     assert inv.statut.code == "PRESENT" and inv.mode_emargement == "QR_CAMERA" and inv.present_le
     assert Emargement.objects.filter(invite=inv).count() == 1
-    assert len(mail.outbox) == 1 and "magazine" in mail.outbox[0].subject.lower()
+    assert len(mail.outbox) == 1 and mail.outbox[0].subject.startswith("Bienvenue à la cérémonie")
 
 
 def test_idempotence_deja_emarge(client_admin, evenement):
@@ -132,11 +132,14 @@ def test_annulation_puis_reemargement_sans_second_magazine(client_admin, client_
     assert client_sa.post(f"/api/emargements/{d['emargementId']}/annulation/", {}, format="json").status_code == 409
 
 
-def test_magazine_inactif(client_admin, evenement, programme):
-    programme.magazine_actif = False
+def test_email_2_envoye_meme_sans_magazine(client_admin, evenement, programme):
+    # 2026-11-10 : tout invité marqué « Présent » reçoit l'email n°2, avec ou sans lien (boutons absents)
+    programme.magazine_actif, programme.lien_magazine = False, ""
     programme.save()
     inv = nouvel_invite(evenement)
-    assert scan(client_admin, evenement, qrToken=inv.qr_token).json()["magazineEnvoye"] is False
+    mail.outbox.clear()
+    assert scan(client_admin, evenement, qrToken=inv.qr_token).json()["magazineEnvoye"] is True
+    assert EmailEnvoye.objects.filter(invite=inv, type=TypeEmail.MAGAZINE).count() == 1
 
 
 def test_scan_hors_ligne_garde_date_client(client_admin, evenement):

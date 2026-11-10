@@ -193,7 +193,8 @@ def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode,
             hors_ligne=bool(date_client and abs((maintenant - date_client).total_seconds()) > 120),
         )
         magazine = False
-        if invite.evenement.magazine_disponible and not emails.magazine_deja_parti(invite):
+        # email n°2 toujours envoyé au passage « Présent », une seule fois ; ses boutons dépendent des liens
+        if not emails.magazine_deja_parti(invite):
             emails.planifier(invite, TypeEmail.MAGAZINE)
             magazine = True
         return _resultat(

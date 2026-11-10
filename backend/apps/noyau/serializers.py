@@ -86,8 +86,7 @@ class ProgrammeSerializer(serializers.ModelSerializer):
         return v
 
     # lien du magazine facultatif ici : chaque cérémonie peut avoir le sien (`Evenement.lien_magazine`), celui du
-    # programme sert de lien par défaut ; sans aucun lien, l'email n°2 n'est pas envoyé
-    # (`Evenement.magazine_disponible`)
+    # programme sert de lien par défaut ; sans aucun lien, l'email n°2 part sans le bouton du magazine
 
 
 # ---------------------------------------------------------------- Événements
@@ -168,8 +167,8 @@ class EvenementSerializer(serializers.ModelSerializer):
         return tokens_programme(obj.programme)
 
     def get_magazine_actif(self, obj):
-        # même règle que l'envoi de l'email n°2 (services) et la page publique : activé ET lien renseigné
-        return obj.magazine_disponible
+        # email n°2 toujours envoyé au passage « Présent » (services.emarger) : colonne et actions toujours affichées
+        return True
 
     def get_carte_invitation(self, obj):
         try:

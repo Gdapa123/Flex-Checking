@@ -30,8 +30,8 @@ def test_couleur_invalide_et_magazine_sans_lien(client_sa, programme, evenement)
         client_sa.patch(f"/api/programmes/{programme.pk}/", {"couleurPrincipale": "rouge"}, format="json").status_code
         == 400
     )
-    # magazine activé sans lien de programme : accepté, chaque cérémonie peut avoir son lien ; sans aucun lien,
-    # l'email n°2 reste indisponible
+    # magazine sans lien de programme : accepté, chaque cérémonie peut avoir son lien ; sans aucun lien,
+    # l'email n°2 part sans le bouton du magazine
     r = client_sa.patch(f"/api/programmes/{programme.pk}/", {"magazineActif": True, "lienMagazine": ""}, format="json")
     assert r.status_code == 200
     evenement.refresh_from_db()

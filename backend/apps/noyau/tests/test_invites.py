@@ -142,13 +142,15 @@ def test_renvoi_individuel(client_admin, peuple):
     assert r.status_code == 202 and len(mail.outbox) == 1
 
 
-def test_renvoi_magazine_refuse_si_desactive(client_admin, programme, peuple):
+def test_renvoi_magazine_possible_sans_lien_mais_pas_avant_la_presence(client_admin, programme, peuple):
     inv = peuple[0]
+    r = client_admin.post(f"/api/invites/{inv.pk}/renvoi-email/", {"type": "MAGAZINE"}, format="json")
+    assert r.status_code == 409 and r.json()["code"] == "MAGAZINE_INDISPONIBLE"  # pas encore présent
     client_admin.post(f"/api/invites/{inv.pk}/presence/")
-    programme.magazine_actif = False
+    programme.magazine_actif, programme.lien_magazine = False, ""
     programme.save()
     r = client_admin.post(f"/api/invites/{inv.pk}/renvoi-email/", {"type": "MAGAZINE"}, format="json")
-    assert r.status_code == 409 and r.json()["code"] == "MAGAZINE_INDISPONIBLE"
+    assert r.status_code == 202
 
 
 def test_actions_groupees_synchrones(client_admin, evenement, peuple):

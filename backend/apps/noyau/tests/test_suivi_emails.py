@@ -75,13 +75,12 @@ def test_renvoyer_magazine_ignore_les_invites_plus_presents(evenement, admin, cl
     assert r.json() == {"traites": 1}
 
 
-def test_magazine_desactive_refuse(evenement, client_admin):
-    evenement.programme.magazine_actif = False
+def test_magazine_toujours_disponible_meme_sans_lien(evenement, client_admin):
+    evenement.programme.magazine_actif, evenement.programme.lien_magazine = False, ""
     evenement.programme.save()
-    assert client_admin.get(url(evenement)).json()["MAGAZINE"]["actif"] is False
-    for suffixe in ("renvoyer-echecs/", "test/"):
-        r = client_admin.post(url(evenement, suffixe), {"type": "MAGAZINE"}, format="json")
-        assert r.status_code == 409
+    assert client_admin.get(url(evenement)).json()["MAGAZINE"]["actif"] is True
+    assert client_admin.post(url(evenement, "renvoyer-echecs/"), {"type": "MAGAZINE"}, format="json").status_code == 200
+    assert client_admin.post(url(evenement, "test/"), {"type": "MAGAZINE"}, format="json").status_code == 200
 
 
 def test_email_de_test_envoye_au_compte_connecte(evenement, admin, client_admin):

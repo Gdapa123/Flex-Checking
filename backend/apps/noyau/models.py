@@ -96,8 +96,10 @@ class Evenement(models.Model):
 
     @property
     def magazine_disponible(self):
-        # email n°2 : magazine activé pour le programme ET un lien (cérémonie ou programme)
-        return bool(self.programme.magazine_actif and self.lien_magazine_effectif)
+        # bouton « Lire le magazine » de l'email n°2 : lien de la cérémonie, sinon du programme. L'email n°2 part
+        # toujours au passage « Présent » (2026-11-10), avec ou sans ce bouton ; `Programme.magazine_actif` n'a
+        # plus d'effet (champ gardé, ADR-014)
+        return bool(self.lien_magazine_effectif)
 
     def save(self, *args, **kwargs):
         if self.date:
@@ -341,8 +343,8 @@ CORPS_EMAIL_1 = (
 )
 CORPS_EMAIL_2 = (
     "Bonjour {civilite} {prenom} {nom},\n\n"
-    "Votre présence est enregistrée. Nous sommes heureux de vous accueillir ce soir. "
-    "Retrouvez dès maintenant le magazine de la promotion {programme} et la brochure Executive Education.\n\n"
+    "Votre présence est enregistrée. Nous sommes heureux de vous accueillir à la cérémonie de Graduation "
+    "{programme} {annee}.\n\n"
     "{lien_magazine}"
 )
 CORPS_EMAIL_3 = (
@@ -361,7 +363,7 @@ class Parametres(models.Model):
     )
     corps_email_1 = models.TextField(default=CORPS_EMAIL_1)
     objet_email_2 = models.CharField(
-        max_length=200, default="Bienvenue · Le magazine de la Graduation {programme} {annee}"
+        max_length=200, default="Bienvenue à la cérémonie de Graduation {programme} {annee}"
     )
     corps_email_2 = models.TextField(default=CORPS_EMAIL_2)
     objet_email_3 = models.CharField(max_length=200, default="Votre avis sur la Graduation {programme} {annee}")

@@ -349,13 +349,10 @@ export default function Programmes() {
                   <span className="text-[14px] font-normal text-erreur">{erreurs.lienMagazine}</span>
                 )}
               </label>
-              <Interrupteur
-                actif={d.magazineActif}
-                onChange={(v) => setD({ ...d, magazineActif: v })}
-                univers="mde"
-                label="Envoyer l’email n°2 au passage « Présent »"
-                description="Une seule fois par invité. Lien de la cérémonie (écran Cérémonies), sinon ce lien par défaut."
-              />
+              <p className="m-0 text-[14px] text-texte-2">
+                Envoyé une fois à chaque invité marqué « Présent ». Bouton « Lire le magazine » : lien de la cérémonie
+                (écran Cérémonies), sinon ce lien par défaut ; sans lien, l’email part sans ce bouton.
+              </p>
             </div>
 
             <div className="flex flex-col gap-2 border-t border-mde-bordure pt-4">

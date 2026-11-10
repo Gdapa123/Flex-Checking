@@ -12,16 +12,15 @@ sources: [backend/apps/noyau/tests/test_corrections_invitation.py, backend/apps/
 | Email | Déclencheur | Condition |
 |---|---|---|
 | n°1 · invitation | inscription publique, ajout manuel (case cochée par défaut), renvoi (public, fiche, action groupée) | toujours |
-| n°2 · magazine | premier passage à Présent | programme `magazine_actif` **et** un lien de magazine (celui de la cérémonie, sinon celui du programme : `Evenement.magazine_disponible`) **et** aucun email MAGAZINE déjà créé pour cet invité |
+| n°2 · magazine | premier passage à Présent | **toujours** (depuis le 2026-11-10, migration `0015`), une seule fois : aucun email MAGAZINE déjà créé pour cet invité. Bouton « Lire le magazine » seulement si un lien existe (cérémonie, sinon programme : `Evenement.magazine_disponible`), bouton brochure seulement si un lien existe (cérémonie, sinon `Parametres.lien_brochure_defaut`) ; sans aucun lien, la carte disparaît. `Programme.magazine_actif` n’a plus d’effet (champ gardé, ADR-014) |
 | n°3 · sondage | lendemain de la cérémonie, à partir de 8 h (Beat ou cron) | invité Présent, programme `sondage_actif`, aucun lien de sondage existant ; au moment de l’envoi, `tasks._envoyer` le passe en ECHEC sans l’envoyer si le lien est clos (24 h) ou si la présence a été annulée — voir [sondage-satisfaction](sondage-satisfaction.md) |
 
 L’email n°2 **ne repart jamais automatiquement**, même après annulation puis nouveau scan
 ([ADR-004](../decisions/ADR-004-email-2-une-seule-fois.md)). Renvoi manuel possible depuis la fiche (invité Présent).
 
 Renvoi manuel depuis la fiche (`POST /api/invites/<id>/renvoi-email/`, `vues_invites.RenvoiEmailView`, 5/h par
-admin et par invité) : n°2 refusé (`MAGAZINE_INDISPONIBLE`) si l’invité n’est pas Présent ou si le magazine n’est
-pas disponible (`suivi_emails.magazine_disponible` : `magazine_actif` **et** `lien_magazine`, même règle que le
-renvoi groupé, depuis le 2026-10-22) ;
+admin et par invité) : n°2 refusé (`MAGAZINE_INDISPONIBLE`) seulement si l’invité n’est pas Présent (depuis le 2026-11-10 ; avant, aussi
+si le magazine était désactivé ou sans lien) ;
 n°3 refusé (`SONDAGE_INDISPONIBLE`) si le programme a désactivé le sondage ou si le lien n’est plus renvoyable
 (`sondages.sondage_renvoyable` : lien encore ouvert **et dernier envoi n°3 en ÉCHEC**, indépendamment de la
 réponse). Depuis le 2026-10-22 (`7e0e071`), l’envoi a lieu **que l’invité ait répondu ou non** (réponse, journal

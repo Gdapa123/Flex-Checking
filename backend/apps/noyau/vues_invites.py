@@ -32,7 +32,6 @@ from .serializers import (
     invites_annotes,
 )
 from .sondages import sondage_renvoyable
-from .suivi_emails import magazine_disponible
 from .taches import DOSSIER, DUREE, SEUIL_ASYNCHRONE, creer_tache, lire_tache, tache_action_groupee, tache_export
 from .validation import sans_controle
 
@@ -252,8 +251,6 @@ class RenvoiEmailView(APIView):
         if type_email == TypeEmail.MAGAZINE:
             if invite.statut.code != statuts.PRESENT:
                 raise ErreurMetier("MAGAZINE_INDISPONIBLE", "L’email n°2 n’est disponible que pour un invité présent.")
-            if not magazine_disponible(invite.evenement):
-                raise ErreurMetier("MAGAZINE_INDISPONIBLE", "Le magazine est désactivé pour ce programme.")
         if type_email == TypeEmail.SONDAGE and not invite.evenement.programme.sondage_actif:
             raise ErreurMetier("SONDAGE_INDISPONIBLE", "Le sondage de satisfaction est désactivé pour ce programme.")
         if type_email == TypeEmail.SONDAGE and not sondage_renvoyable(invite):

@@ -100,10 +100,6 @@ def _ids_en_echec(derniers_type):
     return [pk for pk, statut in derniers_type.values() if statut == StatutEmail.ECHEC]
 
 
-def magazine_disponible(evenement):
-    return evenement.magazine_disponible
-
-
 def a_contacter(evenement, derniers):
     """Invités dont un email n'est pas (ou probablement pas) arrivé, avec la cause et l'action utile.
 
@@ -224,7 +220,7 @@ def suivi(evenement):
             "echecs": len(_ids_en_echec(derniers[type_email])),
         }
         if type_email == TypeEmail.MAGAZINE:
-            bloc["actif"] = magazine_disponible(evenement)
+            bloc["actif"] = True  # toujours envoyé au passage « Présent »
         elif type_email == TypeEmail.SONDAGE:
             bloc["actif"] = evenement.programme.sondage_actif
         resultat[type_email] = bloc
@@ -233,8 +229,6 @@ def suivi(evenement):
 
 
 def _verifier_disponible(evenement, type_email):
-    if type_email == TypeEmail.MAGAZINE and not magazine_disponible(evenement):
-        raise ErreurMetier("MAGAZINE_INDISPONIBLE", "Le magazine est désactivé pour ce programme.")
     if type_email == TypeEmail.SONDAGE and not evenement.programme.sondage_actif:
         raise ErreurMetier("SONDAGE_INDISPONIBLE", "Le sondage de satisfaction est désactivé pour ce programme.")
 

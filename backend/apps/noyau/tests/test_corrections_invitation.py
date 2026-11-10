@@ -137,3 +137,39 @@ def test_liens_refuses_miroir_du_frontend(client_sa, evenement, lien):
     assert r.status_code == 400 and "lienCarteInvitation" in r.json()
     r = client_sa.patch("/api/parametres/", {"lienBrochureDefaut": lien}, format="json")
     assert r.status_code == 400 and "lienBrochureDefaut" in r.json()
+
+
+# --- 2026-11-10 : email n°2 envoyé à tout invité présent, boutons selon les liens --------------------------------
+
+
+def _sans_liens(evenement, brochure_defaut=""):
+    prog = evenement.programme
+    prog.magazine_actif, prog.lien_magazine = False, ""
+    prog.save()
+    evenement.lien_magazine = evenement.lien_brochure = ""
+    evenement.save()
+    p = Parametres.charger()
+    p.lien_brochure_defaut = brochure_defaut
+    p.save()
+
+
+def test_email_2_sans_aucun_lien_sans_boutons(evenement):
+    _sans_liens(evenement)
+    r = rendre(TypeEmail.MAGAZINE, Source.depuis_invite(nouvel_invite(evenement)))
+    assert "Votre présence est enregistrée" in r["html"]
+    for absent in ("Lire le magazine", "Brochure Executive Education", "Le magazine AMP", "vous attend"):
+        assert absent not in r["html"] and absent not in r["texte"]
+
+
+def test_email_2_brochure_seule(evenement):
+    _sans_liens(evenement, brochure_defaut="https://mde.ci")
+    r = rendre(TypeEmail.MAGAZINE, Source.depuis_invite(nouvel_invite(evenement)))
+    assert 'href="https://mde.ci"' in r["html"] and "Brochure Executive Education" in r["html"]
+    assert "Lire le magazine" not in r["html"] and "Le magazine AMP" not in r["html"]
+
+
+def test_email_2_texte_par_defaut_sans_mention_du_magazine(evenement):
+    p = Parametres.charger()
+    assert "magazine" not in p.objet_email_2.lower()
+    assert "magazine" not in p.corps_email_2.replace("{lien_magazine}", "")
+    assert "ce soir" not in p.corps_email_2

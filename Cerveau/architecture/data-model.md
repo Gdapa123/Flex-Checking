@@ -25,7 +25,7 @@ PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740
 `anonymise_le` (null ; date de la dernière anonymisation de ses invités, migration `0010`).
 - `nom_affiche` = « Graduation {programme} {année} » — **calculé, jamais stocké** ; `nom_agenda` = « Cérémonie de
   Graduation {programme} {année} » ; `lien_magazine_effectif` (cérémonie, sinon programme) ;
-  `magazine_disponible` (`magazine_actif` du programme **et** lien effectif).
+  `magazine_disponible` (lien effectif : bouton « Lire le magazine » de l’email n°2 ; depuis le 2026-11-10, `magazine_actif` n’a plus d’effet).
 - Slug : `slugify(programme)-année-<6 hex>`, jamais réattribué (vérifie aussi `AncienSlug`).
 - Validations : accueil ≤ début (la règle « date limite ≤ date » a disparu avec la saisie de la date limite).
 

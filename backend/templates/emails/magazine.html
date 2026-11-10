@@ -1,5 +1,5 @@
 {% extends "emails/base.html" %}
-{% block preheader %}Votre présence est enregistrée. Le magazine de la promotion {{ programme }} vous attend.{% endblock %}
+{% block preheader %}Votre présence est enregistrée.{% if lien_magazine %} Le magazine de la promotion {{ programme }} vous attend.{% endif %}{% endblock %}
 {% block contenu %}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
   <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#1B1D20;">
@@ -9,14 +9,20 @@
     {% for p in paragraphes_avant %}<p style="margin:{% if forloop.first %}0{% else %}12px 0 0 0{% endif %};color:{% if forloop.first %}#1B1D20{% else %}#3D4247{% endif %};">{{ p }}</p>{% endfor %}
   </td></tr>
 </table>
+{% if lien_magazine or lien_brochure %}
 <div style="height:16px;line-height:16px;font-size:16px;">&nbsp;</div>
 
-<!-- Carte magazine : deux boutons, magazine de la promotion et brochure Executive Education -->
+<!-- Carte magazine : deux boutons, magazine de la promotion et brochure Executive Education. Chaque bouton n'apparaît
+     que si son lien existe ; sans aucun lien, la carte disparaît et l'email part quand même (2026-11-10). -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
   <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;">
+    {% if lien_magazine %}
     <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:#1B1D20;">Le magazine {{ programme }} {{ annee }}</p>
     <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#5F666C;">Portraits des diplômés, temps forts du programme et mots des intervenants.</p>
-    {% if lien_magazine or lien_brochure %}
+    {% else %}
+    <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:#1B1D20;">Executive Education</p>
+    <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#5F666C;">Découvrez les programmes de MDE Business School.</p>
+    {% endif %}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">
       <tr>
         {% if lien_magazine %}
@@ -37,9 +43,9 @@
         {% endif %}
       </tr>
     </table>
-    {% endif %}
   </td></tr>
 </table>
+{% endif %}
 
 {% if paragraphes_apres %}
 <div style="height:16px;line-height:16px;font-size:16px;">&nbsp;</div>

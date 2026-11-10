@@ -131,7 +131,7 @@ def statistiques(evenement):
             "invitationsAttente": sum(1 for s in inv.values() if s == StatutEmail.EN_ATTENTE),
             "magazinesEnvoyes": sum(1 for s in mag.values() if s == StatutEmail.ENVOYE),
             "magazinesEchec": sum(1 for s in mag.values() if s == StatutEmail.ECHEC),
-            "magazineActif": evenement.programme.magazine_actif,
+            "magazineActif": True,  # email n°2 toujours envoyé au passage « Présent »
         },
         "comparaison": comparaison,
         "misAJour": maintenant.isoformat(),

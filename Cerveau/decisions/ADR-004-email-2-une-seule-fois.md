@@ -26,8 +26,8 @@ Le plan initial ne comptait que les statuts EN_ATTENTE et ENVOYE ; le code est p
   ou, depuis `bd4f807`, renvoi groupé de l’écran A7 « Suivi des emails » (`suivi_emails.renvoyer_echecs` : invités
   dont le dernier email n°2 est en échec et encore Présents) ; ces renvois manuels ne passent pas par
   `magazine_deja_parti`, ce qui est conforme à la décision (seul le déclenchement automatique est bloqué). Depuis
-  le 2026-10-22, le renvoi depuis la fiche exige aussi que le magazine soit disponible
-  (`suivi_emails.magazine_disponible` : `magazine_actif` et `lien_magazine`), comme le renvoi groupé.
+  le 2026-11-10, l’email n°2 part pour tout invité Présent, avec ou sans lien de magazine (boutons selon les liens) ;
+  le renvoi n’exige plus que la présence (la condition `magazine_actif` + lien du 2026-10-22 est retirée).
 
 ## Vérification (2026-10-26, `44eceb5` ; précédente 2026-10-21, `be899ff`)
 Toujours appliquée : `services.emarger` appelle `emails.magazine_deja_parti` après le verrou `select_for_update` sur
