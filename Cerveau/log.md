@@ -1230,3 +1230,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `25beeef` poussé (frontend `flex-checking` redéployé au push, « Ready ») ; `0014_objet_email_1` appliquée sur Neon (URL non poolée, fichier de variables privé supprimé aussitôt) ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
 - **Validation :** `/api/sante/` OK ; ancien fichier `/assets/…` → 404 `text/plain` ; contrôle de sécurité en lecture seule 33/33.
 - **Risques ou limites :** VPS encore à mettre à jour (`infra/vps/mettre-a-jour.sh`, `caddy validate`, `docker compose restart proxy`). Projet Vercel « frontend » créé par erreur le 2026-11-10 (deploy depuis `frontend/` sans lien) : suppression à confirmer par l'utilisateur.
+
+## [2026-11-10] documentation | VPS mis à jour en 34175d2
+
+- **Contexte :** objet de l'email n°1 (migration 0014), rechargement des onglets ouverts, nouveau bloc `/assets/*` de `infra/Caddyfile.prod`.
+- **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur ; `caddy validate` (« Valid configuration ») puis `docker compose restart proxy`.
+- **Validation :** ancien fichier `/assets/…` → 404 ; fichier existant → 200 `text/javascript`, `immutable` ; `/api/sante/` OK ; contrôle de sécurité en lecture seule 33/33.
+- **Risques ou limites :** sauvegardes du VPS toujours à activer.
