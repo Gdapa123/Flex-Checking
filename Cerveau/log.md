@@ -1306,3 +1306,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/features/invite/Presentation.jsx`, `backend/apps/noyau/vues_public.py`, `frontend/tests/presentation.test.jsx`, `backend/apps/noyau/tests/test_corrections_invitation.py`, `Cerveau/features/inscription.md`
 - **Validation :** ruff OK, pytest complet OK, ESLint OK, Vitest 110/110, build OK, Playwright 10/10.
 - **Risques ou limites :** aucun ; backend à redéployer (nouveau champ public).
+
+## [2026-11-10] documentation | VPS mis à jour en e75bba3
+
+- **Contexte :** guide d'inscription (étape magazine et brochure), barre de recherche sur petit écran, rechargement sans fausse erreur.
+- **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur (« Mise à jour terminée (version e75bba3) »).
+- **Validation :** `/api/sante/` OK ; nouveau texte du guide servi ; contrôle de sécurité en lecture seule 33/33 ; CI GitHub verte depuis `97aad10`.
+- **Risques ou limites :** sauvegardes du VPS toujours à activer.
