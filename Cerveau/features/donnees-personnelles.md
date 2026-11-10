@@ -23,11 +23,15 @@ traçabilité. Voir [ADR-013](../decisions/ADR-013-conservation-limitee-anonymis
 4. Chaque nuit (Celery Beat, 3 h 30) — ou au cron quotidien de l'environnement Vercel — les cérémonies dont la date
    est plus ancienne que la durée de conservation sont **anonymisées**.
 
-Contenu de la page `/confidentialite` (sections) : responsable du traitement, données collectées (les réponses au
-sondage, notes et commentaire, sans lien avec l'identité), finalités, base légale (consentement ; retrait par écrit,
-la direction des événements supprime alors l'inscription), destinataires (personnel MDE concerné **et prestataires
-techniques** d'hébergement et d'envoi des emails, éventuellement hors de Côte d'Ivoire, transferts encadrés « conformément
-à la loi »), durée de conservation (seuls des chiffres et les avis anonymes sont gardés), sécurité, droits.
+Contenu de la page `/confidentialite` (texte fourni par MDE le 2026-11-10, sept sections numérotées) : responsable
+du traitement, données collectées (réponses au sondage sans lien avec l'identité), finalités (inscription, invitation,
+présence, documents de l'événement, sondage ; **information sur les prochains événements et actualités**, refus à tout
+moment en contactant MDE — la promesse d'un lien de désinscription dans chaque email a été retirée : il n'existe pas),
+base légale (consentement de la case du formulaire), destinataires (personnel concerné, prestataires mandatés,
+éventuellement hors de Côte d'Ivoire), sécurité, droits. 🟡 Depuis le 2026-11-10 la page **n'affiche plus** la durée
+de conservation, l'adresse de contact ni la mention de l'ARTCI : `GET /api/public/confidentialite/` et les réglages
+« Données personnelles » restent en place (l'anonymisation automatique continue), mais ne sont plus montrés aux
+invités. À revoir : la loi 2013-450 prévoit d'informer sur la durée de conservation.
 
 ## Règles fonctionnelles (serveur)
 - ✅ `donnees_personnelles.evenements_expires` : `Evenement.date` antérieure à aujourd'hui moins

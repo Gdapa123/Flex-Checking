@@ -1,19 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
 import Logo from '../../components/ui/Logo';
 import useTitre from '../../lib/useTitre';
 
-/** Politique de confidentialité (page publique) : traitement des données des invités. Contact et durée de
- * conservation viennent des paramètres réglés par la direction des événements. */
+/** Politique de confidentialité (page publique) : traitement des données des invités (texte fourni par MDE le
+ * 2026-11-10). */
 export default function ConfidentialitePage() {
   useTitre('Politique de confidentialité');
-  const { data } = useQuery({
-    queryKey: ['confidentialite'],
-    queryFn: () => api.get('/public/confidentialite/'),
-    staleTime: 5 * 60_000,
-  });
-  const duree = data?.dureeConservationMois;
-  const contact = data?.contact;
 
   return (
     <div className="univers-mde min-h-[100dvh] border-t-[6px] border-mde-bordeaux bg-mde-surface text-mde-texte">
@@ -27,66 +18,70 @@ export default function ConfidentialitePage() {
           <h1 className="m-0 text-[26px] font-bold tracking-[-0.02em]">Politique de confidentialité</h1>
           <p className="m-0 text-mde-texte-2">
             Cette page explique comment MDE Business School traite les données personnelles des invités de ses
-            cérémonies de graduation, conformément à la loi ivoirienne n° 2013-450 du 19 juin 2013 relative à la
-            protection des données à caractère personnel.
+            événements, conformément à la loi ivoirienne n° 2013-450 du 19 juin 2013 relative à la protection des
+            données à caractère personnel.
           </p>
 
-          <Section titre="Responsable du traitement">
-            MDE Business School, Abidjan, Côte d’Ivoire. Service : direction des événements.
+          <Section titre="1. Responsable du traitement">
+            <p>Le responsable du traitement est MDE Business School, située à Abidjan, en Côte d’Ivoire.</p>
           </Section>
 
-          <Section titre="Données collectées">
-            Civilité, nom, prénom, adresse email, téléphone, entreprise et fonction, saisis lors de l’inscription ; puis
-            l’heure de votre passage à l’accueil le jour de la cérémonie. Les réponses au questionnaire de satisfaction
-            (notes et commentaire libre) sont enregistrées sans lien avec votre identité.
+          <Section titre="2. Données collectées">
+            <p>
+              Lors de votre inscription, nous recueillons votre civilité, vos nom et prénom, votre adresse email, votre
+              numéro de téléphone, ainsi que le nom de votre entreprise et votre fonction. Le jour de l’événement, nous
+              enregistrons également l’heure de votre passage à l’accueil. Enfin, les réponses que vous apportez au
+              questionnaire de satisfaction, qu’il s’agisse des notes ou du commentaire libre, sont enregistrées sans
+              aucun lien avec votre identité.
+            </p>
           </Section>
 
-          <Section titre="Finalités">
-            Gérer votre inscription, vous envoyer votre invitation (QR code et code de secours), enregistrer votre
-            présence à l’accueil, vous adresser le magazine de la promotion et, le lendemain, le questionnaire de
-            satisfaction. Vos données ne sont ni vendues ni utilisées à des fins publicitaires.
+          <Section titre="3. Finalités">
+            <p>
+              Vos données nous permettent de gérer votre inscription et de vous envoyer votre invitation, qui comprend
+              un QR code et un code de secours. Elles servent ensuite à enregistrer votre présence à l’accueil, puis à
+              vous adresser les documents de l’événement et le questionnaire de satisfaction.
+            </p>
+            <p>
+              Nous pouvons également les utiliser pour vous informer de nos prochains événements et de nos actualités.
+              Vous restez libre de refuser ces envois à tout moment en contactant MDE Business School.
+            </p>
+            <p>Vos données ne sont en aucun cas vendues ni cédées à des tiers à des fins publicitaires.</p>
           </Section>
 
-          <Section titre="Base légale">
-            Votre consentement, donné en cochant la case du formulaire d’inscription. Vous pouvez le retirer à tout
-            moment en écrivant à l’adresse ci-dessous ; la direction des événements supprime alors votre inscription.
+          <Section titre="4. Base légale">
+            <p>
+              Ce traitement repose sur votre consentement, que vous exprimez en cochant la case prévue à cet effet dans
+              le formulaire d’inscription.
+            </p>
           </Section>
 
-          <Section titre="Destinataires">
-            Uniquement les personnes de MDE Business School chargées de la cérémonie (direction des événements et hôtes
-            d’accueil), chacune limitée aux cérémonies qui la concernent, ainsi que les prestataires techniques qui,
-            pour le compte de MDE, hébergent l’application et acheminent les emails. Ces prestataires peuvent être
-            situés hors de Côte d’Ivoire ; MDE encadre ces transferts conformément à la loi.
+          <Section titre="5. Destinataires">
+            <p>
+              L’accès à vos données est réservé au personnel de MDE Business School strictement concerné par leur
+              traitement. Elles peuvent également être confiées à des prestataires explicitement mandatés par MDE pour
+              assurer la gestion technique de l’application ou l’envoi de nos communications. Ces prestataires peuvent
+              être établis hors de Côte d’Ivoire ; ces transferts s’effectuent alors dans le strict respect de la
+              réglementation en vigueur.
+            </p>
           </Section>
 
-          <Section titre="Durée de conservation">
-            {duree
-              ? `Vos données sont conservées ${duree} mois après la date de la cérémonie. Elles sont ensuite anonymisées automatiquement : seuls des chiffres (nombre d’inscrits et de présents) et les avis anonymes sont gardés pour les bilans.`
-              : 'Vos données sont conservées pour une durée limitée après la date de la cérémonie, puis anonymisées automatiquement.'}
+          <Section titre="6. Sécurité">
+            <p>
+              Nous mettons en œuvre plusieurs mesures pour protéger vos données. Les échanges avec notre application
+              passent par une connexion chiffrée (HTTPS). L’accès aux données est réservé aux comptes autorisés, et
+              chaque connexion est enregistrée. Aucune donnée personnelle ne figure dans les QR codes ni dans les
+              journaux techniques. Enfin, nos sauvegardes sont elles aussi chiffrées.
+            </p>
           </Section>
 
-          <Section titre="Sécurité">
-            Connexion chiffrée (HTTPS), accès réservé aux comptes autorisés et journalisé, aucune donnée personnelle
-            dans les QR codes ni dans les journaux techniques, sauvegardes chiffrées.
-          </Section>
-
-          <Section titre="Vos droits">
-            Vous pouvez demander l’accès à vos données, leur rectification, leur suppression ou vous opposer à leur
-            traitement
-            {contact ? (
-              <>
-                {' '}
-                en écrivant à{' '}
-                <a href={`mailto:${contact}`} className="font-semibold text-mde-bordeaux">
-                  {contact}
-                </a>
-                .
-              </>
-            ) : (
-              ' en contactant la direction des événements de MDE Business School.'
-            )}{' '}
-            Vous pouvez aussi saisir l’Autorité de Régulation des Télécommunications/TIC de Côte d’Ivoire (ARTCI),
-            autorité de protection des données personnelles.
+          <Section titre="7. Vos droits">
+            <p>
+              Vous disposez à tout moment d’un droit d’accès à vos données, ainsi que du droit de les faire rectifier ou
+              supprimer. Vous pouvez également vous opposer à leur traitement, y compris à l’envoi d’informations sur
+              nos événements et nos actualités. Pour exercer ces droits, il vous suffit de contacter MDE Business
+              School.
+            </p>
           </Section>
         </article>
       </main>
@@ -98,7 +93,7 @@ function Section({ titre, children }) {
   return (
     <section className="flex flex-col gap-1.5">
       <h2 className="m-0 text-[17px] font-semibold">{titre}</h2>
-      <p className="m-0 text-mde-texte-2 [text-wrap:pretty]">{children}</p>
+      <div className="flex flex-col gap-2 text-mde-texte-2 [text-wrap:pretty] [&_p]:m-0">{children}</div>
     </section>
   );
 }

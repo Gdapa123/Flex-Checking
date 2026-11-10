@@ -1252,3 +1252,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `ebcfcf7` poussé (frontend `flex-checking` redéployé au push, « Ready ») ; `0015_email_2_toujours_envoye` appliquée sur Neon avant le code (URL non poolée, fichier de variables privé supprimé aussitôt) ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
 - **Validation :** `/api/sante/` OK ; contrôle de sécurité en lecture seule 33/33.
 - **Risques ou limites :** VPS à mettre à jour (`infra/vps/mettre-a-jour.sh` ; pas de changement Caddy, pas de redémarrage du proxy nécessaire).
+
+## [2026-11-10] documentation | Politique de confidentialité : nouveau texte de MDE
+
+- **Contexte :** texte fourni par l'utilisateur ; à sa demande, la phrase promettant « un lien de désinscription présent dans chacun de nos emails » est retirée (aucun email n'en contient).
+- **Modifications :** `ConfidentialitePage` réécrite avec les sept sections numérotées du texte (plusieurs paragraphes par section), sans appel à `/api/public/confidentialite/` ; test de la page adapté.
+- **Fichiers concernés :** `frontend/src/features/invite/ConfidentialitePage.jsx`, `frontend/tests/confidentialite.test.jsx`, `Cerveau/features/donnees-personnelles.md`
+- **Validation :** ESLint et Prettier OK, Vitest 105/105, build OK, Playwright 8/8 (dont audit axe de `/confidentialite` ; un échec ENOSPC — disque plein — sur `sessionAdmin.spec.js`, relancé : 4/4), `npm audit --omit=dev` 0 vulnérabilité, tests de sécurité du serveur OK.
+- **Risques ou limites :** la page n'indique plus la durée de conservation, l'adresse de contact ni l'ARTCI (signalé à l'utilisateur) ; la phrase « nos sauvegardes sont chiffrées » suppose l'activation des sauvegardes du VPS.

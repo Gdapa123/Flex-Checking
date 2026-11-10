@@ -19,17 +19,13 @@ function afficher() {
 describe('politique de confidentialité', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('affiche la durée de conservation et le contact réglés par le super admin', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ contact: 'dpo@mde.ci', dureeConservationMois: 18 }), {
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
+  it('affiche le texte de MDE, sans promettre de lien de désinscription', () => {
     afficher();
     expect(screen.getByRole('heading', { name: 'Politique de confidentialité' })).toBeTruthy();
-    expect(await screen.findByText(/conservées 18 mois après la date de la cérémonie/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'dpo@mde.ci' }).getAttribute('href')).toBe('mailto:dpo@mde.ci');
     expect(screen.getByText(/loi ivoirienne n° 2013-450/)).toBeTruthy();
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(7);
+    expect(screen.getByText(/refuser ces envois à tout moment en contactant MDE Business School/)).toBeTruthy();
+    expect(screen.queryByText(/désinscription/)).toBeNull();
   });
 
   it('valide les réglages comme le serveur (1 à 60 mois, email facultatif)', () => {
