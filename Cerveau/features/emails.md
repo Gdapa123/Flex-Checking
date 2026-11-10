@@ -47,7 +47,8 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
 
 ## Contenu (`emails.rendre`)
 - Modèles éditables par le super admin (objet + corps texte, `Parametres.objet_email_1..3` / `corps_email_1..3`,
-  écran Paramètres, un onglet par email). Variables : `{civilite} {prenom} {nom} {programme} {annee} {date}
+  écran Paramètres, un onglet par email). Objet par défaut de l’email n°1 (2026-11-10, migration `0014_objet_email_1`) :
+  « Votre inscription à la cérémonie de Graduation {programme} {annee} ». Variables : `{civilite} {prenom} {nom} {programme} {annee} {date}
   {lieu} {qr_code} {code} {lien_magazine} {lien_sondage}`. Remplacement en **une seule passe** (`emails._remplacer`,
   expression régulière, 2026-10-22) : une valeur saisie par un invité (« {code} » comme prénom) n’est jamais
   remplacée à son tour. Objets des trois emails : caractères de contrôle refusés (`ParametresSerializer`,

@@ -356,7 +356,9 @@ CORPS_EMAIL_3 = (
 
 
 class Parametres(models.Model):
-    objet_email_1 = models.CharField(max_length=200, default="Votre invitation · Graduation {programme} {annee}")
+    objet_email_1 = models.CharField(
+        max_length=200, default="Votre inscription à la cérémonie de Graduation {programme} {annee}"
+    )
     corps_email_1 = models.TextField(default=CORPS_EMAIL_1)
     objet_email_2 = models.CharField(
         max_length=200, default="Bienvenue · Le magazine de la Graduation {programme} {annee}"

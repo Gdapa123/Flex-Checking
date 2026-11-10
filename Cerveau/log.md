@@ -1215,3 +1215,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `infra/Caddyfile.prod`, `frontend/src/lib/nouvelleVersion.js`, `frontend/src/main.jsx`, `frontend/tests/nouvelleVersion.test.js`
 - **Validation :** Vitest 105/105 (3 nouveaux tests), ESLint OK, build OK (gestionnaire présent dans le bundle). Caddy non testé en local (Docker indisponible, disque plein) : `caddy validate` à lancer sur le VPS avant le redémarrage du proxy.
 - **Risques ou limites :** un onglet sans `sessionStorage` disponible garde l'ancien comportement (erreur, à recharger à la main).
+
+## [2026-11-10] correction | Objet de l'email n°1 : « Votre inscription à la cérémonie de Graduation … »
+
+- **Contexte :** demande de l'utilisateur (objet reçu : « Votre invitation · Graduation PMD 2026 »).
+- **Modifications :** défaut de `Parametres.objet_email_1` changé ; migration `0014_objet_email_1` (AlterField sans effet sur le schéma + RunPython qui remplace l'ancien objet seulement s'il n'a pas été personnalisé, réversible).
+- **Fichiers concernés :** `backend/apps/noyau/models.py`, `backend/apps/noyau/migrations/0014_objet_email_1.py`, `backend/apps/noyau/tests/test_inscription.py`
+- **Validation :** ruff OK, `makemigrations --check` : aucun changement, pytest complet OK.
+- **Risques ou limites :** à migrer sur Neon et sur le VPS ; un objet déjà personnalisé dans Paramètres n'est pas modifié.

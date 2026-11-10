@@ -58,7 +58,7 @@ def test_inscription_reussie_envoie_email_1(client, evenement):
     m = mail.outbox[0]
     assert m.to == ["aya.kouassi@sib.ci"]
     assert "Flex’Checking · MDE Business School" in m.from_email
-    assert m.subject == f"Votre invitation · Graduation AMP {evenement.date.year}"
+    assert m.subject == f"Votre inscription à la cérémonie de Graduation AMP {evenement.date.year}"
     noms = [a[0] for a in m.attachments]
     assert "qr-code.png" in noms and "graduation.ics" in noms
     html = m.alternatives[0][0]
