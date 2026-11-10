@@ -255,7 +255,10 @@ export default function Evenements() {
               {CHAMPS.map(([k, l, type, large]) => (
                 <label
                   key={k}
-                  className={`flex flex-col gap-2 text-[15px] font-medium ${large ? 'sm:col-span-2' : ''}`}
+                  className="flex flex-col gap-2 text-[15px] font-medium"
+                  // toute la ligne, quel que soit le nombre de colonnes (« sm:col-span-2 » créait une 2e colonne
+                  // hors cadre quand une seule tenait, ex. 1024 px)
+                  style={large ? { gridColumn: '1 / -1' } : undefined}
                 >
                   {l}
                   <input

@@ -56,6 +56,7 @@ retrait d'un « C’est moi » expiré `CHOIX_BORNE_INVALIDE` puis rejeu des sui
   requête ; temps réel (une inscription faite depuis un contexte sans session apparaît chez l’admin sans rechargement).
 - `cameraQr.spec.js` (2026-11-09) : fausse caméra Chromium (`--use-file-for-fake-video-capture`, `e2e/fixtures/qr-lien-piege.mjpeg`) filmant un QR code piégé → lecture ZXing réelle, « QR code non reconnu », aucune requête, aucun onglet.
 - `accessibilite.spec.js` : audit axe-core des écrans principaux, dont `/confidentialite` (iframes d'aperçu d'email exclues).
+- `responsive.spec.js` (2026-11-10) : 18 écrans × 7 largeurs (320, 375, 414, 768, 1024, 1280, 1920 px), puis poste de scan (Code, Manuel, Douchette), panneau « Ajouter un invité » et fiche invité × 5 largeurs : aucune page ne défile horizontalement, aucun élément ne dépasse de la fenêtre ni n'est coupé par un conteneur masquant (les conteneurs défilants — tableaux, onglets — sont admis).
 
 ## Non couvert (constaté)
 - Sessions (constaté le 2026-10-26) : la déconnexion est testée pour la révocation du jeton d'accès, le maintien

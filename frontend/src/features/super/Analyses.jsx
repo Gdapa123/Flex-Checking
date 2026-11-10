@@ -51,6 +51,21 @@ const INFOBULLE = {
 const AXE = { fontSize: 12, fill: 'var(--mde-texte-2)' };
 const jourMois = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
+/** Nom de programme sous un graphique : « Public-AMP » sur deux lignes, pour rester lisible sur téléphone (les noms
+ * se chevauchaient et sortaient du cadre à 320 px). */
+function TickProgramme({ x, y, payload }) {
+  const lignes = String(payload.value).split('-');
+  return (
+    <text x={x} y={y + 12} textAnchor="middle" {...AXE}>
+      {lignes.map((l, i) => (
+        <tspan key={i} x={x} dy={i ? 13 : 0}>
+          {l}
+        </tspan>
+      ))}
+    </text>
+  );
+}
+
 /** Analyses du super admin : activité de toutes les cérémonies et indicateurs techniques, rapport PDF. */
 export default function Analyses() {
   const toast = useToast();
@@ -75,7 +90,7 @@ export default function Analyses() {
         <div
           role="tablist"
           aria-label="Type d’analyse"
-          className="flex rounded-moyen border border-mde-bordure bg-surface p-1 shadow-carte-mde"
+          className="flex w-full rounded-moyen border border-mde-bordure bg-surface p-1 shadow-carte-mde sm:w-auto"
         >
           {[
             ['activite', 'Activité', 'chart'],
@@ -88,9 +103,9 @@ export default function Analyses() {
               role="tab"
               aria-selected={f.onglet === v}
               onClick={() => maj({ onglet: v })}
-              className={`flex h-10 cursor-pointer items-center gap-2 rounded-bouton border-0 px-4 text-[15px] font-semibold ${f.onglet === v ? 'bg-mde-texte text-surface' : 'bg-transparent text-mde-texte-2 hover:text-mde-texte'}`}
+              className={`flex h-10 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-bouton border-0 px-2 text-[15px] font-semibold sm:flex-none sm:px-4 ${f.onglet === v ? 'bg-mde-texte text-surface' : 'bg-transparent text-mde-texte-2 hover:text-mde-texte'}`}
             >
-              <Icon nom={i} className="text-[17px]" />
+              <Icon nom={i} className="hidden text-[17px] sm:block" />
               {l}
             </button>
           ))}
@@ -351,7 +366,7 @@ function Activite() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={a.programmes} margin={{ top: 18, right: 4, left: -18, bottom: 0 }} barGap={3}>
                 <CartesianGrid vertical={false} stroke="var(--mde-bordure-ligne)" />
-                <XAxis dataKey="programme" tickLine={false} tick={AXE} interval={0} />
+                <XAxis dataKey="programme" tickLine={false} tick={<TickProgramme />} interval={0} height={40} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXE} />
                 <Tooltip
                   contentStyle={INFOBULLE}

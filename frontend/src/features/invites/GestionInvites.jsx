@@ -486,12 +486,12 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
               </select>
             </>
           )}
-          <label className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-[14px] font-semibold">
+          <label className="flex min-w-0 max-w-full items-center gap-2">
+            <span className="flex flex-none items-center gap-1.5 text-[14px] font-semibold">
               <Icon nom="sort" className="text-[17px]" />
               Trier par
             </span>
-            <select value={f.tri} onChange={(e) => choisirTri(e.target.value)} className={select}>
+            <select value={f.tri} onChange={(e) => choisirTri(e.target.value)} className={`${select} min-w-0 flex-1`}>
               {tris.map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}

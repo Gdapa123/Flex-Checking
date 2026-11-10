@@ -1267,3 +1267,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur (« Mise à jour terminée (version 230cf6d) », `migrate` sorti en 0) ; pas de redémarrage du proxy (Caddyfile inchangé).
 - **Validation :** `/api/sante/` OK ; nouveau texte de `/confidentialite` servi ; ancien fichier `/assets/…` → 404 ; contrôle de sécurité en lecture seule 33/33.
 - **Risques ou limites :** sauvegardes du VPS toujours à activer (la politique affirme des sauvegardes chiffrées).
+
+## [2026-11-10] correction | Affichage sur tout type d'écran (responsive)
+
+- **Contexte :** demande de l'utilisateur : « gère le responsive sur tout type d'écran ».
+- **Modifications :** nouveau test `frontend/e2e/responsive.spec.js` (débordement horizontal et contenu coupé, 18 écrans × 7 largeurs + écrans ouverts par une action × 5 largeurs). Quatre défauts trouvés et corrigés : formulaire des cérémonies à 1024 px (`sm:col-span-2` dans une grille `auto-fit` créait une colonne hors cadre → `gridColumn: 1 / -1`) ; tri des invités à 320 px (liste resserrable, `min-w-0 flex-1`) ; onglets des Analyses ≤ 414 px (pleine largeur, icônes masquées sous `sm`) ; noms de programmes du graphique « Inscrits et présents par programme » qui se chevauchaient à 320 px (`TickProgramme` : « Public-AMP » sur deux lignes).
+- **Fichiers concernés :** `frontend/src/features/super/Evenements.jsx`, `frontend/src/features/invites/GestionInvites.jsx`, `frontend/src/features/super/Analyses.jsx`, `frontend/e2e/responsive.spec.js`, `Cerveau/testing/test-cases.md`, `Cerveau/testing/test-strategy.md`
+- **Validation :** ESLint OK, Vitest 105/105, build OK, Playwright 10/10.
+- **Risques ou limites :** contrôle géométrique (débordements) ; pas de revue visuelle de chaque écran ; pages de confirmation et de sondage non couvertes (accessibles seulement après une inscription ou avec un jeton).
