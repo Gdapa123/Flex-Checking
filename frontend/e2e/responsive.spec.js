@@ -85,6 +85,7 @@ async function connecterSuperAdmin(page) {
 }
 
 async function controler(page, nom, problemes) {
+  await page.evaluate(() => document.fonts.ready); // polices chargées : largeurs de texte définitives
   await page.waitForTimeout(300);
   const d = await page.evaluate(debordements);
   if (d.length) problemes.push(`${page.viewportSize().width}px ${nom}\n    ${d.join('\n    ')}`);
@@ -125,6 +126,7 @@ test('aucun écran ne déborde, du téléphone au grand écran', async ({ page }
     for (const url of ecrans) {
       await page.goto(url);
       await page.waitForLoadState('networkidle');
+      await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(250);
       const d = await page.evaluate(debordements);
       if (d.length) problemes.push(`${largeur}px ${url}\n    ${d.join('\n    ')}`);

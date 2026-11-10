@@ -27,7 +27,8 @@ export default defineConfig({
   timeout: 90_000,
   fullyParallel: false,
   workers: 1,
-  reporter: [['list']],
+  // sur GitHub Actions, chaque échec devient aussi une annotation du job (lisible sans ouvrir le journal)
+  reporter: process.env.CI ? [['list'], ['github']] : [['list']],
   use: { baseURL: 'http://localhost:5174', trace: 'retain-on-failure', locale: 'fr-FR', timezoneId: 'Africa/Abidjan' },
   // « setup » se connecte une fois avec le compte admin et enregistre la session (SESSION_ADMIN) : les tests qui n'ont
   // pas besoin de tester la connexion la réutilisent, sans dépasser la limite serveur de 5 connexions/min par compte
