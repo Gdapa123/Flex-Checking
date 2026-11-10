@@ -313,11 +313,11 @@ export default function Parametres() {
           </h2>
           <p className="m-0 text-[15px] text-mde-texte-2">
             Passé ce délai après une cérémonie, les invités sont anonymisés automatiquement chaque nuit (nom, email,
-            téléphone, entreprise effacés ; seuls les chiffres restent). Ces informations figurent sur la{' '}
+            téléphone, entreprise effacés ; seuls les chiffres restent). La{' '}
             <a href="/confidentialite" target="_blank" rel="noopener" className="font-semibold text-mde-bordeaux">
               politique de confidentialité
-            </a>
-            .
+            </a>{' '}
+            (texte de MDE) n’affiche ni cette durée ni ce contact.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -340,7 +340,7 @@ export default function Parametres() {
             value={d.contactDonnees ?? ''}
             onChange={(e) => setD({ ...d, contactDonnees: e.target.value })}
             erreur={erreursDonnees.contactDonnees}
-            aide="Adresse à laquelle les invités exercent leurs droits (accès, suppression…)."
+            aide="Usage interne : la politique de confidentialité invite à « contacter MDE Business School »."
           />
         </div>
       </Carte>

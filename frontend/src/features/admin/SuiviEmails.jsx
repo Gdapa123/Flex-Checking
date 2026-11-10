@@ -39,8 +39,8 @@ const EMAILS = [
     statut: ['PRESENT', 'Présent'],
   },
 ];
+// l'email n°2 n'est jamais désactivé (envoyé à tout invité présent depuis le 2026-11-10) : seul le sondage peut l'être
 const DESACTIVE = {
-  MAGAZINE: 'Le magazine est désactivé pour ce programme : seul l’email d’invitation est envoyé.',
   SONDAGE: 'Le sondage de satisfaction est désactivé pour ce programme (réglage du super admin, écran Programmes).',
 };
 const RENVOI = {

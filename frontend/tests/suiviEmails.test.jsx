@@ -185,11 +185,11 @@ describe('suivi des emails', () => {
     expect(api.post).toHaveBeenCalledWith('/evenements/2/suivi-emails/test/', { type: 'INVITATION' });
   });
 
-  it('magazine et sondage désactivés : message, ni test ni aperçu', async () => {
-    afficher(suivi(0, false, false));
-    expect(await screen.findByText(/Le magazine est désactivé/)).toBeInTheDocument();
-    expect(screen.getByText(/Le sondage de satisfaction est désactivé/)).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /Aperçu et email de test/ })).toHaveLength(1);
+  it('sondage désactivé : message, ni test ni aperçu ; le magazine reste actif', async () => {
+    afficher(suivi(0, true, false));
+    expect(await screen.findByText(/Le sondage de satisfaction est désactivé/)).toBeInTheDocument();
+    expect(screen.queryByText(/magazine est désactivé/)).toBeNull();
+    expect(screen.getAllByRole('button', { name: /Aperçu et email de test/ })).toHaveLength(2);
   });
 
   it('email n°3 : le sondage a sa carte', async () => {

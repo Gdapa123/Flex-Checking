@@ -1327,3 +1327,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** 44 pages de `Cerveau/` (api, architecture, decisions, features, operations, project, specifications, testing, analyses).
 - **Validation :** `python3 Cerveau/outils/lint_wiki.py` : 0 erreur, 0 avertissement, 0 page à revérifier ; objets d'email par défaut des migrations 0014/0015 identiques à ceux de `models.py` ; connexions réussies bien journalisées (`comptes/views.py`, « CONNEXION »), comme l'affirme la politique.
 - **Risques ou limites :** écarts de code relevés, non corrigés : `Parametres.jsx` affirme encore que contact et durée « figurent sur la politique de confidentialité » ; `GET /api/public/confidentialite/` n'est plus appelé ; `magazineActif` a trois sens selon l'endpoint ; messages « magazine désactivé » devenus inutiles dans `SuiviEmails.jsx` et `TableauDeBord.jsx` ; `LIMITE_IMAGES_EMAIL` absente de `.env.example`.
+
+## [2026-11-10] correction | Textes devenus faux : Paramètres (confidentialité) et « magazine désactivé »
+
+- **Contexte :** écarts relevés pendant la revérification du wiki (`b93256f`).
+- **Modifications :** `Parametres.jsx` : la carte « Données personnelles » ne dit plus que durée et contact « figurent sur la politique de confidentialité » (le texte de MDE ne les affiche pas) ; aide du contact « usage interne ». `SuiviEmails.jsx` : message « Le magazine est désactivé » retiré (l'email n°2 n'est jamais désactivé). `TableauDeBord.jsx` : ligne « Email n°2 envoyés » toujours affichée, message « désactivé » retiré. Test `suiviEmails.test.jsx` adapté (sondage seul désactivable).
+- **Fichiers concernés :** `frontend/src/features/super/Parametres.jsx`, `frontend/src/features/admin/SuiviEmails.jsx`, `frontend/src/features/admin/TableauDeBord.jsx`, `frontend/tests/suiviEmails.test.jsx`
+- **Validation :** ESLint et Prettier OK, Vitest 110/110, build OK, Playwright 10/10.
+- **Risques ou limites :** `Parametres.contact_donnees` et `GET /api/public/confidentialite/` restent en place sans usage public (R32).

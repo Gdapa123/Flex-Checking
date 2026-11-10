@@ -262,9 +262,8 @@ export default function TableauDeBord({ ev }) {
           </h2>
           {[
             { label: 'Email n°1 envoyés · invitation', n: s.emails.invitationsEnvoyees, sur: s.inscrits },
-            ...(s.emails.magazineActif
-              ? [{ label: 'Email n°2 envoyés · magazine', n: s.emails.magazinesEnvoyes, sur: s.presents }]
-              : []),
+            // email n°2 envoyé à tout invité présent (toujours affiché)
+            { label: 'Email n°2 envoyés · magazine', n: s.emails.magazinesEnvoyes, sur: s.presents },
           ].map((m) => (
             <div key={m.label} className="flex flex-col gap-2">
               <div className="flex justify-between text-[15px]">
@@ -278,9 +277,6 @@ export default function TableauDeBord({ ev }) {
               </div>
             </div>
           ))}
-          {!s.emails.magazineActif && (
-            <p className="m-0 text-[14px] text-texte-2">Email n°2 (magazine) désactivé pour ce programme.</p>
-          )}
           {s.emails.invitationsEchec > 0 ? (
             <div className="flex flex-wrap items-center gap-3 rounded-moyen border border-avert-bord bg-avert-fond px-3.5 py-3">
               <Icon nom="alert" className="text-[20px] text-avert" />
