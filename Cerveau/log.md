@@ -1191,3 +1191,19 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/noyau/middleware.py`, `backend/apps/noyau/tests/test_securite.py`, `infra/Caddyfile.prod` (commentaire), `Cerveau/operations/guide-admins.md`, `Cerveau/index.md`, exigences non fonctionnelles.
 - **Validation :** `pytest` 405 passed ; contrôle en ligne Vercel : 32/33, le point restant étant une attente erronée du script (envoi de carte sans session → 401, refus attendu).
 - **Risques ou limites :** VPS `inscription.mde.ci` à mettre à jour (`infra/vps/mettre-a-jour.sh`, applique `0013`) ; en-têtes de l’API à revérifier ensuite sur le VPS.
+
+## [2026-11-10] documentation | VPS mis à jour en 9f0036b, contrôle de sécurité 33/33
+
+- **Contexte :** mise à jour de production `inscription.mde.ci` après la carte d'invitation en fichier et la correction des en-têtes.
+- **Modifications :** `infra/vps/mettre-a-jour.sh` lancé par l'utilisateur (migration 0013 appliquée), puis `docker compose restart proxy` pour charger le nouveau `infra/Caddyfile.prod` (le script ne recrée pas le conteneur Caddy quand seul le fichier monté change).
+- **Fichiers concernés :** `infra/vps/mettre-a-jour.sh`, `infra/Caddyfile.prod`, `docker-compose.prod.yml`
+- **Validation :** `X-Frame-Options` = `DENY` sur `/api/sante/` et `SAMEORIGIN` sur la page ; contrôle de sécurité en lecture seule (33 points : en-têtes, 401 sans session, JWT forgé, CSRF, 415, fichiers non exposés) : 33/33 ; `/api/sante/` → `{"statut": "ok"}`.
+- **Risques ou limites :** le redémarrage du proxy est encore manuel ; sauvegardes du VPS pas encore activées.
+
+## [2026-11-10] correction | Page d'inscription : mention « Inscriptions ouvertes jusqu'au jour de la cérémonie » retirée
+
+- **Contexte :** demande de l'utilisateur (bloc jugé inutile sous le guide « Comment ça se passe ? »).
+- **Modifications :** paragraphe retiré de `Presentation`; la règle reste appliquée par `services.etat_inscriptions`.
+- **Fichiers concernés :** `frontend/src/features/invite/Presentation.jsx`
+- **Validation :** Vitest 102/102, build OK, ESLint du fichier OK.
+- **Risques ou limites :** aucun ; à déployer sur Vercel et sur le VPS.

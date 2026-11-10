@@ -78,10 +78,6 @@ export default function Presentation({ ev }) {
               );
             })}
           </ol>
-          <p className="m-0 flex items-start gap-2 rounded-moyen bg-fond px-3 py-2.5 text-[12.5px] leading-[1.45] text-texte-3 sm:text-[14px]">
-            <Icon nom="clock" className="mt-0.5 text-[15px] text-texte-2" />
-            <span>Inscriptions ouvertes jusqu’au jour de la cérémonie, dans la limite des places disponibles.</span>
-          </p>
         </div>
       )}
     </section>
