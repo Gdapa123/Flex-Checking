@@ -1260,3 +1260,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/features/invite/ConfidentialitePage.jsx`, `frontend/tests/confidentialite.test.jsx`, `Cerveau/features/donnees-personnelles.md`
 - **Validation :** ESLint et Prettier OK, Vitest 105/105, build OK, Playwright 8/8 (dont audit axe de `/confidentialite` ; un échec ENOSPC — disque plein — sur `sessionAdmin.spec.js`, relancé : 4/4), `npm audit --omit=dev` 0 vulnérabilité, tests de sécurité du serveur OK.
 - **Risques ou limites :** la page n'indique plus la durée de conservation, l'adresse de contact ni l'ARTCI (signalé à l'utilisateur) ; la phrase « nos sauvegardes sont chiffrées » suppose l'activation des sauvegardes du VPS.
+
+## [2026-11-10] documentation | VPS mis à jour en 230cf6d
+
+- **Contexte :** email n°2 envoyé à tout invité présent (migration 0015) et nouvelle politique de confidentialité.
+- **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur (« Mise à jour terminée (version 230cf6d) », `migrate` sorti en 0) ; pas de redémarrage du proxy (Caddyfile inchangé).
+- **Validation :** `/api/sante/` OK ; nouveau texte de `/confidentialite` servi ; ancien fichier `/assets/…` → 404 ; contrôle de sécurité en lecture seule 33/33.
+- **Risques ou limites :** sauvegardes du VPS toujours à activer (la politique affirme des sauvegardes chiffrées).
