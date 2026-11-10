@@ -1275,3 +1275,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/features/super/Evenements.jsx`, `frontend/src/features/invites/GestionInvites.jsx`, `frontend/src/features/super/Analyses.jsx`, `frontend/e2e/responsive.spec.js`, `Cerveau/testing/test-cases.md`, `Cerveau/testing/test-strategy.md`
 - **Validation :** ESLint OK, Vitest 105/105, build OK, Playwright 10/10.
 - **Risques ou limites :** contrôle géométrique (débordements) ; pas de revue visuelle de chaque écran ; pages de confirmation et de sondage non couvertes (accessibles seulement après une inscription ou avec un jeton).
+
+## [2026-11-10] documentation | VPS mis à jour en 4474e46
+
+- **Contexte :** corrections d'affichage sur tout type d'écran.
+- **Modifications :** `infra/vps/mettre-a-jour.sh` par l'utilisateur (« Mise à jour terminée (version 4474e46) ») ; Caddyfile inchangé.
+- **Validation :** Playwright 10/10 en local sur `4474e46` ; en ligne : `/api/sante/` OK, nouvelle version servie, contrôle de sécurité en lecture seule 33/33.
+- **Risques ou limites :** sauvegardes du VPS toujours à activer.
