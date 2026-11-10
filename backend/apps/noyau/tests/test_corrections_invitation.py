@@ -173,3 +173,14 @@ def test_email_2_texte_par_defaut_sans_mention_du_magazine(evenement):
     assert "magazine" not in p.objet_email_2.lower()
     assert "magazine" not in p.corps_email_2.replace("{lien_magazine}", "")
     assert "ce soir" not in p.corps_email_2
+
+
+def test_page_publique_annonce_magazine_et_brochure(client, evenement):
+    # guide « Comment ça se passe ? » : l'étape de l'email n°2 dépend des liens (2026-11-10)
+    _sans_liens(evenement, brochure_defaut="https://mde.ci")
+    url = f"/api/public/evenements/{evenement.slug_inscription}/"
+    d = client.get(url).json()
+    assert d["magazineActif"] is False and d["brochureActive"] is True
+    evenement.lien_magazine = "https://mde.ci/magazine/promo"
+    evenement.save()
+    assert client.get(url).json()["magazineActif"] is True

@@ -109,7 +109,10 @@ class EvenementPublicView(APIView):
                 "fin": fin.astimezone(UTC).isoformat().replace("+00:00", "Z"),
                 "description": description_agenda(ev, slug),
             },
+            # guide « Comment ça se passe ? » : l'email n°2 part toujours au passage « Présent » ; ses boutons
+            # (magazine, brochure Executive Education) dépendent des liens
             "magazineActif": ev.magazine_disponible,
+            "brochureActive": bool(ev.lien_brochure or Parametres.charger().lien_brochure_defaut),
             "etat": services.FERME if ancien else services.etat_inscriptions(ev),
         }
 

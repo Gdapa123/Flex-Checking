@@ -1,9 +1,34 @@
 import { useId, useState } from 'react';
 import Icon from '../../components/ui/Icon';
 
+const promotion = (ev) => ev.nomAffiche.replace(/^Graduation\s+/i, '');
+
+/** 3e étape : l'email n°2, toujours envoyé au passage « Présent » ; son contenu dépend des liens renseignés. */
+function etapeEmail2(ev) {
+  const accueil = 'Une fois mon QR code scanné à l’accueil, je reçois par email';
+  if (ev.magazineActif)
+    return {
+      icone: 'book',
+      titre: ev.brochureActive ? 'Je reçois le magazine et la brochure' : 'Je reçois le magazine',
+      texte: `${accueil} le magazine de la promotion ${promotion(ev)}${ev.brochureActive ? ' et la brochure Executive Education de MDE Business School' : ''}.`,
+    };
+  if (ev.brochureActive)
+    return {
+      icone: 'book',
+      titre: 'Je reçois la brochure Executive Education',
+      texte: `${accueil} la brochure Executive Education de MDE Business School.`,
+    };
+  return {
+    icone: 'mail',
+    titre: 'Je reçois un email de bienvenue',
+    texte: `${accueil} la confirmation de ma présence.`,
+  };
+}
+
 /**
  * Guide « Comment ça se passe ? » au-dessus du formulaire d'inscription, replié par défaut : le formulaire est
- * visible dès l'ouverture du lien. L'étape « magazine » n'apparaît que si la cérémonie envoie l'email n°2.
+ * visible dès l'ouverture du lien. La 3e étape annonce l'email reçu après le scan (magazine, brochure Executive
+ * Education).
  */
 export default function Presentation({ ev }) {
   const [ouvert, setOuvert] = useState(false);
@@ -21,15 +46,7 @@ export default function Presentation({ ev }) {
       titre: 'Le jour de la graduation',
       texte: 'Je présente mon QR code à l’accueil : il est scanné rapidement. Le code à 4 chiffres sert de secours.',
     },
-    ...(ev.magazineActif
-      ? [
-          {
-            icone: 'book',
-            titre: 'Je reçois le magazine',
-            texte: `Une fois ma présence enregistrée, je reçois par email le lien du magazine de la promotion ${ev.nomAffiche.replace(/^Graduation\s+/i, '')}.`,
-          },
-        ]
-      : []),
+    etapeEmail2(ev),
   ];
 
   return (

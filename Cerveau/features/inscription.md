@@ -17,7 +17,7 @@ sources: [backend/apps/noyau/vues_public.py, backend/apps/noyau/services.py, bac
      par la page du sondage).
    - `etat` ≠ `OUVERT` → `EtatCarte` : `FERME`, `DATE_LIMITE`, `COMPLET`.
 2. **Guide des étapes** (`Presentation.jsx`) : bloc « Comment ça se passe ? » **replié par défaut** au-dessus du
-   formulaire (bouton `aria-expanded`), 2 ou 3 étapes (la 3ᵉ, « magazine », seulement si `magazineActif`). Depuis
+   formulaire (bouton `aria-expanded`), toujours 3 étapes depuis le 2026-11-10 : la 3ᵉ annonce l'email reçu après le scan, « magazine et brochure », « brochure » seule ou « email de bienvenue » selon `magazineActif` (lien du magazine) et `brochureActive` (lien de brochure de la cérémonie, sinon défaut des Paramètres) de `GET /api/public/evenements/<slug>/`. Depuis
    le 2026-11-09 le formulaire s’affiche directement ; l’ancien écran intermédiaire « Commencer mon inscription »
    (`?etape=formulaire`) est supprimé.
 3. **Formulaire** : civilité, nom, prénom, email, téléphone (+225), entreprise, fonction, consentement —

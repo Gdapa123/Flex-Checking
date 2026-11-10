@@ -1298,3 +1298,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/features/invites/GestionInvites.jsx`, `frontend/e2e/responsive.spec.js`, `frontend/playwright.config.js`
 - **Validation :** ESLint et Prettier OK, Vitest 107/107, Playwright `responsive.spec.js` + `parcours.spec.js` 4/4 en local ; CI à confirmer.
 - **Risques ou limites :** aucun.
+
+## [2026-11-10] fonctionnalité | Guide d'inscription : étape « magazine et brochure Executive Education » toujours annoncée
+
+- **Contexte :** demande de l'utilisateur : le guide ne disait pas aux invités qu'ils recevront, après le scan, un email avec le magazine et la brochure Executive Education.
+- **Modifications :** `Presentation` : 3ᵉ étape toujours affichée (l'email n°2 part pour tout invité présent), titre et texte selon les liens ; page publique : champ `brochureActive` (`vues_public`), lecture seule, aucun champ ajouté au formulaire d'inscription.
+- **Fichiers concernés :** `frontend/src/features/invite/Presentation.jsx`, `backend/apps/noyau/vues_public.py`, `frontend/tests/presentation.test.jsx`, `backend/apps/noyau/tests/test_corrections_invitation.py`, `Cerveau/features/inscription.md`
+- **Validation :** ruff OK, pytest complet OK, ESLint OK, Vitest 110/110, build OK, Playwright 10/10.
+- **Risques ou limites :** aucun ; backend à redéployer (nouveau champ public).
