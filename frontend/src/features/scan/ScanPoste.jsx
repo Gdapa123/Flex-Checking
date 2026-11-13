@@ -79,7 +79,7 @@ function presenterResultat(r, { mode, poste }) {
         type: 'AUTRE_EVENEMENT',
         titre: 'Cet invité appartient à un autre événement',
         nom: '',
-        meta: `Inscrit à la ${r.evenementAutre}`,
+        meta: r.evenementAutre ? `Inscrit à la ${r.evenementAutre}` : 'Inscrit à une autre cérémonie',
       };
     case 'ANNULE_DEPUIS':
       return {

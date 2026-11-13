@@ -1356,3 +1356,11 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** ESLint et Prettier OK, Vitest 119/119, build OK (plus de `registerSW.js`, `sw.js` toujours généré). pytest et Playwright non relancés (Docker arrêté).
 - **Risques ou limites :** un échec de chargement sur réseau instable reste possible (et signalé) ; seul le message affiché change. Effet en production après déploiement seulement.
 
+## [2026-11-13] sécurité | Revue de sécurité globale : 6 corrections, 4 points acceptés
+
+- **Contexte :** demande de l'utilisateur : revue de sécurité de tout le dépôt (`/code-review`) puis corrections.
+- **Modifications :** corps lu avant la file d'attente ; jeton de rafraîchissement copié → toutes les sessions fermées (`SESSION_REUTILISEE`) ; `rotate_token` à la connexion ; `lieu` sans caractères de contrôle et objet des emails sur une ligne ; QR d'une autre cérémonie sans verrou ni nom hors périmètre ; liens refusés dans les champs d'un invité (serveur et Zod). Détail et points acceptés : [R35](project/risques-et-dette.md).
+- **Fichiers concernés :** `backend/config/concurrence.py`, `backend/apps/comptes/views.py`, `backend/apps/noyau/{services,serializers,validation,emails,journal,journal_texte}.py`, `backend/apps/noyau/tests/{test_revue_securite,test_emargement}.py`, `frontend/src/lib/schemas.js`, `frontend/src/features/scan/ScanPoste.jsx`, `frontend/tests/schemas.test.js`
+- **Validation :** ruff OK, pytest 428/428, ESLint et Prettier OK, Vitest 120/120, build OK, Playwright 10/10.
+- **Risques ou limites :** un vrai invité dont le navigateur perd la réponse d'un rafraîchissement puis renvoie l'ancien jeton plus de 30 s après est déconnecté de toutes ses sessions (il se reconnecte) ; un nom contenant un domaine connu (« .com », « .ci »…) est refusé.
+

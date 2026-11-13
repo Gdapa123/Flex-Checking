@@ -142,9 +142,16 @@ def emarger(evenement, admin, *, qr_token=None, code=None, invite_id=None, mode,
             qr_token = qr_token.strip()
             if not est_qr_token(qr_token):  # QR code étranger (lien, texte…) : jamais cherché en base
                 return _resultat(CODE_INVALIDE, evenement)
-            invite = qs.filter(qr_token=qr_token).first()
-            if invite is not None and invite.evenement_id != evenement.pk:
-                return _resultat(AUTRE_EVENEMENT, evenement, invite=None, evenement_autre=invite.evenement.nom_affiche)
+            trouve = Invite.objects.filter(qr_token=qr_token).values("pk", "evenement_id").first()
+            if trouve is not None and trouve["evenement_id"] != evenement.pk:
+                # invité d'une autre cérémonie : ni verrou sur sa ligne, ni nom d'une cérémonie hors du périmètre
+                from apps.comptes.permissions import evenements_visibles
+
+                autre = evenements_visibles(admin).filter(pk=trouve["evenement_id"]).first()
+                return _resultat(
+                    AUTRE_EVENEMENT, evenement, invite=None, evenement_autre=autre.nom_affiche if autre else None
+                )
+            invite = qs.filter(pk=trouve["pk"]).first() if trouve else None
         elif code:
             invite = qs.filter(evenement=evenement, code=code.strip()).first()
         elif invite_id:

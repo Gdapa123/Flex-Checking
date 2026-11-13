@@ -37,6 +37,21 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
     expect(e.entreprise).toBe('Indiquez votre entreprise.');
     expect(e.fonction).toBe('Indiquez votre fonction.');
   });
+  it('refuse les liens dans les champs repris par l’invitation (miroir de validation.LIEN_RE_NOM / LIEN_RE_TEXTE)', () => {
+    const e = erreursParChamp(
+      schemaInscription.safeParse({
+        ...OK,
+        prenom: 'Réglez sur https://payer-mde.co',
+        nom: 'payer-mde.co',
+        entreprise: 'www.x.ci',
+        fonction: 'voir http://x',
+      }),
+    );
+    for (const champ of ['prenom', 'nom', 'entreprise', 'fonction'])
+      expect(e[champ]).toBe('Les liens et adresses ne sont pas acceptés dans ce champ.');
+    const noms = { ...OK, prenom: 'J.-B. Marie', nom: 'N’Guessan-Koffi', entreprise: 'Jumia.ci' };
+    expect(schemaInscription.safeParse(noms).success).toBe(true);
+  });
   it('exige le consentement', () => {
     expect(erreurChamp(schemaInscription, 'consentementDonnees', { ...OK, consentementDonnees: false })).toMatch(
       /Cochez cette case/,

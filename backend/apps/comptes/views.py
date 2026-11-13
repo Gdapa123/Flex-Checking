@@ -8,7 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core import signing
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.middleware.csrf import get_token
+from django.middleware.csrf import get_token, rotate_token
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
@@ -228,7 +228,9 @@ class ConnexionView(APIView):
         response = Response(MoiSerializer(admin).data)
         _poser_cookies(response, emettre_jetons(admin))
         _memoriser_poste(request, response, email)
-        get_token(request)
+        # nouveau jeton CSRF pour la session authentifiée : un jeton posé avant la connexion (par un sous-domaine
+        # voisin, par exemple) n'est plus accepté
+        rotate_token(request)
         return response
 
 
@@ -255,6 +257,41 @@ def _renouvele_par_un_autre_onglet(raw):
     return OutstandingToken.objects.filter(
         user_id=origine.user_id, pk__gt=origine.pk, created_at__range=fenetre
     ).exists()
+
+
+def _compte_du_jeton_reutilise(raw):
+    """Jeton de rafraîchissement authentique, non expiré, de la session en cours du compte, mais déjà révoqué (rotation
+    ou déconnexion) hors de la fenêtre des onglets simultanés : il a été copié (vol de cookie). Rend le compte."""
+    try:
+        donnees = token_backend.decode(raw, verify=True)
+    except TokenBackendError:
+        return None
+    origine = OutstandingToken.objects.filter(jti=donnees.get("jti")).first()
+    if origine is None or not BlacklistedToken.objects.filter(token=origine).exists():
+        return None
+    admin = Admin.objects.filter(pk=donnees.get("user_id")).first()
+    if admin is None or jeton_revoque(donnees, admin):  # session déjà fermée par un changement de mot de passe
+        return None
+    return admin
+
+
+def _fermer_sessions_jeton_reutilise(request, admin):
+    """Réutilisation d'un jeton déjà renouvelé : toutes les sessions du compte sont fermées (celle du voleur comme
+    celle de la personne), l'action est journalisée et le super admin alerté (une fois par compte et par heure)."""
+    from apps.noyau.alertes import alerter
+
+    nouvelle_version_session(admin)
+    admin.save(update_fields=["version_session"])
+    reseau = ConnexionIpThrottle().get_ident(request)
+    securite.warning("Jeton de session réutilisé : compte %s, réseau %s ; sessions fermées", admin.pk, reseau)
+    journaliser(None, "SESSION_REUTILISEE", admin, reseau=reseau)
+    alerter(
+        f"session-reutilisee:{admin.pk}",
+        f"Session copiée : {admin.nom}",
+        f"Un jeton de session déjà renouvelé du compte « {admin.nom} » ({admin.get_role_display()}) a été présenté "
+        f"de nouveau (réseau {reseau}) : le cookie de session a probablement été copié. Toutes les sessions du "
+        "compte ont été fermées ; la personne doit se reconnecter. Si cela se répète, changez son mot de passe.",
+    )
 
 
 class RafraichirView(APIView):
@@ -287,6 +324,9 @@ class RafraichirView(APIView):
                 # un autre onglet vient de renouveler la session : ses nouveaux cookies sont déjà dans le navigateur,
                 # ne pas les effacer (sinon l'utilisateur est déconnecté de tous ses onglets)
                 return Response({"code": "SESSION_DEJA_RENOUVELEE"}, status=status.HTTP_409_CONFLICT)
+            compte = _compte_du_jeton_reutilise(raw)
+            if compte is not None:
+                _fermer_sessions_jeton_reutilise(request, compte)
             response = Response({"code": "SESSION_EXPIREE"}, status=status.HTTP_401_UNAUTHORIZED)
             _effacer_cookies(response)
             return response

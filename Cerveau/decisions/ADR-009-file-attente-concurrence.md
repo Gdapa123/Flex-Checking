@@ -1,8 +1,8 @@
 ---
 type: decision
 statut: acceptée
-verifie: 2026-11-10
-commit: 93646d7
+verifie: 2026-11-13
+commit: 0a11d09
 sources: [backend/config/bases.py, backend/config/settings.py, backend/config/concurrence.py, backend/config/asgi.py, backend/apps/noyau/consumers.py, docker-compose.prod.yml, infra/charge/README.md]
 ---
 
@@ -37,3 +37,10 @@ Dimensionnement : `WEB_CONCURRENCY × DB_CONCURRENCE × conteneurs < max_connect
 Décision et complément Postgres toujours conformes : `concurrence.py`, `bases.py`, `asgi.py`, `consumers.py` et
 `docker-compose.prod.yml` sont inchangés depuis `f55527e` ; seul ajout dans `settings.py`, la limite de débit
 `images_email`, sans rapport avec la file d'attente.
+
+## Complément (2026-11-13, revue de sécurité R35)
+Le corps de la requête est lu **avant** de prendre une place (`concurrence._lire_corps`, rejoué à Django par
+`_rejouer`) : un client qui envoie son corps très lentement ne bloque plus de place. Délai `LECTURE_CORPS_MAX`
+(15 s, variable d'environnement) → 408 `LECTURE_TROP_LENTE` ; plus de 6 Mo → 413 `TROP_VOLUMINEUX`. Le corps
+est gardé en mémoire le temps de la requête (5 Mo au plus derrière Caddy). Test :
+`test_revue_securite.py::test_corps_lu_avant_de_prendre_une_place`.

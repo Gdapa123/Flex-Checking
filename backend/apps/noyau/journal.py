@@ -41,6 +41,7 @@ CATEGORIES = {
     "CONNEXION": "Compte",
     "CONNEXION_ECHEC": "Compte",
     "CONNEXION_BLOQUEE": "Compte",
+    "SESSION_REUTILISEE": "Compte",
     "DECONNEXION": "Compte",
     "MOT_DE_PASSE_CHANGE": "Compte",
 }

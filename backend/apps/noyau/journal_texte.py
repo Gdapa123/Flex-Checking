@@ -156,6 +156,8 @@ def decrire(e, cibles):  # noqa: C901 — table de correspondance volontairement
             return f"Connexion refusée · {cible.nom if cible else 'compte supprimé'} · {raison}"
         case "CONNEXION_BLOQUEE":
             return f"Connexion bloquée après trop d’échecs · {cible.nom if cible else 'compte supprimé'}"
+        case "SESSION_REUTILISEE":
+            return f"Sessions fermées : jeton de session copié · {cible.nom if cible else 'compte supprimé'}"
         case "DECONNEXION":
             return "Déconnexion"
         case "MOT_DE_PASSE_CHANGE":

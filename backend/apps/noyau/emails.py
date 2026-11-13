@@ -285,7 +285,8 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
             ("graduation.ics", ics_evenement(ev), "text/calendar"),
         ]
     return {
-        "objet": _remplacer(objet, valeurs),
+        # en-tête Subject : aucun saut de ligne, même venant d'une valeur remplacée (sinon BadHeaderError)
+        "objet": " ".join(_remplacer(objet, valeurs).split()),
         "html": html,
         "texte": texte,
         "images_inline": list(images.items()),

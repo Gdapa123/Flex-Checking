@@ -54,7 +54,8 @@ def test_code_invalide_et_autre_evenement(client_admin, evenement, autre_eveneme
     autre = nouvel_invite(autre_evenement, email="b@sib.ci")
     d = scan(client_admin, evenement, qrToken=autre.qr_token).json()
     assert d["resultat"] == "AUTRE_EVENEMENT"
-    assert d["evenementAutre"] == autre_evenement.nom_affiche
+    # cérémonie hors du périmètre de l'admin : son nom n'est pas révélé (revue de sécurité 2026-11-13)
+    assert d["evenementAutre"] is None
     assert d["invite"] is None
 
 

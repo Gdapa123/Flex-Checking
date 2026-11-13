@@ -10,7 +10,15 @@ HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 CONTROLE_RE = re.compile(r"[\x00-\x1f\x7f]")
 # texte sur plusieurs lignes : sauts de ligne et tabulation admis, autres caractères de contrôle refusés
 CONTROLE_MULTILIGNE_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-
+# Liens glissés dans les champs d'un invité : l'invitation, envoyée depuis l'adresse de MDE à l'email saisi, reprend
+# prénom, nom et entreprise (hameçonnage « réglez vos frais sur … »). Nom et prénom : ni lien, ni adresse, ni domaine ;
+# entreprise et fonction : ni lien ni « www. » (un nom de société peut contenir un point : « Jumia.ci »).
+LIEN_RE_TEXTE = re.compile(r"https?:|://|www\.", re.IGNORECASE)
+LIEN_RE_NOM = re.compile(
+    r"https?:|://|www\.|[@/\\]|\.(?:com|net|org|ci|co|io|fr|info|biz|xyz|me|link|site|online|app|ly|top|shop)\b",
+    re.IGNORECASE,
+)
+MESSAGE_LIEN = "Les liens et adresses ne sont pas acceptés dans ce champ."
 
 ENTIER_RE = re.compile(r"[0-9]{1,9}")
 # QR code d'invitation : exactement le jeton de models.nouveau_qr_token (secrets.token_urlsafe(24), 32 caractères
@@ -60,8 +68,14 @@ def sans_controle_multiligne(valeur):
     return valeur
 
 
+def sans_lien(valeur, motif=LIEN_RE_TEXTE):
+    if motif.search(valeur or ""):
+        raise serializers.ValidationError(MESSAGE_LIEN)
+    return valeur
+
+
 def valider_nom(valeur, libelle):
-    valeur = sans_controle((valeur or "").strip())
+    valeur = sans_lien(sans_controle((valeur or "").strip()), LIEN_RE_NOM)
     if len(valeur) < 2:
         raise serializers.ValidationError(f"Indiquez votre {libelle}.")
     if len(valeur) > 80:

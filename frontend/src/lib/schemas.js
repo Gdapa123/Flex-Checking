@@ -41,12 +41,21 @@ export const MESSAGES_QR = {
   inconnu: 'Ce n’est pas une invitation Flex’Checking. Proposez le code à 4 chiffres ou la recherche par nom.',
 };
 
+// liens refusés dans les champs d'un invité (miroir de LIEN_RE_TEXTE / LIEN_RE_NOM de validation.py) : l'invitation
+// envoyée depuis l'adresse de MDE reprend ces champs
+const LIEN_RE_TEXTE = /https?:|:\/\/|www\./i;
+const LIEN_RE_NOM =
+  /https?:|:\/\/|www\.|[@/\\]|\.(?:com|net|org|ci|co|io|fr|info|biz|xyz|me|link|site|online|app|ly|top|shop)\b/i;
+export const MESSAGE_LIEN = 'Les liens et adresses ne sont pas acceptés dans ce champ.';
+const sansLien = (motif) => (v) => !motif.test(v);
+
 export const champNom = (libelle) =>
   z
     .string({ error: `Indiquez votre ${libelle}.` })
     .trim()
     .min(2, `Indiquez votre ${libelle}.`)
-    .max(80, '80 caractères maximum.');
+    .max(80, '80 caractères maximum.')
+    .refine(sansLien(LIEN_RE_NOM), MESSAGE_LIEN);
 
 export const champEmail = z
   .string({ error: 'Indiquez votre adresse email.' })
@@ -74,8 +83,8 @@ export const schemaInvite = z.object({
   prenom: champNom('prénom'),
   email: champEmail,
   telephone: champTelephone,
-  entreprise: z.string().trim().max(120).optional().default(''),
-  fonction: z.string().trim().max(120).optional().default(''),
+  entreprise: z.string().trim().max(120).refine(sansLien(LIEN_RE_TEXTE), MESSAGE_LIEN).optional().default(''),
+  fonction: z.string().trim().max(120).refine(sansLien(LIEN_RE_TEXTE), MESSAGE_LIEN).optional().default(''),
 });
 
 /** Tous les champs sont obligatoires, entreprise et fonction comprises (inscription, ajout manuel et modification). */
@@ -84,12 +93,14 @@ export const schemaInviteComplet = schemaInvite.extend({
     .string({ error: 'Indiquez votre entreprise.' })
     .trim()
     .min(2, 'Indiquez votre entreprise.')
-    .max(120, '120 caractères maximum.'),
+    .max(120, '120 caractères maximum.')
+    .refine(sansLien(LIEN_RE_TEXTE), MESSAGE_LIEN),
   fonction: z
     .string({ error: 'Indiquez votre fonction.' })
     .trim()
     .min(2, 'Indiquez votre fonction.')
-    .max(120, '120 caractères maximum.'),
+    .max(120, '120 caractères maximum.')
+    .refine(sansLien(LIEN_RE_TEXTE), MESSAGE_LIEN),
 });
 
 export const schemaInscription = schemaInviteComplet.extend({

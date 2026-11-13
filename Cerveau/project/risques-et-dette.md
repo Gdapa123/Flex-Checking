@@ -1,9 +1,9 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
-sources: [backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/noyau/services.py, backend/apps/noyau/middleware.py, frontend/src/features/super/Programmes.jsx, infra/vps/sauvegarde.sh, infra/vps/activer-sauvegardes.sh, backend/templates/emails/invitation.html, backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
+verifie: 2026-11-13
+commit: 0a11d09
+sources: [backend/config/concurrence.py, backend/apps/noyau/tests/test_revue_securite.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/noyau/services.py, backend/apps/noyau/middleware.py, frontend/src/features/super/Programmes.jsx, infra/vps/sauvegarde.sh, infra/vps/activer-sauvegardes.sh, backend/templates/emails/invitation.html, backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
 ---
 
 # Risques, limitations et dette technique
@@ -384,6 +384,30 @@ Pillow 13.0.0), R16, R18, R19 (`MAX_CODES_INVALIDES_BORNE` = 10), R20, R23, R24.
 - Constaté au journal le 2026-11-10 : Docker indisponible faute de place (Caddy non testé en local) et un échec
   `ENOSPC` de Playwright sur `sessionAdmin.spec.js` (réussi à la relance). Sans effet sur la production ; la CI GitHub
   (verte depuis `97aad10`) reste le contrôle de référence. **Statut** : ouvert (libérer de l’espace sur le poste).
+
+## R35 — Revue de sécurité globale du 2026-11-13 (sécurité) — 🟡 6 points corrigés, 4 acceptés
+Revue de tout le dépôt (`/code-review`), chaque point vérifié dans le code avant correction.
+- ✅ **File d'attente bloquée par un envoi lent** : `config/concurrence.LimiteConcurrence` prenait sa place avant la
+  lecture du corps (aucun délai de lecture chez Caddy ni Uvicorn). Le corps est maintenant lu d'abord
+  (`LECTURE_CORPS_MAX` = 15 s → 408, plus de 6 Mo → 413). Voir [ADR-009](../decisions/ADR-009-file-attente-concurrence.md).
+- ✅ **Jeton de rafraîchissement copié** : sa réutilisation après la fenêtre des onglets simultanés (30 s) ferme toutes
+  les sessions du compte (`nouvelle_version_session`), action `SESSION_REUTILISEE` au journal, alerte au super admin
+  (`comptes/views._fermer_sessions_jeton_reutilise`).
+- ✅ **Jeton CSRF non renouvelé à la connexion** : `rotate_token` dans `ConnexionView`.
+- ✅ **`Evenement.lieu` sans contrôle des caractères de contrôle** : `validate_lieu` (`sans_controle`) ; l'objet des
+  emails est en plus ramené sur une ligne (`emails.rendre`).
+- ✅ **Scan d'un QR d'une autre cérémonie** : plus de verrou sur la ligne de l'invité, nom de la cérémonie renvoyé
+  seulement si elle est dans `evenements_visibles` (sinon « Inscrit à une autre cérémonie »).
+- ✅ **Liens dans les champs repris par l'invitation** (hameçonnage depuis l'expéditeur de MDE) : liens, adresses et
+  domaines refusés dans prénom et nom, liens et « www. » dans entreprise et fonction (`validation.sans_lien`, miroir Zod
+  `schemas.champNom`). L'envoi à une adresse non confirmée reste possible (voir R11).
+- Acceptés, sans changement : **marquage en masse depuis la borne** (recherche + « C'est moi » à 12/min : la borne est
+  surveillée par l'hôte, l'annulation reste possible) ; **`dateClient` choisi par la borne** pour le jeton « C'est
+  moi » (nécessaire au rejeu hors ligne ; le jeton n'est obtenu que par la session borne elle-même) ; **vérification
+  du mot de passe de l'hôte à la borne** sans verrou (R12) ; **script de sauvegarde lancé en root par lien vers le
+  dépôt** (le compte de déploiement a déjà `sudo` sans mot de passe et `mettre-a-jour.sh` lance ce script en root :
+  aucun droit en plus).
+- Preuve : `backend/apps/noyau/tests/test_revue_securite.py` (12 tests), `frontend/tests/schemas.test.js`.
 
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface

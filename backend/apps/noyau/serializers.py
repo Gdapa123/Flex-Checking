@@ -24,6 +24,7 @@ from .services import etat_inscriptions, statut_evenement
 from .theme import tokens_du_programme
 from .validation import (
     sans_controle,
+    sans_lien,
     valider_couleur,
     valider_couleur_facultative,
     valider_email,
@@ -211,6 +212,10 @@ class EvenementSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Ce programme est désactivé.")
         return programme
 
+    def validate_lieu(self, v):
+        # remplacé dans l'objet des emails ({lieu}) et le fichier .ics : une seule ligne
+        return sans_controle(v)
+
     def validate_lien_magazine(self, v):
         return valider_lien(v)
 
@@ -322,10 +327,10 @@ class InviteEcritureSerializer(serializers.Serializer):
         return valider_telephone(v)
 
     def validate_entreprise(self, v):
-        return sans_controle(v)  # CharField retire déjà les espaces de début et de fin
+        return sans_lien(sans_controle(v))  # CharField retire déjà les espaces de début et de fin
 
     def validate_fonction(self, v):
-        return sans_controle(v)
+        return sans_lien(sans_controle(v))
 
 
 class ChampsProfessionnelsObligatoires(serializers.Serializer):
@@ -343,10 +348,10 @@ class ChampsProfessionnelsObligatoires(serializers.Serializer):
     )
 
     def validate_entreprise(self, v):
-        return valider_texte_obligatoire(v, "Indiquez votre entreprise.")
+        return sans_lien(valider_texte_obligatoire(v, "Indiquez votre entreprise."))
 
     def validate_fonction(self, v):
-        return valider_texte_obligatoire(v, "Indiquez votre fonction.")
+        return sans_lien(valider_texte_obligatoire(v, "Indiquez votre fonction."))
 
 
 class InscriptionSerializer(ChampsProfessionnelsObligatoires, InviteEcritureSerializer):

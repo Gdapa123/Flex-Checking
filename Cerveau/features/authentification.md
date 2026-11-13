@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
+verifie: 2026-11-13
+commit: 0a11d09
 sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx, frontend/src/lib/nouvelleVersion.js, frontend/src/main.jsx, infra/Caddyfile.prod]
 ---
 
@@ -51,6 +51,10 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
   autre appareil ne suffit pas, depuis `7e0e071`), `RafraichirView` répond 409 `SESSION_DEJA_RENOUVELEE` **sans effacer les cookies**
   (`_renouvele_par_un_autre_onglet`) ; une déconnexion ou une révocation n'émettant pas de nouveau jeton reste un
   401 `SESSION_EXPIREE`.
+  **Jeton copié** (2026-11-13) : hors de cette fenêtre, un jeton authentique, de la session en cours, mais déjà
+  révoqué ferme **toutes** les sessions du compte (`_compte_du_jeton_reutilise`, `_fermer_sessions_jeton_reutilise` :
+  `nouvelle_version_session`, action `SESSION_REUTILISEE`, alerte par email) — voir R35.
+- **CSRF** : jeton renouvelé à la connexion (`rotate_token`, 2026-11-13).
 - Champ mot de passe avec bouton « Afficher / Masquer » (`Champ`, aussi dans le changement de mot de passe).
 - Deux écrans : `/connexion` (admin, redirection selon le rôle) et `/super/connexion` (univers MDE).
 - Retour après connexion vers `state.depuis`, filtré par `cheminInterne` (pas de redirection ouverte).
