@@ -5,6 +5,8 @@
 const NOIR = '#000000';
 const BLANC = '#FFFFFF';
 const TEXTE_FONCE = '#141414';
+// couleur des titres sur fond blanc par défaut (= --texte de styles/tokens.css)
+export const TITRE_DEFAUT = '#1B1D20';
 
 export function hexVersRgb(couleur) {
   let h = couleur.replace('#', '');
@@ -58,7 +60,11 @@ export function couleurSur(fond) {
 
 export const estHexValide = (c) => /^#[0-9a-f]{6}$/i.test(c || '');
 
-export function deriverTokens(principale, secondaire) {
+/**
+ * `texte` : couleur du texte posé sur la principale (boutons, bandeaux), automatique si vide ; `titres` : couleur des
+ * titres sur fond blanc, #1B1D20 si vide (réglages du programme, 2026-11-10).
+ */
+export function deriverTokens(principale, secondaire, texte = '', titres = '') {
   const p = principale.toUpperCase();
   const s = secondaire.toUpperCase();
   return {
@@ -67,15 +73,16 @@ export function deriverTokens(principale, secondaire) {
     primary_hover: melanger(p, NOIR, 0.15),
     primary_soft: melanger(p, BLANC, 0.88),
     secondary_soft: melanger(s, BLANC, 0.85),
-    on_primary: couleurSur(p),
+    on_primary: (texte || couleurSur(p)).toUpperCase(),
     on_secondary: couleurSur(s),
     header: melanger(p, BLANC, 0.86),
+    heading: (titres || TITRE_DEFAUT).toUpperCase(),
   };
 }
 
 /** Variables CSS (--p, --s…) à poser sur la racine d'un écran thématisé. */
-export function variablesCss(principale, secondaire) {
-  const t = deriverTokens(principale, secondaire);
+export function variablesCss(principale, secondaire, texte = '', titres = '') {
+  const t = deriverTokens(principale, secondaire, texte, titres);
   return {
     '--p': t.primary,
     '--s': t.secondary,
@@ -85,18 +92,19 @@ export function variablesCss(principale, secondaire) {
     '--op': t.on_primary,
     '--os': t.on_secondary,
     '--hd': t.header,
+    '--ti': t.heading,
   };
 }
 
-/** Variables CSS depuis les tokens renvoyés par l'API ({p, s, ph, ps, ss, op, os, hd}). */
+/** Variables CSS depuis les tokens renvoyés par l'API ({p, s, ph, ps, ss, op, os, hd, ti}). */
 export function variablesDepuisApi(tokens) {
   if (!tokens) return {};
   return Object.fromEntries(Object.entries(tokens).map(([k, v]) => [`--${k}`, v]));
 }
 
 /** Contrôles de contraste WCAG affichés dans l'éditeur de programme. */
-export function controlesContraste(principale, secondaire) {
-  const t = deriverTokens(principale, secondaire);
+export function controlesContraste(principale, secondaire, texte = '', titres = '') {
+  const t = deriverTokens(principale, secondaire, texte, titres);
   const graphite = '#0B0C0D';
   return [
     {
@@ -106,6 +114,7 @@ export function controlesContraste(principale, secondaire) {
       min: 4.5,
     },
     { cle: 'pblanc', label: 'Principale en texte sur blanc', ratio: contraste(t.primary, BLANC), min: 4.5 },
+    { cle: 'titres', label: 'Titres sur fond blanc', ratio: contraste(t.heading, BLANC), min: 4.5 },
     {
       cle: 'sg',
       label: 'Secondaire sur fond graphite (cadre de visée)',
@@ -120,3 +129,6 @@ export function controlesContraste(principale, secondaire) {
     },
   ].map((c) => ({ ...c, ok: c.ratio >= c.min }));
 }
+
+/** Logo blanc sur une principale foncée : choix selon le fond, indépendant de la couleur de texte choisie. */
+export const logoBlanc = (principale) => couleurSur(principale.toUpperCase()) === BLANC;

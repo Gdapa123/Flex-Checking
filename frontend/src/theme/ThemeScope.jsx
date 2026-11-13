@@ -8,13 +8,19 @@ export default function ThemeScope({
   tokens,
   principale,
   secondaire,
+  texte,
+  titres,
   className = '',
   children,
   as: Tag = 'div',
   style,
   ...rest
 }) {
-  const variables = tokens ? variablesDepuisApi(tokens) : principale ? variablesCss(principale, secondaire) : {};
+  const variables = tokens
+    ? variablesDepuisApi(tokens)
+    : principale
+      ? variablesCss(principale, secondaire, texte, titres)
+      : {};
   return (
     <Tag className={className} style={{ ...style, ...variables }} {...rest}>
       {children}

@@ -14,7 +14,7 @@ Migrations : `0001_initial` → `0015_email_2_toujours_envoye` (noyau ; la 0008 
 ## Entités
 
 ### Programme
-`nom` (unique), `couleur_principale`, `couleur_secondaire` (#RRGGBB, mises en majuscules), `actif`,
+`nom` (unique), `couleur_principale`, `couleur_secondaire` (#RRGGBB, mises en majuscules), `couleur_texte` et `couleur_titres` (#RRGGBB ou vide = automatique, migration `0016_couleurs_texte_titres`, `db_default=""`), `actif`,
 `magazine_actif` (sans effet depuis le 2026-11-10, champ gardé selon [ADR-014](../decisions/ADR-014-migrations-expand-contract.md)), `lien_magazine` (lien par défaut des cérémonies), `sondage_actif` (défaut vrai), dates. Créés par la data migration `0002` : AMP `#8F1C1F/#F7941D`,
 PMD `#1A5E36/#FFF200`, Public-AMP `#77421C/#F7941D`, Public-ASD `#06474F/#F37740`.
 

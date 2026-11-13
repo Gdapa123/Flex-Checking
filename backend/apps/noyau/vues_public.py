@@ -21,7 +21,7 @@ from .icones_email import ICONES_EMAIL, icone_png
 from .ics import bornes, description_agenda, ics_evenement
 from .models import CarteInvitation, Evenement, Invite, Parametres, Programme, TypeEmail
 from .serializers import InscriptionSerializer, tokens_programme
-from .theme import deriver_tokens
+from .theme import tokens_du_programme
 from .validation import valider_email
 
 MESSAGE_RENVOI = (
@@ -263,9 +263,11 @@ def couleurs_des_emails():
     couleurs = cache.get("emails:couleurs")
     if couleurs is None:
         couleurs = set(COULEURS_FIXES)
-        for principale, secondaire in Programme.objects.values_list("couleur_principale", "couleur_secondaire"):
-            t = deriver_tokens(principale, secondaire)
-            couleurs |= {t["primary"].upper(), t["on_primary"].upper()}
+        for programme in Programme.objects.only(
+            "couleur_principale", "couleur_secondaire", "couleur_texte", "couleur_titres"
+        ):
+            t = tokens_du_programme(programme)
+            couleurs |= {t["primary"].upper(), t["on_primary"].upper(), t["heading"].upper()}
         cache.set("emails:couleurs", couleurs, 60)  # nouveau programme : ses icônes sous une minute
     return couleurs
 

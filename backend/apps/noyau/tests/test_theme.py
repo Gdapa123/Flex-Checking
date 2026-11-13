@@ -11,7 +11,7 @@ FIXTURES = json.loads((Path(settings.ROOT_DIR) / "shared" / "token-fixtures.json
 
 @pytest.mark.parametrize("cas", FIXTURES["cas"], ids=lambda c: c["nom"])
 def test_tokens_reference(cas):
-    t = deriver_tokens(cas["principale"], cas["secondaire"])
+    t = deriver_tokens(cas["principale"], cas["secondaire"], cas.get("texte", ""), cas.get("titres", ""))
     for cle, attendu in cas["attendu"].items():
         assert t[cle] == attendu, cle
 

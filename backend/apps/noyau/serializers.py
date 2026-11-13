@@ -21,10 +21,11 @@ from .models import (
     TypeEmail,
 )
 from .services import etat_inscriptions, statut_evenement
-from .theme import deriver_tokens
+from .theme import tokens_du_programme
 from .validation import (
     sans_controle,
     valider_couleur,
+    valider_couleur_facultative,
     valider_email,
     valider_lien,
     valider_nom,
@@ -34,7 +35,7 @@ from .validation import (
 
 
 def tokens_programme(programme):
-    t = deriver_tokens(programme.couleur_principale, programme.couleur_secondaire)
+    t = tokens_du_programme(programme)
     return {
         "p": t["primary"],
         "s": t["secondary"],
@@ -44,6 +45,7 @@ def tokens_programme(programme):
         "op": t["on_primary"],
         "os": t["on_secondary"],
         "hd": t["header"],
+        "ti": t["heading"],
     }
 
 
@@ -59,6 +61,8 @@ class ProgrammeSerializer(serializers.ModelSerializer):
             "nom",
             "couleur_principale",
             "couleur_secondaire",
+            "couleur_texte",
+            "couleur_titres",
             "actif",
             "magazine_actif",
             "lien_magazine",
@@ -78,6 +82,12 @@ class ProgrammeSerializer(serializers.ModelSerializer):
 
     def validate_couleur_secondaire(self, v):
         return valider_couleur(v)
+
+    def validate_couleur_texte(self, v):
+        return valider_couleur_facultative(v)
+
+    def validate_couleur_titres(self, v):
+        return valider_couleur_facultative(v)
 
     def validate_nom(self, v):
         v = sans_controle(v.strip())

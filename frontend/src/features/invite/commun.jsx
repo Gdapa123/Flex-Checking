@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { dateBandeau, heureTexte } from '../../lib/format';
 import Icon from '../../components/ui/Icon';
 import Logo from '../../components/ui/Logo';
+import { logoBlanc } from '../../theme/tokens';
 
 export function useEvenementPublic(slug) {
   return useQuery({
@@ -17,11 +18,12 @@ export const CLE_CONFIRMATION = (slug) => `fc-confirmation-${slug}`;
 
 /** En-tête en dégradé du programme (I1 à I7). */
 export function EnteteInvite({ ev, variante = 'formulaire', children }) {
-  const logoBlanc = ev.tokens?.op === '#FFFFFF';
+  // logo selon le fond (la principale), pas selon la couleur de texte choisie
+  const blanc = ev.tokens?.p ? logoBlanc(ev.tokens.p) : true;
   return (
     <header className="entete-degrade hachures px-5 pb-11 pt-3.5 sm:pb-16 sm:pt-[22px]">
       <div className="relative mx-auto flex max-w-[560px] flex-col gap-3.5 sm:gap-[22px]">
-        <Logo variante={logoBlanc ? 'blanc' : 'rouge'} hauteur={32} />
+        <Logo variante={blanc ? 'blanc' : 'rouge'} hauteur={32} />
         {variante === 'formulaire' ? (
           <>
             <div className="flex flex-col gap-1.5 sm:gap-2.5">

@@ -97,7 +97,11 @@ export function Section({ id, icone, titre, texte, children }) {
           <Icon nom={icone} />
         </span>
         <div className="flex flex-col">
-          <h2 id={`${id}-titre`} tabIndex={-1} className="m-0 text-[18px] font-bold tracking-[-0.01em] outline-none">
+          <h2
+            id={`${id}-titre`}
+            tabIndex={-1}
+            className="m-0 text-[18px] font-bold tracking-[-0.01em] text-titre outline-none"
+          >
             {titre}
           </h2>
           <p className="m-0 text-[14px] text-texte-2">{texte}</p>

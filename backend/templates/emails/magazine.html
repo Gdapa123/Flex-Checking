@@ -17,10 +17,10 @@
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EAECEE;border-radius:16px;border-collapse:separate;">
   <tr><td class="police" style="padding:24px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;">
     {% if lien_magazine %}
-    <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:#1B1D20;">Le magazine {{ programme }} {{ annee }}</p>
+    <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:{{ t.heading }};">Le magazine {{ programme }} {{ annee }}</p>
     <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#5F666C;">Portraits des diplômés, temps forts du programme et mots des intervenants.</p>
     {% else %}
-    <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:#1B1D20;">Executive Education</p>
+    <p style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.2px;color:{{ t.heading }};">Executive Education</p>
     <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#5F666C;">Découvrez les programmes de MDE Business School.</p>
     {% endif %}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">

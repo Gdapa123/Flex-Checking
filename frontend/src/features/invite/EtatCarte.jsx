@@ -29,7 +29,7 @@ export default function EtatCarte({ ev, etat }) {
     <main className="relative mx-auto -mt-10 max-w-[560px] px-3 pb-10">
       <section className="flex animate-in-up flex-col items-center gap-4 rounded-carte border border-bordure-carte bg-surface px-6 py-8 text-center shadow-carte">
         <IconeTuile nom={e.icone} />
-        <h2 className="m-0 text-[24px] font-bold tracking-[-0.02em] [text-wrap:balance]">{e.titre}</h2>
+        <h2 className="m-0 text-[24px] font-bold tracking-[-0.02em] text-titre [text-wrap:balance]">{e.titre}</h2>
         <p className="m-0 max-w-[400px] text-[16px] leading-[1.55] text-texte-2 [text-wrap:pretty]">{e.texte}</p>
         <a
           href={CONTACT}

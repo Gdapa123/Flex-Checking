@@ -323,7 +323,9 @@ function Merci({ prenom, dejaAppareil, dejaLien }) {
       <span className="flex h-16 w-16 animate-pop items-center justify-center rounded-full bg-succes-doux text-[30px] text-succes">
         <Icon nom="check" />
       </span>
-      <h2 className="m-0 text-[24px] font-bold tracking-[-0.02em]">{prenom ? `Merci ${prenom} !` : 'Merci !'}</h2>
+      <h2 className="m-0 text-[24px] font-bold tracking-[-0.02em] text-titre">
+        {prenom ? `Merci ${prenom} !` : 'Merci !'}
+      </h2>
       <p className="m-0 max-w-[420px] text-[16px] leading-[1.55] text-texte-3 [text-wrap:pretty]">
         {dejaAppareil
           ? 'Un avis a déjà été envoyé depuis cet appareil pour cette cérémonie. Merci pour votre participation.'
@@ -348,7 +350,7 @@ function SondageClos({ ev, prenom }) {
         <span className="flex h-14 w-14 items-center justify-center rounded-full bg-subtil text-[26px] text-texte-3">
           <Icon nom="hourglass" />
         </span>
-        <h2 className="m-0 text-[22px] font-bold tracking-[-0.02em]">Le sondage est clos</h2>
+        <h2 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-titre">Le sondage est clos</h2>
         <p className="m-0 max-w-[400px] text-[15.5px] leading-[1.55] text-texte-3">
           Merci{prenom ? ` ${prenom}` : ''} pour votre présence à la {ev.nomAffiche}. À très bientôt !
         </p>

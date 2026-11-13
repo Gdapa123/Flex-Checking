@@ -90,6 +90,27 @@
         "on_secondary": "#141414",
         "header": "#E2E3EF"
       }
+    },
+    {
+      "nom": "Couleurs de texte et de titres choisies",
+      "principale": "#8F1C1F",
+      "secondaire": "#F7941D",
+      "texte": "#fff8e0",
+      "titres": "#8f1c1f",
+      "attendu": {
+        "on_primary": "#FFF8E0",
+        "heading": "#8F1C1F",
+        "primary": "#8F1C1F",
+        "on_secondary": "#141414"
+      }
+    },
+    {
+      "nom": "Titres automatiques",
+      "principale": "#1A5E36",
+      "secondaire": "#FFF200",
+      "attendu": {
+        "heading": "#1B1D20"
+      }
     }
   ],
   "contrastes": [

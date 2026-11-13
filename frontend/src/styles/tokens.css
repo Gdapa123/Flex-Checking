@@ -12,6 +12,8 @@
   --op: #ffffff;
   --os: #141414;
   --hd: #efdfe0;
+  /* titres sur fond blanc (réglage « Couleur des titres » du programme) */
+  --ti: #1b1d20;
 
   /* Neutres · admin et invité */
   --fond: #f6f7f8;
@@ -143,6 +145,7 @@
   --op: #ffffff;
   --os: var(--mde-texte);
   --hd: var(--mde-entete);
+  --ti: var(--mde-texte);
   --focus: var(--mde-bordeaux);
   --focus-champ: var(--mde-bordeaux);
   --focus-anneau: var(--mde-focus);

@@ -29,7 +29,7 @@ from .icones_email import icone_png
 from .ics import ics_evenement, lien_pratique
 from .models import EmailEnvoye, Parametres, StatutEmail, TypeEmail
 from .qr import qr_png
-from .theme import deriver_tokens
+from .theme import logo_blanc, tokens_du_programme
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 VARIABLES = [
@@ -166,7 +166,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
     """
     p = parametres or Parametres.charger()
     ev, prog = source.evenement, source.evenement.programme
-    t = deriver_tokens(prog.couleur_principale, prog.couleur_secondaire)
+    t = tokens_du_programme(prog)
     valeurs = _valeurs(source)
     est_invitation = type_email == TypeEmail.INVITATION
     # type → (objet, corps, marqueur du bloc central, gabarit, titre du bandeau)
@@ -210,7 +210,7 @@ def rendre(type_email, source, *, parametres=None, objet=None, corps=None, aperc
         jointe."""
         return data_uri(donnees) if apercu else url_image_publique(nom)
 
-    variante_logo = "blanc" if t["on_primary"] == "#FFFFFF" else "rouge"
+    variante_logo = "blanc" if logo_blanc(prog.couleur_principale) else "rouge"
     logo = (ASSETS / f"logo-{variante_logo}.png").read_bytes()
     lien_public = f"{settings.APP_PUBLIC_URL}/i/{ev.slug_inscription}"
     contexte = {

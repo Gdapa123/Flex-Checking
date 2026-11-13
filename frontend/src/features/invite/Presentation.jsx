@@ -61,7 +61,7 @@ export default function Presentation({ ev }) {
         >
           <Icon nom="info" className="flex-none text-[18px] text-p" />
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[15px] font-semibold tracking-[-0.01em] text-texte sm:text-[17px]">
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-titre sm:text-[17px]">
               Comment ça se passe ?
             </span>
             <span className="text-[12.5px] font-normal text-texte-2 sm:text-[14px]">

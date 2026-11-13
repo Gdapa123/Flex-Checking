@@ -203,7 +203,9 @@ function Formulaire({ ev, slug }) {
 
         <section className="flex animate-in-up flex-col gap-4 rounded-carte border border-bordure-carte bg-surface px-4 py-4 shadow-carte sm:gap-6 sm:px-5 sm:py-6">
           <div className="flex items-baseline justify-between gap-1 sm:flex-col sm:items-start">
-            <h2 className="m-0 text-[17px] font-semibold tracking-[-0.01em] sm:text-[20px]">Vos informations</h2>
+            <h2 className="m-0 text-[17px] font-semibold tracking-[-0.01em] text-titre sm:text-[20px]">
+              Vos informations
+            </h2>
             <p className="m-0 text-[12.5px] text-texte-2 sm:text-[15px]">
               <span className="sm:hidden">Champs obligatoires</span>
               <span className="hidden sm:inline">Tous les champs sont obligatoires.</span>

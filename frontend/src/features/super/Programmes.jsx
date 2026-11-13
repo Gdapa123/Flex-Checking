@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, messageErreur } from '../../lib/api';
-import { controlesContraste, deriverTokens, estHexValide } from '../../theme/tokens';
+import {
+  TITRE_DEFAUT,
+  controlesContraste,
+  couleurSur,
+  deriverTokens,
+  estHexValide,
+  logoBlanc,
+} from '../../theme/tokens';
 import ThemeScope from '../../theme/ThemeScope';
 import Bouton from '../../components/ui/Bouton';
 import Carte from '../../components/ui/Carte';
@@ -22,6 +29,8 @@ const VIDE = {
   nom: '',
   couleurPrincipale: '#2F3A8F',
   couleurSecondaire: '#3CC4B0',
+  couleurTexte: '',
+  couleurTitres: '',
   magazineActif: false,
   lienMagazine: '',
   sondageActif: true,
@@ -57,9 +66,18 @@ export default function Programmes() {
       ),
     );
 
-  const valide = d && estHexValide(d.couleurPrincipale) && estHexValide(d.couleurSecondaire);
-  const t = valide ? deriverTokens(d.couleurPrincipale, d.couleurSecondaire) : null;
-  const controles = valide ? controlesContraste(d.couleurPrincipale, d.couleurSecondaire) : [];
+  // couleurs du texte et des titres : vides = automatiques
+  const facultativeValide = (c) => !c || estHexValide(c);
+  const valide =
+    d &&
+    estHexValide(d.couleurPrincipale) &&
+    estHexValide(d.couleurSecondaire) &&
+    facultativeValide(d.couleurTexte) &&
+    facultativeValide(d.couleurTitres);
+  const t = valide ? deriverTokens(d.couleurPrincipale, d.couleurSecondaire, d.couleurTexte, d.couleurTitres) : null;
+  const controles = valide
+    ? controlesContraste(d.couleurPrincipale, d.couleurSecondaire, d.couleurTexte, d.couleurTitres)
+    : [];
   const alerte = controles.find((c) => c.cle === 'pblanc' && !c.ok);
 
   const enregistrer = async () => {
@@ -70,6 +88,8 @@ export default function Programmes() {
         nom: d.nom,
         couleurPrincipale: d.couleurPrincipale,
         couleurSecondaire: d.couleurSecondaire,
+        couleurTexte: d.couleurTexte || '',
+        couleurTitres: d.couleurTitres || '',
         magazineActif: d.magazineActif,
         lienMagazine: d.lienMagazine,
         sondageActif: d.sondageActif,
@@ -220,6 +240,67 @@ export default function Programmes() {
                   </span>
                 </div>
               ))}
+              {[
+                [
+                  'couleurTexte',
+                  'Couleur du texte',
+                  'Texte posé sur la couleur principale : boutons, bandeaux, en-têtes (site et emails).',
+                  estHexValide(d.couleurPrincipale) ? couleurSur(d.couleurPrincipale) : '#FFFFFF',
+                ],
+                [
+                  'couleurTitres',
+                  'Couleur des titres',
+                  'Titres sur fond blanc : pages des invités et emails.',
+                  TITRE_DEFAUT,
+                ],
+              ].map(([k, l, aide, auto]) => (
+                <div key={k} className="flex flex-col gap-2">
+                  <span id={`${k}-libelle`} className="text-[15px] font-medium">
+                    {l}
+                  </span>
+                  <label className="flex min-h-12 cursor-pointer items-center gap-2.5 text-[15px]">
+                    <input
+                      type="checkbox"
+                      checked={!d[k]}
+                      onChange={(e) => setD({ ...d, [k]: e.target.checked ? '' : auto })}
+                      aria-describedby={`${k}-aide`}
+                      className="h-[18px] w-[18px] cursor-pointer accent-mde-bordeaux"
+                    />
+                    Automatique
+                    <span className="inline-flex items-center gap-1.5 text-[13px] text-mde-texte-2">
+                      <span className="h-4 w-4 rounded-puce border border-mde-bordure" style={{ background: auto }} />
+                      <span className="font-mono">{auto}</span>
+                    </span>
+                  </label>
+                  {d[k] && (
+                    <div
+                      data-fw="1"
+                      className="flex h-12 items-center gap-2.5 rounded-moyen border border-mde-champ px-1.5"
+                    >
+                      <input
+                        type="color"
+                        aria-label={`${l} (sélecteur)`}
+                        value={estHexValide(d[k]) ? d[k] : '#000000'}
+                        onChange={(e) => majCouleur(k, e.target.value)}
+                        className="h-9 w-9 cursor-pointer border-0 bg-transparent p-0"
+                      />
+                      <input
+                        id={k}
+                        aria-labelledby={`${k}-libelle`}
+                        value={d[k]}
+                        onChange={(e) => majCouleur(k, e.target.value)}
+                        className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[16px] font-medium uppercase text-mde-texte outline-none"
+                      />
+                    </div>
+                  )}
+                  <span
+                    id={`${k}-aide`}
+                    className={`text-[13px] ${erreurs[k] || !facultativeValide(d[k]) ? 'text-erreur' : 'text-mde-texte-2'}`}
+                  >
+                    {erreurs[k] || (!facultativeValide(d[k]) ? 'Couleur au format #RRGGBB attendue.' : aide)}
+                  </span>
+                </div>
+              ))}
             </div>
 
             {t && (
@@ -233,6 +314,7 @@ export default function Programmes() {
                     ['on-primary', t.on_primary],
                     ['on-secondary', t.on_secondary],
                     ['en-tête', t.header],
+                    ['titres', t.heading],
                   ].map(([k, c]) => (
                     <div
                       key={k}
@@ -289,13 +371,17 @@ export default function Programmes() {
                 <ThemeScope
                   principale={d.couleurPrincipale}
                   secondaire={d.couleurSecondaire}
+                  texte={d.couleurTexte}
+                  titres={d.couleurTitres}
                   className="grid gap-3 text-texte"
                   style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}
                 >
                   <div className="overflow-hidden rounded-[12px] border border-bordure bg-fond">
                     <div className="flex flex-col gap-1.5 border-t-[6px] border-p bg-gradient-to-b from-hd to-fond p-4">
                       <span className="text-[12px] text-texte-2">Formulaire invité</span>
-                      <span className="text-[20px] font-bold tracking-[-0.025em]">Graduation {d.nom || '…'} 2026</span>
+                      <span className="text-[20px] font-bold tracking-[-0.025em] text-titre">
+                        Graduation {d.nom || '…'} 2026
+                      </span>
                     </div>
                     <div className="flex flex-col gap-2.5 px-4 pb-4">
                       <div className="grid w-[140px] grid-cols-2 gap-1 rounded-moyen bg-subtil p-1">
@@ -318,7 +404,7 @@ export default function Programmes() {
                   </div>
                   <div className="overflow-hidden rounded-[12px] border border-bordure bg-fond">
                     <div className="entete-degrade flex flex-col gap-3 p-4">
-                      <Logo variante={t.on_primary === '#FFFFFF' ? 'blanc' : 'rouge'} hauteur={26} />
+                      <Logo variante={logoBlanc(d.couleurPrincipale) ? 'blanc' : 'rouge'} hauteur={26} />
                       <span className="text-[18px] font-extrabold tracking-[-0.03em]">
                         Graduation {d.nom || '…'} 2026
                       </span>

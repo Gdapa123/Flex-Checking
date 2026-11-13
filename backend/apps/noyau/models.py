@@ -17,6 +17,9 @@ class Programme(models.Model):
     nom = models.CharField(max_length=60, unique=True)
     couleur_principale = models.CharField(max_length=7, validators=[couleur_hex])
     couleur_secondaire = models.CharField(max_length=7, validators=[couleur_hex])
+    # vides = automatiques : texte blanc ou foncé selon le contraste avec la principale ; titres en #1B1D20
+    couleur_texte = models.CharField(max_length=7, blank=True, default="", db_default="", validators=[couleur_hex])
+    couleur_titres = models.CharField(max_length=7, blank=True, default="", db_default="", validators=[couleur_hex])
     actif = models.BooleanField(default=True)
     magazine_actif = models.BooleanField(default=False)
     lien_magazine = models.URLField(blank=True)
@@ -34,6 +37,8 @@ class Programme(models.Model):
     def save(self, *args, **kwargs):
         self.couleur_principale = (self.couleur_principale or "").upper()
         self.couleur_secondaire = (self.couleur_secondaire or "").upper()
+        self.couleur_texte = (self.couleur_texte or "").upper()
+        self.couleur_titres = (self.couleur_titres or "").upper()
         super().save(*args, **kwargs)
 
 

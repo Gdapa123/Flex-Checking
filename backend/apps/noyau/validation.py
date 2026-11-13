@@ -107,6 +107,11 @@ def valider_couleur(valeur):
     return valeur.upper()
 
 
+def valider_couleur_facultative(valeur):
+    """Couleur choisie ou vide (« automatique »)."""
+    return valider_couleur(valeur) if valeur else ""
+
+
 LIEN_RE = re.compile(r"^https?://[^\s/$.?#][^\s\x00-\x1f\x7f]*$", re.IGNORECASE)
 
 

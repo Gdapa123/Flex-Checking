@@ -24,6 +24,7 @@ export default {
         op: v('op'),
         os: v('os'),
         hd: v('hd'),
+        titre: v('ti'),
         fond: v('fond'),
         surface: v('surface'),
         subtil: v('subtil'),
@@ -105,7 +106,15 @@ export default {
         noir: v('noir'),
       },
       // bouton : tous les boutons ; bloc : panneaux d'information (même arrondi qu'avant le changement des boutons)
-      borderRadius: { puce: '6px', petit: '8px', moyen: '10px', champ: '12px', bouton: '5px', bloc: '14px', carte: '16px' },
+      borderRadius: {
+        puce: '6px',
+        petit: '8px',
+        moyen: '10px',
+        champ: '12px',
+        bouton: '5px',
+        bloc: '14px',
+        carte: '16px',
+      },
       boxShadow: {
         carte: 'var(--ombre-carte)',
         'carte-mde': 'var(--ombre-carte-mde)',

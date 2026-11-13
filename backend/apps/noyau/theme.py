@@ -9,6 +9,8 @@ import math
 NOIR = "#000000"
 BLANC = "#FFFFFF"
 TEXTE_FONCE = "#141414"
+# couleur des titres sur fond blanc par défaut (= --texte de frontend/src/styles/tokens.css)
+TITRE_DEFAUT = "#1B1D20"
 
 
 def hex_vers_rgb(couleur):
@@ -48,7 +50,9 @@ def couleur_sur(fond):
     return BLANC if contraste(fond, BLANC) >= contraste(fond, TEXTE_FONCE) else TEXTE_FONCE
 
 
-def deriver_tokens(principale, secondaire):
+def deriver_tokens(principale, secondaire, texte="", titres=""):
+    """`texte` : couleur du texte posé sur la principale (boutons, bandeaux), automatique si vide ; `titres` : couleur
+    des titres sur fond blanc, #1B1D20 si vide (réglages du programme, 2026-11-10)."""
     p, s = principale.upper(), secondaire.upper()
     return {
         "primary": p,
@@ -56,10 +60,26 @@ def deriver_tokens(principale, secondaire):
         "primary_hover": melanger(p, NOIR, 0.15),
         "primary_soft": melanger(p, BLANC, 0.88),
         "secondary_soft": melanger(s, BLANC, 0.85),
-        "on_primary": couleur_sur(p),
+        "on_primary": (texte or couleur_sur(p)).upper(),
         "on_secondary": couleur_sur(s),
         "header": melanger(p, BLANC, 0.86),
+        "heading": (titres or TITRE_DEFAUT).upper(),
         # dégradé d'en-tête (approximation sans color-mix, pour les emails)
         "gradient_dark": melanger(p, NOIR, 0.38),
         "gradient_light": melanger(p, BLANC, 0.18),
     }
+
+
+def tokens_du_programme(programme):
+    """Tokens d'un programme, avec ses couleurs de texte et de titres choisies (vides = automatiques)."""
+    return deriver_tokens(
+        programme.couleur_principale,
+        programme.couleur_secondaire,
+        programme.couleur_texte,
+        programme.couleur_titres,
+    )
+
+
+def logo_blanc(principale):
+    """Logo blanc sur une principale foncée : choix selon le fond, indépendant de la couleur de texte choisie."""
+    return couleur_sur(principale.upper()) == BLANC

@@ -1335,3 +1335,15 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `frontend/src/features/super/Parametres.jsx`, `frontend/src/features/admin/SuiviEmails.jsx`, `frontend/src/features/admin/TableauDeBord.jsx`, `frontend/tests/suiviEmails.test.jsx`
 - **Validation :** ESLint et Prettier OK, Vitest 110/110, build OK, Playwright 10/10.
 - **Risques ou limites :** `Parametres.contact_donnees` et `GET /api/public/confidentialite/` restent en place sans usage public (R32).
+
+## [2026-11-10] fonctionnalité | Programme : couleur du texte et couleur des titres
+
+- **Contexte :** demande de l'utilisateur : choisir la couleur du texte dans le paramétrage du programme ; précisé : le texte sur la couleur principale **et** les titres.
+- **Modifications :**
+  - Modèle `Programme.couleur_texte`, `couleur_titres` (vides = automatiques, migration `0016_couleurs_texte_titres`, `db_default=""`), validation `validation.valider_couleur_facultative`, champs `couleurTexte` / `couleurTitres` du sérialiseur (super admin).
+  - Dérivation : `theme.deriver_tokens(principale, secondaire, texte, titres)` et son miroir `tokens.js` : `on_primary` = couleur choisie sinon blanc / #141414 selon le contraste ; nouveau token `heading` (`ti` dans l'API, `--ti`, classe Tailwind `text-titre`), #1B1D20 par défaut ; `theme.tokens_du_programme` utilisé par l'API, les emails et la liste des couleurs d'icônes ; logo blanc ou rouge choisi selon la principale (`logo_blanc` / `logoBlanc`), plus selon la couleur du texte. Cas partagés ajoutés à `shared/token-fixtures.json`.
+  - Titres colorés : pages invités (« Vos informations », guide, état du lien, infos pratiques, sondage) et emails (salutation et date de l'email n°1, titres des cartes de l'email n°2, titre du sondage). Les titres posés sur la couleur principale (en-tête) prennent la couleur du texte.
+  - Écran Programmes : deux réglages avec case « Automatique » (valeur automatique affichée), token « titres », contrôle de contraste « Titres sur fond blanc », aperçu en direct.
+- **Fichiers concernés :** `backend/apps/noyau/models.py`, `theme.py`, `serializers.py`, `validation.py`, `emails.py`, `vues_public.py`, `migrations/0016_couleurs_texte_titres.py`, `backend/templates/emails/invitation.html`, `magazine.html`, `sondage.html`, `frontend/src/theme/tokens.js`, `ThemeScope.jsx`, `frontend/src/styles/tokens.css`, `frontend/tailwind.config.js`, `frontend/src/features/super/Programmes.jsx`, `frontend/src/features/invite/{commun,EtatCarte,InscriptionPage,pratique,SondagePage,Presentation}.jsx`, `shared/token-fixtures.json`, tests `test_couleurs_programme.py`, `test_theme.py`, `tokens.test.js`
+- **Validation :** ruff OK, `makemigrations --check` OK, pytest complet sans échec, ESLint OK, Vitest 115/115, build OK, Playwright 10/10 ; capture de l'écran Programmes avec couleurs choisies vérifiée.
+- **Risques ou limites :** une couleur choisie peu lisible est seulement signalée (contrôle de contraste « Insuffisant »), pas refusée ; espace admin non concerné par la couleur des titres (pages invités et emails seulement) ; migration 0016 à appliquer sur Neon avant le code.
