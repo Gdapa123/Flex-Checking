@@ -1347,3 +1347,12 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Fichiers concernés :** `backend/apps/noyau/models.py`, `theme.py`, `serializers.py`, `validation.py`, `emails.py`, `vues_public.py`, `migrations/0016_couleurs_texte_titres.py`, `backend/templates/emails/invitation.html`, `magazine.html`, `sondage.html`, `frontend/src/theme/tokens.js`, `ThemeScope.jsx`, `frontend/src/styles/tokens.css`, `frontend/tailwind.config.js`, `frontend/src/features/super/Programmes.jsx`, `frontend/src/features/invite/{commun,EtatCarte,InscriptionPage,pratique,SondagePage,Presentation}.jsx`, `shared/token-fixtures.json`, tests `test_couleurs_programme.py`, `test_theme.py`, `tokens.test.js`
 - **Validation :** ruff OK, `makemigrations --check` OK, pytest complet sans échec, ESLint OK, Vitest 115/115, build OK, Playwright 10/10 ; capture de l'écran Programmes avec couleurs choisies vérifiée.
 - **Risques ou limites :** une couleur choisie peu lisible est seulement signalée (contrôle de contraste « Insuffisant »), pas refusée ; espace admin non concerné par la couleur des titres (pages invités et emails seulement) ; migration 0016 à appliquer sur Neon avant le code.
+
+## [2026-11-13] correction | Erreurs techniques du navigateur : service worker, « Script error. », robots, connexion coupée
+
+- **Contexte :** erreurs relevées dans Super admin › Erreurs (10–12/11, inscription.mde.ci).
+- **Modifications :** enregistrement du service worker avec échec géré (`lib/serviceWorker.js`, `injectRegister: false`) ; « Script error. » sans détail et robots d’exploration non signalés ; écran « La page n’a pas pu se charger » pour un échec de téléchargement de page. Détail : [features/erreurs-techniques.md](features/erreurs-techniques.md).
+- **Fichiers concernés :** `frontend/src/lib/signalement.js`, `frontend/src/lib/serviceWorker.js`, `frontend/src/main.jsx`, `frontend/vite.config.js`, `frontend/src/components/ui/FiletErreur.jsx`, `frontend/tests/signalement.test.js`, `frontend/tests/serviceWorker.test.js`
+- **Validation :** ESLint et Prettier OK, Vitest 119/119, build OK (plus de `registerSW.js`, `sw.js` toujours généré). pytest et Playwright non relancés (Docker arrêté).
+- **Risques ou limites :** un échec de chargement sur réseau instable reste possible (et signalé) ; seul le message affiché change. Effet en production après déploiement seulement.
+

@@ -61,4 +61,38 @@ describe('signalement des erreurs du navigateur', () => {
     for (let i = 0; i < 30; i++) signalerErreur(new Error(`n°${i}`));
     expect(fetch).toHaveBeenCalledTimes(20);
   });
+
+  it('ignore « Script error. » sans détail (script étranger) et les robots d’exploration', async () => {
+    const { installerSignalement, estRobot } = await import('../src/lib/signalement');
+    installerSignalement();
+    window.dispatchEvent(new ErrorEvent('error', { message: 'Script error.' }));
+    expect(fetch).not.toHaveBeenCalled();
+    window.dispatchEvent(
+      new ErrorEvent('error', { message: 'Script error.', filename: `${window.location.origin}/assets/index-abc.js` }),
+    );
+    // signalée (l'écouteur installé par le test précédent reste actif : au moins un envoi)
+    expect(fetch).toHaveBeenCalled();
+
+    expect(
+      estRobot(
+        'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X) Chrome/153.0 Mobile Safari/537.36 (compatible; GoogleOther)',
+      ),
+    ).toBe(true);
+    expect(estRobot('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')).toBe(true);
+    expect(
+      estRobot('Mozilla/5.0 (Linux; U; Android 15; fr-fr; Infinix X6880) Chrome/137.0 Mobile Safari/537.36 PHX/22.6'),
+    ).toBe(false);
+    expect(
+      estRobot('Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) Version/27.3 Mobile/15E148 Safari/604.1'),
+    ).toBe(false);
+  });
+
+  it('reconnaît un échec de téléchargement d’une page chargée à la demande', async () => {
+    const { estEchecChargement } = await import('../src/lib/signalement');
+    expect(
+      estEchecChargement(new TypeError('Failed to fetch dynamically imported module: https://x/assets/A.js')),
+    ).toBe(true);
+    expect(estEchecChargement(new TypeError('Importing a module script failed.'))).toBe(true);
+    expect(estEchecChargement(new TypeError('x is undefined'))).toBe(false);
+  });
 });

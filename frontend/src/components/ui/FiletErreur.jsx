@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { signalerErreur } from '../../lib/signalement';
+import { estEchecChargement, signalerErreur } from '../../lib/signalement';
 
 /**
  * Filet de sécurité : une erreur d'affichage montre un message simple et un bouton de rechargement,
@@ -20,14 +20,20 @@ export default class FiletErreur extends Component {
 
   render() {
     if (!this.state.erreur) return this.props.children;
+    // page chargée à la demande non téléchargée (connexion coupée), même après le rechargement automatique
+    const reseau = estEchecChargement(this.state.erreur);
     return (
       <div
         role="alert"
         className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-auto bg-fond p-6 text-center"
       >
-        <p className="m-0 text-[20px] font-bold text-texte">Un problème d’affichage est survenu.</p>
+        <p className="m-0 text-[20px] font-bold text-texte">
+          {reseau ? 'La page n’a pas pu se charger.' : 'Un problème d’affichage est survenu.'}
+        </p>
         <p className="m-0 max-w-[380px] text-[15px] leading-[1.5] text-texte-2">
-          Il a été signalé automatiquement à l’équipe. Rechargez la page : vos informations sont conservées.
+          {reseau
+            ? 'Vérifiez votre connexion internet, puis rechargez la page : vos informations sont conservées.'
+            : 'Il a été signalé automatiquement à l’équipe. Rechargez la page : vos informations sont conservées.'}
         </p>
         <button
           type="button"

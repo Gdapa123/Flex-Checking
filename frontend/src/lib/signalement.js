@@ -12,8 +12,20 @@ let envoyes = 0;
 export const normaliserLieu = (chemin) => chemin.replace(/^\/sondage\/[^/]+/, '/sondage/:jeton');
 const lieuCourant = () => (typeof window === 'undefined' ? '' : normaliserLieu(window.location.pathname));
 
+/** Robots d'exploration (Google, Bing…) : ils ouvrent d'anciennes versions des pages, leurs erreurs ne concernent
+ * aucun visiteur (« Failed to fetch dynamically imported module » de GoogleOther, 2026-11-10). */
+export const estRobot = (agent) =>
+  /bot\b|crawler|spider|GoogleOther|Google-InspectionTool|Lighthouse/i.test(agent || '');
+
+/** Échec de téléchargement d'une page chargée à la demande (connexion coupée, fichier d'une ancienne version). */
+export const estEchecChargement = (erreur) =>
+  /dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload/i.test(
+    String(erreur?.message ?? erreur ?? ''),
+  );
+
 export function signalerErreur(erreur, complement = '') {
   try {
+    if (typeof navigator !== 'undefined' && estRobot(navigator.userAgent)) return;
     const type = erreur?.name || (typeof erreur === 'string' ? 'Erreur' : erreur?.constructor?.name) || 'Erreur';
     const message = String(erreur?.message ?? erreur ?? '').slice(0, 1000);
     const cle = `${type}|${message}|${lieuCourant()}`;
@@ -59,6 +71,9 @@ export function installerSignalement() {
     // erreurs de chargement de ressource (image, script) : pas d'objet Error, peu exploitables
     if (!e.error && !e.message) return;
     if (/ResizeObserver loop/.test(e.message || '')) return; // avertissement bénin des navigateurs
+    // « Script error. » : erreur d'un script d'une autre origine (injecté par le navigateur, ex. PHX sur Android),
+    // masquée par le navigateur, sans objet Error ni fichier : rien d'exploitable, pas notre code
+    if (!e.error && !e.filename && /^Script error\.?$/i.test(e.message || '')) return;
     if (!vientDeLApplication(e.error, e.filename)) return;
     signalerErreur(e.error || e.message);
   });

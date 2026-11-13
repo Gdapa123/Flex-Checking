@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-09
-commit: f55527e
-sources: [backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/exceptions.py, frontend/src/lib/signalement.js, frontend/src/components/ui/FiletErreur.jsx, frontend/src/features/super/Erreurs.jsx]
+verifie: 2026-11-13
+commit: b0db942
+sources: [frontend/src/lib/serviceWorker.js, backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/exceptions.py, frontend/src/lib/signalement.js, frontend/src/components/ui/FiletErreur.jsx, frontend/src/features/super/Erreurs.jsx]
 ---
 
 # Erreurs techniques
@@ -14,7 +14,7 @@ sources: [backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/app
 ## Sources capturées
 | Source | Capture |
 |---|---|
-| NAVIGATEUR | `FiletErreur` (écran planté), `window.onerror`, `unhandledrejection` → `POST /api/erreurs/` (public, 30/min par IP — `SignalementThrottle`, dérivée de `LimiteIpPartagee` depuis 2026-10-14 : compteur partagé entre instances dans le cache des limites, IPv6 regroupée par /64 — sans cookie, `keepalive`) ; 20 max par page, dédoublonnées ; erreurs d’API ignorées ; **seules les erreurs dont le fichier ou la trace passe par l’origine de l’application sont signalées** (`signalement.vientDeLApplication`) : celles des extensions et des scripts injectés par les navigateurs intégrés (Instagram, Facebook…) sont ignorées |
+| NAVIGATEUR | `FiletErreur` (écran planté), `window.onerror`, `unhandledrejection` → `POST /api/erreurs/` (public, 30/min par IP — `SignalementThrottle`, dérivée de `LimiteIpPartagee` depuis 2026-10-14 : compteur partagé entre instances dans le cache des limites, IPv6 regroupée par /64 — sans cookie, `keepalive`) ; 20 max par page, dédoublonnées ; erreurs d’API ignorées ; **seules les erreurs dont le fichier ou la trace passe par l’origine de l’application sont signalées** (`signalement.vientDeLApplication`) : celles des extensions et des scripts injectés par les navigateurs intégrés (Instagram, Facebook…) sont ignorées ; ignorés aussi : « Script error. » sans objet Error ni fichier (script d’une autre origine masqué par le navigateur) et tout signalement d’un robot d’exploration (`signalement.estRobot` : GoogleOther, Googlebot…) |
 | SERVEUR | `gestionnaire_exceptions` (500 neutre `ERREUR_SERVEUR`) et signal `got_request_exception` |
 | TACHE | signal Celery `task_failure`, file d’emails injoignable, relais temps réel |
 | EMAIL | échec définitif d’un envoi |
@@ -39,10 +39,22 @@ Filtres à traiter / résolues / toutes et par source, détail dépliable (trace
 « Tout marquer résolu », « Supprimer les résolues ». Mise à jour en temps réel.
 
 ## Tests
-`test_erreurs.py`, `frontend/tests/signalement.test.js`, `frontend/tests/sondage.test.jsx` (`normaliserLieu`).
+`test_erreurs.py`, `frontend/tests/signalement.test.js`, `frontend/tests/serviceWorker.test.js`, `frontend/tests/sondage.test.jsx` (`normaliserLieu`).
 
 ## Historique notable
 - 2026-10-13 : erreur « Error · Rejected » sur `/i/pmd-2026-387a21/` (navigateur, 12/10/2026 17:04). La chaîne
   « Rejected » n’existe ni dans le code, ni dans le build, ni dans les dépendances : erreur d’un script tiers injecté
   dans la page. Correctif : filtre `vientDeLApplication` dans `frontend/src/lib/signalement.js` (test dans
   `frontend/tests/signalement.test.js`). L’entrée existante est à marquer « Résolue » dans Super admin › Erreurs.
+- 2026-11-13 : quatre erreurs du 10 au 12/11 sur inscription.mde.ci, corrigées (en attente de déploiement) :
+  - « SecurityError · Script …/sw.js load failed » (iPhone) : le `registerSW.js` généré par vite-plugin-pwa
+    n’interceptait pas le refus de Safari (navigation privée, mode Isolement). L’enregistrement est désormais fait par
+    `frontend/src/lib/serviceWorker.js` (`enregistrerServiceWorker`, échec ignoré, `injectRegister: false` dans
+    `frontend/vite.config.js`).
+  - « Script error. » (navigateur PHX sur Android) : script étranger, filtré dans `installerSignalement`.
+  - « Failed to fetch dynamically imported module » (robot GoogleOther, ancienne version) : robots ignorés.
+  - Erreur React sans message sur iPhone (trace ramenée aux sources avec les sourcemaps de `e75bba3` :
+    `React.lazy` relance l’échec de téléchargement d’une page, après le rechargement automatique de
+    `nouvelleVersion.js`) : connexion coupée. `FiletErreur` affiche alors « La page n’a pas pu se charger. Vérifiez
+    votre connexion internet… » (`signalement.estEchecChargement`) au lieu de « problème d’affichage » ; l’erreur
+    reste signalée.

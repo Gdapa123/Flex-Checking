@@ -9,6 +9,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // enregistrement fait par src/lib/serviceWorker.js (échec géré), pas par le registerSW.js généré
+      injectRegister: false,
       includeAssets: ['favicon-64.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Flex’Checking',

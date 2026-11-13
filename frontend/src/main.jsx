@@ -5,11 +5,13 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import FiletErreur from './components/ui/FiletErreur';
 import { installerRechargementVersion } from './lib/nouvelleVersion';
+import { enregistrerServiceWorker } from './lib/serviceWorker';
 import { installerSignalement } from './lib/signalement';
 import './styles/index.css';
 
 installerSignalement();
 installerRechargementVersion();
+if (import.meta.env.PROD) enregistrerServiceWorker();
 
 const client = new QueryClient({
   defaultOptions: {
