@@ -1364,3 +1364,10 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Validation :** ruff OK, pytest 428/428, ESLint et Prettier OK, Vitest 120/120, build OK, Playwright 10/10.
 - **Risques ou limites :** un vrai invité dont le navigateur perd la réponse d'un rafraîchissement puis renvoie l'ancien jeton plus de 30 s après est déconnecté de toutes ses sessions (il se reconnecte) ; un nom contenant un domaine connu (« .com », « .ci »…) est refusé.
 
+
+## [2026-11-13] documentation | Déploiement Vercel de a06c5e4 (migration 0016 sur Neon)
+
+- **Contexte :** couleurs du texte et des titres, erreurs du navigateur, revue de sécurité R35 ; demande de l'utilisateur de tester sur Vercel avant le VPS.
+- **Modifications :** `a06c5e4` poussé (frontend `flex-checking` redéployé au push, « Ready ») ; `0016_couleurs_texte_titres` appliquée sur Neon avant le code (URL non poolée seule, clé secrète jetable, fichier de variables privé supprimé aussitôt) ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
+- **Validation :** `/api/sante/` 200 (direct et via le frontend) ; `sw.js` 200 ; la page d'entrée ne référence plus `registerSW.js`. Contrôle de sécurité en ligne non relancé.
+- **Risques ou limites :** VPS encore sur `e75bba3` (commandes données à l'utilisateur, migration 0016 appliquée par `mettre-a-jour.sh`).
