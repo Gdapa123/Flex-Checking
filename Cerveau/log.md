@@ -1371,3 +1371,12 @@ Historique antérieur au wiki : voir `git log` (14 commits du 2026-10-09 au 2026
 - **Modifications :** `a06c5e4` poussé (frontend `flex-checking` redéployé au push, « Ready ») ; `0016_couleurs_texte_titres` appliquée sur Neon avant le code (URL non poolée seule, clé secrète jetable, fichier de variables privé supprimé aussitôt) ; backend `flex-checking-api` par `vercel deploy --prod --scope mde-it` (« Ready »).
 - **Validation :** `/api/sante/` 200 (direct et via le frontend) ; `sw.js` 200 ; la page d'entrée ne référence plus `registerSW.js`. Contrôle de sécurité en ligne non relancé.
 - **Risques ou limites :** VPS encore sur `e75bba3` (commandes données à l'utilisateur, migration 0016 appliquée par `mettre-a-jour.sh`).
+
+## [2026-11-13] documentation | Mise à jour du VPS vers a06c5e4 et première sauvegarde
+
+- **Contexte :** déploiement sur inscription.mde.ci des corrections du 13/11 (erreurs du navigateur, revue de sécurité R35, couleurs du programme).
+- **Modifications :** sauvegarde chiffrée faite par l'utilisateur (`sauvegardes/flex-2026-11-13-193509.sql.gz.gpg`) puis `infra/vps/mettre-a-jour.sh` ; VPS sur `a06c5e4` (migration 0016). Aucun changement du Caddyfile depuis `e75bba3` : pas de redémarrage du proxy.
+- **Fichiers concernés :** `infra/vps/mettre-a-jour.sh`, `infra/vps/sauvegarde.sh`, `infra/vps/activer-sauvegardes.sh`
+- **Validation :** depuis le Mac : `/` 200, `/api/sante/` 200 `{"statut": "ok"}`, `sw.js` 200, page sans `registerSW.js` ; en-têtes HSTS, CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy présents ; HTTP → HTTPS 308 ; API privées 401 sans connexion ; connexion sans CSRF 403 ; pas de CORS pour une origine étrangère ; `/.env`, `/.git/config`, `/admin/`, `/media/` renvoient la page de l'application (aucun fichier exposé). Le script des 33 contrôles (scratchpad d'une ancienne session) n'existe plus : contrôle réduit refait à la main.
+- **Sauvegardes :** actives depuis le 2026-11-05 (fichiers nocturnes `flex-AAAA-MM-JJ-023001` du 06 au 13/11, taille croissante jusqu'à 672 Ko) ; les 26 fichiers chiffrés copiés sur le Mac de l'utilisateur par `scp` le 2026-11-13.
+- **Risques ou limites :** copie hors serveur manuelle (à refaire régulièrement) ; erreurs du 10–12/11 à marquer « Résolue » dans Super admin › Erreurs.
