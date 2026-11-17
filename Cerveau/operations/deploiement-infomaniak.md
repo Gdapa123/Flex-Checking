@@ -1,8 +1,8 @@
 ---
 type: operations
 statut: prévu
-verifie: 2026-11-10
-commit: 93646d7
+verifie: 2026-11-17
+commit: 244302e
 sources: [docker-compose.prod.yml, backend/Dockerfile, frontend/package.json, frontend/.npmrc, infra/Caddyfile.prod, .env.example, backend/config/settings.py, README.md, infra/charge/README.md, backend/apps/noyau/emails.py, backend/apps/noyau/management/commands/seed_demo.py, backend/apps/noyau/models.py, backend/apps/noyau/suivi_emails.py, backend/apps/comptes/models.py, frontend/src/App.jsx, frontend/src/lib/nouvelleVersion.js, backend/apps/noyau/services.py, infra/vps/mettre-a-jour.sh, .gitignore, .github/workflows/ci.yml]
 ---
 
@@ -587,6 +587,7 @@ Ce que veut dire chaque ligne :
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS` | serveur d’envoi de MDE, port **587**, chiffrement activé (`1`) |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | compte d’envoi dédié |
 | `EMAIL_TIMEOUT` | facultatif : délai maximal (secondes) de chaque échange SMTP, **15** par défaut |
+| `EMAIL_DEBIT_MAX` | facultatif : débit maximal d’envoi des emails par le worker (format Celery `20/m`, `1/s` ; vide = sans limite), **20/m** par défaut ; à ajuster selon la limite du fournisseur SMTP |
 | `DEFAULT_FROM_EMAIL` | **adresse seule** (ex. `evenements@mde.ci`), sans nom ni guillemets |
 | `MYSQL_INNODB_BUFFER` | mémoire de MySQL : `512M` au lieu de `1G` par défaut (petit serveur) |
 | `REDIS_MAXMEMORY` | mémoire de Redis : `128mb` au lieu de `512mb` |

@@ -6,6 +6,7 @@ du dépôt en développement, non commité ; voir .env.example).
 
 import hashlib
 import hmac
+import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -335,6 +336,15 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 # délai maximal (secondes) de chaque échange avec le serveur SMTP : sans lui, un SMTP qui ne répond plus bloque
 # l'email de test (envoyé dans la requête), l'envoi sans file (sans Redis) et un worker Celery jusqu'à sa limite
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=15)
+# débit maximal d'envoi des emails par le worker Celery (format Celery : « 20/m », « 1/s » ; vide = sans limite).
+# Sans lui, une rafale (sondages de 8 h, renvoi groupé) ouvre des centaines de connexions SMTP en quelques secondes
+# et le fournisseur coupe la connexion pendant l'authentification (SMTPServerDisconnected, 17/11/2026).
+EMAIL_DEBIT_MAX = env("EMAIL_DEBIT_MAX", default="20/m") or None
+# une valeur mal écrite (« 20/min ») ferait planter le worker en boucle au démarrage : refusée ici, message clair
+if EMAIL_DEBIT_MAX and not re.fullmatch(r"\d+(\.\d+)?/[smh]", EMAIL_DEBIT_MAX):
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured("EMAIL_DEBIT_MAX : format attendu « 20/m », « 1/s » ou « 600/h » (vide = sans limite).")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="evenements@mde.ci")
 EMAIL_FILE_PATH = env("EMAIL_FILE_PATH", default=str(BASE_DIR / "emails-envoyes"))
 

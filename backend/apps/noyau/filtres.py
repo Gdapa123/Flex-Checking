@@ -44,6 +44,24 @@ def filtrer_par_evenement(qs, params):
     return qs
 
 
+# civilités tapées avec le nom (« Mme Koné ») : ignorées, aucun champ recherché ne les contient
+CIVILITES_RECHERCHE = {"m", "mr", "mme", "mlle", "me", "dr", "pr", "monsieur", "madame", "mademoiselle", "docteur"}
+APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'", "´": "'", "ʼ": "'"})
+
+
+def mots_recherche(q, limite=6):
+    """Mots d'une recherche par nom, insensibles à la ponctuation des noms composés.
+
+    Apostrophes (droite ou typographique) et tirets séparent les mots : « N’Guessan » trouve « N'Guessan » et
+    « Jean Marc » trouve « Jean-Marc » (et inversement), chaque morceau étant cherché séparément. Les civilités
+    (« M. », « Mme »…) sont ignorées. Le point n'est pas un séparateur (emails).
+    """
+    texte = (q or "").translate(APOSTROPHES)
+    mots = [m for m in re.split(r"[\s'\-–—]+", texte) if m]
+    utiles = [m for m in mots if m.lower().rstrip(".") not in CIVILITES_RECHERCHE]
+    return (utiles or mots)[:limite]
+
+
 def filtrer_invites(qs, params):
     q = (params.get("q") or "").strip()
     if q and re.fullmatch(r"[\d\s+.]+", q) and len(re.sub(r"\D", "", q)) >= 3:
@@ -53,7 +71,7 @@ def filtrer_invites(qs, params):
         qs = qs.filter(Q(tel_chiffres__contains=chiffres) | Q(code=chiffres))
     elif q:
         qs = qs.annotate(tel_chiffres=Replace("telephone", Value(" "), Value("")))
-        for mot in q.split()[:6]:
+        for mot in mots_recherche(q):
             condition = (
                 Q(nom__icontains=mot)
                 | Q(prenom__icontains=mot)

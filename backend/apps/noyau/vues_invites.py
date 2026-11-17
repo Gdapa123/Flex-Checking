@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -23,7 +24,7 @@ from .exceptions import ErreurMetier
 from .exports import COMPTE_SUPPRIME
 from .filtres import PaginationInvites, compteurs_invites, filtrer_invites, filtrer_par_evenement, trier_invites
 from .journal import journaliser
-from .models import Appareil, EmailEnvoye, Invite, ModeEmargement, Source, TypeEmail, libelle_email
+from .models import Appareil, EmailEnvoye, Invite, ModeEmargement, Source, StatutEmail, TypeEmail, libelle_email
 from .qr import qr_png
 from .serializers import (
     AjoutInviteSerializer,
@@ -258,6 +259,19 @@ class RenvoiEmailView(APIView):
                 "SONDAGE_INDISPONIBLE",
                 "Le sondage ne peut être renvoyé que si son envoi a échoué, pendant ses 24 heures d’ouverture.",
             )
+        if en_file := invite.emails.filter(type=type_email, statut=StatutEmail.EN_ATTENTE).order_by("-pk").first():
+            # déjà en file : pas de second email (l'invité le recevrait deux fois). Jamais tenté (rafale au débit
+            # limité, message perdu) : remis en file. Déjà tenté : son nouvel essai est programmé (au plus 30 min) et
+            # partira à l'adresse actuelle ; une seconde chaîne d'essais fausserait le compte des tentatives.
+            if en_file.tentatives == 0:
+                from .tasks import envoyer_email
+
+                transaction.on_commit(lambda: emails._lancer(envoyer_email, en_file.pk))
+                detail = "Email déjà en file : envoi relancé."
+            else:
+                detail = "Nouvel essai déjà programmé (dans 30 min au plus), à l’adresse actuelle de l’invité."
+            journaliser(request.user, "EMAIL_RENVOI", invite, evenement=invite.evenement_id, type=type_email)
+            return Response({"detail": detail}, status=status.HTTP_202_ACCEPTED)
         emails.planifier(invite, type_email)
         journaliser(request.user, "EMAIL_RENVOI", invite, evenement=invite.evenement_id, type=type_email)
         return Response({"detail": "Email programmé."}, status=status.HTTP_202_ACCEPTED)
@@ -373,15 +387,25 @@ def executer_action_groupee(admin, evenement, action, invite_ids, contexte):
                 n += r["resultat"] == services.PRESENT
         return {"traites": n, "ignores": qs.count() - n}
     if action == "RENVOYER":
-        # même garde-fou que le renvoi individuel : jamais deux invitations en moins d'une heure à une même adresse
+        # jamais deux invitations en moins d'une heure à une même adresse, ni une seconde tant que la précédente est
+        # encore en file (débit limité, nouvel essai programmé) : l'invité la recevrait deux fois. Une invitation en
+        # file jamais tentée depuis plus d'une heure (message perdu, Redis redémarré) est remise en file, comme au
+        # renvoi individuel.
+        from .tasks import RELANCE_JAMAIS_PARTI, envoyer_email
+
+        en_file = EmailEnvoye.objects.filter(invite__in=qs, type=TypeEmail.INVITATION, statut=StatutEmail.EN_ATTENTE)
+        perdus = list(en_file.filter(tentatives=0, cree_le__lt=timezone.now() - RELANCE_JAMAIS_PARTI))
         recents = set(
-            EmailEnvoye.objects.filter(
-                invite__in=qs, type=TypeEmail.INVITATION, cree_le__gt=timezone.now() - DELAI_RENVOI_GROUPE
-            ).values_list("invite_id", flat=True)
-        )
-        n = 0
+            EmailEnvoye.objects.filter(invite__in=qs, type=TypeEmail.INVITATION)
+            .filter(Q(cree_le__gt=timezone.now() - DELAI_RENVOI_GROUPE) | Q(statut=StatutEmail.EN_ATTENTE))
+            .values_list("invite_id", flat=True)
+        ) - {e.invite_id for e in perdus}
+        for e in perdus:
+            transaction.on_commit(lambda pk=e.pk: emails._lancer(envoyer_email, pk))
+        deja = {e.invite_id for e in perdus}
+        n = len(deja)
         for invite in qs:
-            if invite.pk in recents:
+            if invite.pk in recents or invite.pk in deja:
                 continue
             emails.planifier(invite, TypeEmail.INVITATION)
             n += 1

@@ -138,7 +138,7 @@ def test_causes_envoi_compte_les_invites_pas_les_problemes(client_admin, eveneme
     echouer(inv, "TimeoutError: timed out")
     bloque = nouvel_invite(evenement, email="bloque@sib.ci")
     EmailEnvoye.objects.filter(pk=dernier(bloque).pk).update(
-        statut=StatutEmail.EN_ATTENTE, cree_le=timezone.now() - timedelta(minutes=30)
+        statut=StatutEmail.EN_ATTENTE, tentatives=0, cree_le=timezone.now() - timedelta(minutes=70)
     )
     d = a_contacter(client_admin, evenement)
     assert d["causesEnvoi"] == 2  # un échec réseau + un envoi bloqué, deux invités
@@ -173,7 +173,7 @@ def test_invitation_jamais_envoyee_et_envoi_bloque(client_admin, evenement, admi
     )
     bloque = nouvel_invite(evenement, email="bloque@sib.ci")
     EmailEnvoye.objects.filter(pk=dernier(bloque).pk).update(
-        statut=StatutEmail.EN_ATTENTE, cree_le=timezone.now() - timedelta(minutes=30)
+        statut=StatutEmail.EN_ATTENTE, tentatives=0, cree_le=timezone.now() - timedelta(minutes=70)
     )
     recent = nouvel_invite(evenement, email="recent@sib.ci")  # en attente depuis peu : normal
     EmailEnvoye.objects.filter(pk=dernier(recent).pk).update(statut=StatutEmail.EN_ATTENTE)

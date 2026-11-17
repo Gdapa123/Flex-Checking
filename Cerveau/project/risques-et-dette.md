@@ -1,7 +1,7 @@
 ---
 type: project
 statut: implémenté
-verifie: 2026-11-13
+verifie: 2026-11-17
 commit: 0a11d09
 sources: [backend/config/concurrence.py, backend/apps/noyau/tests/test_revue_securite.py, backend/apps/noyau/validation.py, backend/apps/noyau/models.py, backend/apps/noyau/services.py, backend/apps/noyau/middleware.py, frontend/src/features/super/Programmes.jsx, infra/vps/sauvegarde.sh, infra/vps/activer-sauvegardes.sh, backend/templates/emails/invitation.html, backend/apps/noyau/logs.py, frontend/tests/api.test.js, backend/apps/comptes/views.py, frontend/src/lib/api.js, docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, frontend/src/features/super/Parametres.jsx, backend/apps/noyau/vues_admin.py, backend/apps/noyau/journal_texte.py, frontend/src/features/invite/ConfidentialitePage.jsx, backend/apps/noyau/migrations/0010_donnees_personnelles.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/tests/test_durcissement.py, frontend/src/features/invite/EtatCarte.jsx, .env.example, backend/apps/noyau/vues_invites.py, backend/apps/noyau/suivi_emails.py, frontend/src/features/scan/fileHorsLigne.js, frontend/tests/fileHorsLigne.test.js, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/migrations/0008_inscriptions_pas_dans_le_futur.py, backend/gunicorn.conf.py, infra/Caddyfile.prod, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/invite/EtatCarte.jsx, frontend/src/features/invite/InscriptionPage.jsx, backend/apps/noyau/vues_public.py, frontend/src/features/invites/PanneauInvite.jsx, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/sondages.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/erreurs.py, backend/config/settings.py, backend/config/settings_test.py, backend/vercel.json, backend/requirements.txt, frontend/package.json, .github/workflows/ci.yml, README.md, PLAN.md, infra/vps/preparer-serveur.sh, infra/vps/installer.sh, infra/vps/mettre-a-jour.sh]
 ---
@@ -408,6 +408,28 @@ Revue de tout le dépôt (`/code-review`), chaque point vérifié dans le code a
   dépôt** (le compte de déploiement a déjà `sudo` sans mot de passe et `mettre-a-jour.sh` lance ce script en root :
   aucun droit en plus).
 - Preuve : `backend/apps/noyau/tests/test_revue_securite.py` (12 tests), `frontend/tests/schemas.test.js`.
+
+## R36 — Audit général du 2026-11-17 : points non corrigés (fiabilité, moyen à faible) — 📋 à trancher
+Audit après le jour J du 16/11 (scan, admin, backend, emails, infra). Corrigés : voir `log.md` (2026-11-17). Restent :
+- **Compteurs de la borne partagés par compte** (moyen) : codes invalides (`vues_scan._cle_codes_invalides`, 10 par
+  10 min en borne) et « C'est moi » (12/min) comptent par compte et cérémonie ; plusieurs bornes ouvertes avec le même
+  compte se bloquent mutuellement. Contournement : un compte d'accueil par borne. Correctif : identifiant de poste.
+- **Consentement d'un invité ajouté à la main** (conformité) : `services.creer_invite` enregistre
+  `consentement_donnees=True` pour la source `MANUEL` ; l'historique affiche « consentement donné ». ❓ choix métier
+  à confirmer (loi n° 2013-450).
+- **Infra prod non modifiée** (refus de l'outil de permission pour `docker-compose.prod.yml`, 2026-11-17) :
+  `stop_grace_period: 130s` sur `celery` (un arrêt forcé à 10 s pendant un envoi SMTP peut renvoyer l'email),
+  `mem_limit` par service (VPS 4 Go), `depends_on: migrate` pour `celery` / `celery-beat`.
+- **Sauvegardes uniquement sur le VPS** (`infra/vps/sauvegarde.sh`), phrase de chiffrement sur la même machine : pas
+  de copie externe.
+- **Une file Celery unique** : une rafale d'emails (20/min) retarde exports et alertes ; file `emails` dédiée possible
+  (modification de `docker-compose.prod.yml`, non faite).
+- **Seuils de relance fixes** (`tasks.RELANCE_JAMAIS_PARTI` 1 h) calés sur 20/min : avec un débit plus faible ou une
+  rafale de plus d'environ 1 000 emails, la relance peut encore doubler des tâches en file (sans doublon d'email : verrou
+  et statut). Le débit est par worker : deux conteneurs `celery` doublent le débit réel.
+- **Envoi sans file (Vercel)** : `sondages._envoyer_en_attente` envoie sans débit limité (test uniquement).
+- **Scan** : torche éteinte à chaque invité (caméra arrêtée pendant le résultat) ; focus forcé de la douchette qui
+  empêche d'atteindre les autres boutons au clavier seul.
 
 ## Limitations assumées (documentées, non bugs)
 - Durée de conservation des données : la confirmation avant de la **raccourcir** n'existe que dans l'interface

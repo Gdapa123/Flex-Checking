@@ -35,6 +35,12 @@ import { useMoi } from '../auth/useMoi';
 import useWakeLock from './useWakeLock';
 
 const ANTI_REBOND_MS = 3000;
+// délai maximal d'un émargement en ligne : au-delà (Wi-Fi qui ne répond plus mais `navigator.onLine` vrai), le passage
+// part dans la file hors ligne au lieu de bloquer le poste (rejeu idempotent côté serveur)
+const DELAI_EMARGEMENT_MS = 8000;
+// résultats affichés par la recherche de l'hôte (taille de page maximale du serveur) ; au-delà, un message demande de
+// préciser : un nom courant (Kouassi, Koné…) dépasse vite 25 résultats, et la personne cherchée était alors invisible
+const TAILLE_RECHERCHE = 100;
 // côté de la zone de lecture de la borne : grand, mais toujours contenu dans l'écran de la tablette
 const TAILLE_BORNE = 'min(38vw, 56dvh, 560px)';
 const CLE_HISTO = (id) => `fc-scan-historique-${id}`;
@@ -64,7 +70,8 @@ function presenterResultat(r, { mode, poste }) {
         type: 'PRESENT',
         titre: 'Présence enregistrée',
         nom,
-        meta: [h, MODES[mode], r.invite?.entreprise].filter(Boolean).join(' · '),
+        fonction: [r.invite?.fonction, r.invite?.entreprise].filter(Boolean).join(' · '),
+        meta: [h, MODES[mode]].filter(Boolean).join(' · '),
         note: r.magazineEnvoye ? 'Email n°2 envoyé · magazine du programme' : '',
       };
     case 'DEJA_EMARGE':
@@ -72,6 +79,7 @@ function presenterResultat(r, { mode, poste }) {
         type: 'DEJA_EMARGE',
         titre: `Déjà émargé à ${h}`,
         nom,
+        fonction: [r.invite?.fonction, r.invite?.entreprise].filter(Boolean).join(' · '),
         meta: ['Premier passage : ' + h, MODES[r.mode] || '', r.poste].filter(Boolean).join(' · '),
       };
     case 'AUTRE_EVENEMENT':
@@ -308,9 +316,14 @@ function Poste({ evenement }) {
   );
   const synchroniser = useCallback(async () => {
     if (!navigator.onLine) return;
-    const faits = await file.synchroniser(evenementId, (payload) =>
-      api.post(`/evenements/${evenementId}/emargement/`, payload),
-    );
+    let faits;
+    try {
+      faits = await file.synchroniser(evenementId, (payload) =>
+        api.post(`/evenements/${evenementId}/emargement/`, payload),
+      );
+    } catch {
+      return; // stockage local indisponible : nouvel essai au prochain passage (15 s ou retour du réseau)
+    }
     if (faits.length) {
       const dernierOk = faits[faits.length - 1].resultat;
       setCompteurs({ presents: dernierOk.presents, inscrits: dernierOk.inscrits });
@@ -385,14 +398,24 @@ function Poste({ evenement }) {
       setPhase('detection');
       const payload = { ...donnees, mode, poste: reglages.poste, appareil, dateClient: new Date().toISOString() };
       const debut = Date.now();
+      const delai = new AbortController();
+      const minuteur = setTimeout(() => delai.abort(), DELAI_EMARGEMENT_MS);
       try {
         if (!navigator.onLine) throw new TypeError('hors ligne');
-        const r = await api.post(`/evenements/${evenementId}/emargement/`, payload);
+        const r = await api.post(`/evenements/${evenementId}/emargement/`, payload, { signal: delai.signal });
         await new Promise((ok) => setTimeout(ok, Math.max(0, 250 - (Date.now() - debut))));
         afficher(r, mode);
       } catch (e) {
-        if (e instanceof TypeError || e?.status >= 500) {
-          const item = await file.ajouter(evenementId, payload);
+        if (e instanceof TypeError || e?.name === 'AbortError' || e?.status >= 500) {
+          let item;
+          try {
+            item = await file.ajouter(evenementId, payload);
+          } catch {
+            // stockage local indisponible (navigation privée, quota) : le poste ne reste pas bloqué
+            setPhase('attente');
+            afficherToast('Réseau indisponible et passage non enregistré. Réessayez ou utilisez le code.', 'erreur');
+            return;
+          }
           rafraichirAttente();
           setEnLigne(navigator.onLine);
           afficher({ resultat: 'HORS_LIGNE', fileId: item.id }, mode);
@@ -410,6 +433,7 @@ function Poste({ evenement }) {
           );
         }
       } finally {
+        clearTimeout(minuteur);
         occupe.current = false;
       }
     },
@@ -424,6 +448,9 @@ function Poste({ evenement }) {
         const n = p + 0.05 / duree;
         if (n >= 1) {
           clearInterval(t);
+          // anti-rebond compté depuis le retour à la caméra : l'invité qui garde son QR code devant l'objectif
+          // ne voit pas « Déjà émargé » juste après « Présence enregistrée »
+          dernierScan.current = { ...dernierScan.current, t: Date.now() };
           setPhase('attente');
           setResultat(null);
           return 0;
@@ -482,6 +509,12 @@ function Poste({ evenement }) {
     const v = valeurDouchette.trim();
     setValeurDouchette('');
     if (!v) return;
+    if (occupe.current) {
+      // scan précédent encore en cours d'envoi : ce passage n'est pas pris en compte, l'hôte doit le savoir
+      signaler('CODE_INVALIDE', { son, vibration });
+      afficherToast('Passage précédent en cours d’envoi : rescannez ce code dans un instant.', 'erreur');
+      return;
+    }
     if (/^\d{4}$/.test(v)) emarger({ code: v }, 'DOUCHETTE');
     else lireQr(v, 'DOUCHETTE');
   };
@@ -529,7 +562,7 @@ function Poste({ evenement }) {
     queryFn: () =>
       borne
         ? api.get(`/evenements/${evenementId}/borne/recherche/`, { q: qRecherche })
-        : api.get(`/evenements/${evenementId}/invites/`, { q: qRecherche, taille: 25, tri: 'nom' }),
+        : api.get(`/evenements/${evenementId}/invites/`, { q: qRecherche, taille: TAILLE_RECHERCHE, tri: 'nom' }),
     enabled: rechercheActive && enLigne,
     placeholderData: (p) => p,
     staleTime: 3000,

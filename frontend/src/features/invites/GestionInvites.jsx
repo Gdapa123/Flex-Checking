@@ -5,6 +5,7 @@ import { api, messageErreur } from '../../lib/api';
 import { heure, jour, MODES, nombre } from '../../lib/format';
 import { marquerMaj, useSecours } from '../../lib/tempsReel';
 import { suivreTache, telecharger } from '../../lib/telechargement';
+import { gesteActif, preparerImpression } from './impression';
 import useUrlState from '../../lib/useUrlState';
 import Icon from '../../components/ui/Icon';
 import Segmente from '../../components/ui/Segmente';
@@ -193,10 +194,10 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
           res.traites
             ? `Invitation renvoyée à ${nombre(res.traites)} ${res.traites > 1 ? 'invités' : 'invité'}.${
                 res.ignores
-                  ? ` ${nombre(res.ignores)} ignoré${res.ignores > 1 ? 's' : ''} (déjà envoyée il y a moins d’une heure).`
+                  ? ` ${nombre(res.ignores)} ignoré${res.ignores > 1 ? 's' : ''} (déjà envoyée il y a moins d’une heure ou en cours d’envoi).`
                   : ''
               }`
-            : 'Aucune invitation renvoyée : déjà envoyée il y a moins d’une heure à ces invités.',
+            : 'Aucune invitation renvoyée : déjà envoyée il y a moins d’une heure ou en cours d’envoi pour ces invités.',
           res.traites ? 'ok' : 'info',
         );
       setSelection(new Set());
@@ -223,6 +224,33 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
       );
     } catch (e) {
       toast(messageErreur(e, 'L’export a échoué.'), 'erreur');
+    } finally {
+      setExportEnCours('');
+    }
+  };
+
+  // impression de la liste filtrée (mêmes filtres que l'export) par le navigateur : aucune charge serveur
+  // supplémentaire (les requêtes de lecture du tableau, 100 lignes par page)
+  const [impression, setImpression] = useState(null);
+  const imprimer = async () => {
+    setExportEnCours('impression');
+    try {
+      // vue « Tous les invités » filtrée sur une cérémonie ou un programme : nommés sur la feuille
+      const ceremonie =
+        evenement?.nomAffiche || evenements.find((e) => String(e.id) === String(f.evenement))?.nomAffiche;
+      const programme = programmes.find((p) => String(p.id) === String(f.programme))?.nom;
+      const portee = evenement ? '' : ceremonie || (programme ? `programme ${programme}` : '');
+      const titre = `${f.statut === 'PRESENT' ? 'Liste des présents' : f.statut === 'INSCRIT' ? 'Invités non présents' : 'Liste des invités'}${ceremonie ? ` · ${ceremonie}` : ''}`;
+      const r = await preparerImpression({ base, filtres, titre, avecEvenement: !evenement && !f.evenement, portee });
+      if (r.total > r.imprimes)
+        toast(
+          `Liste limitée aux ${nombre(r.imprimes)} premiers sur ${nombre(r.total)} : filtrez pour le reste.`,
+          'info',
+        );
+      if (gesteActif()) r.imprimer();
+      else setImpression(r); // le chargement a duré : confirmation par un toucher (iPad, Safari)
+    } catch (e) {
+      toast(messageErreur(e, 'L’impression n’a pas pu être préparée.'), 'erreur');
     } finally {
       setExportEnCours('');
     }
@@ -552,6 +580,19 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
                 {fmt === 'csv' ? 'CSV' : 'Excel'}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={imprimer}
+              disabled={!!exportEnCours}
+              className={`flex h-11 cursor-pointer items-center gap-2 rounded-bouton border bg-surface px-3.5 text-[14px] font-semibold disabled:opacity-60 ${mde ? 'border-mde-champ text-mde-texte hover:bg-mde-survol' : 'border-champ text-texte hover:bg-fond'}`}
+            >
+              {exportEnCours === 'impression' ? (
+                <Spinner taille={14} />
+              ) : (
+                <Icon nom="printer" className="text-[16px]" />
+              )}
+              Imprimer
+            </button>
             {evenement && (
               <button
                 type="button"
@@ -918,6 +959,43 @@ export default function GestionInvites({ evenement, univers = 'programme', evene
         {confirmationGroupee === 'VALIDER'
           ? `Les invités sélectionnés passeront au statut « Présent »${magazineActif ? ' et recevront l’email n°2 (magazine)' : ''}.`
           : `Un nouvel email d’invitation (QR code et code à 4 chiffres) sera envoyé à ${selection.size > 1 ? `ces ${nombre(selection.size)} invités` : 'cet invité'}.`}
+      </Dialogue>
+      <Dialogue
+        univers={univers}
+        ouvert={!!impression}
+        tonalite="info"
+        icone="printer"
+        titre="Liste prête à imprimer"
+        onFermer={() => {
+          impression?.fermer();
+          setImpression(null);
+        }}
+        actions={
+          <>
+            <Bouton
+              variante={mde ? 'mde-secondaire' : 'secondaire'}
+              onClick={() => {
+                impression?.fermer();
+                setImpression(null);
+              }}
+            >
+              Annuler
+            </Bouton>
+            <Bouton
+              variante={mde ? 'mde' : 'principal'}
+              data-autofocus
+              onClick={() => {
+                impression?.imprimer();
+                setImpression(null);
+              }}
+            >
+              Imprimer
+            </Bouton>
+          </>
+        }
+      >
+        {impression &&
+          `${nombre(impression.imprimes)} ${impression.imprimes > 1 ? 'personnes' : 'personne'} sur la liste.`}
       </Dialogue>
       <DialogueSuppression
         univers={univers}

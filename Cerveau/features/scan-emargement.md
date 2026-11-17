@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
-sources: [backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py]
+verifie: 2026-11-17
+commit: 244302e
+sources: [backend/apps/noyau/validation.py, frontend/src/lib/schemas.js, backend/apps/noyau/serializers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/services.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_admin.py, backend/apps/comptes/permissions.py, frontend/src/features/scan/ScanSetup.jsx, frontend/src/features/scan/ScanPoste.jsx, frontend/src/features/scan/composants.jsx, frontend/src/features/scan/useCamera.js, frontend/src/features/scan/reglages.js, frontend/src/features/scan/retour.js, frontend/src/features/auth/useMoi.js, backend/apps/noyau/tests/test_emargement.py, backend/apps/noyau/tests/test_audit_securite.py, backend/apps/noyau/filtres.py, backend/apps/noyau/tests/test_recherche_emargement.py]
 ---
 
 # Scan et émargement
@@ -92,7 +92,25 @@ Historique « Derniers passages » et « Dernier » en `sessionStorage` (`fc-sca
 Son (Web Audio) et vibration désactivables ; valeurs globales (Paramètres) surchargées par l’appareil.
 Recherche par nom (hôte et borne) : requête envoyée 300 ms après la dernière frappe (`lib/useValeurDifferee`,
 2026-11-09), « Recherche… » affiché pendant l’attente ; la borne reste limitée à 30 recherches/min par le serveur.
-Anti-rebond caméra : même QR ignoré pendant 3 s ; caméra en pause pendant le résultat.
+Recherche par nom de l’hôte (2026-11-17, après 5 invités introuvables le jour J) : **100 résultats** demandés
+(`ScanPoste.TAILLE_RECHERCHE`, au lieu de 25 sans moyen de voir la suite alors que le compteur annonçait le total) et
+message « N premiers affichés (ordre alphabétique) : ajoutez le prénom » au-delà ; fonction affichée dans chaque
+résultat. Pendant « Recherche… », la liste précédente reste visible mais **grisée et inactive** (2026-11-17 : la
+vérification visuelle a montré qu’un toucher rapide émargeait une autre personne que celle cherchée). Côté serveur,
+`filtres.mots_recherche` (liste des invités et borne) : apostrophes droite et typographique
+et tirets séparent les mots (« N’Guessan » trouve « N'Guessan », « Jean Marc » trouve « Jean-Marc »), civilités
+(« M. », « Mme », « Dr »…) ignorées. Pas de recherche approchée : « Nguessan » ne trouve pas « N'Guessan » ;
+accents ignorés seulement par la collation MySQL `utf8mb4_unicode_ci` (❓ pas sur Postgres de test). Cause réelle des
+5 cas du jour J non vérifiée (base de production non consultée).
+Écran de confirmation (PRESENT, DÉJÀ ÉMARGÉ) : **fonction · entreprise** sous le nom (`invite.fonction` ajouté à
+`InviteResultatSerializer`, 2026-11-17).
+Anti-rebond caméra : même QR ignoré pendant 3 s **comptées depuis le retour à la caméra** (2026-11-17 ; avant, depuis
+la détection : un QR gardé devant l’objectif affichait « Déjà émargé » juste après « Présence enregistrée ») ; caméra
+en pause pendant le résultat.
+Robustesse (2026-11-17) : émargement en ligne abandonné après 8 s (`DELAI_EMARGEMENT_MS`, `AbortController`, délai
+qui interrompt aussi l’attente du jeton CSRF et du rafraîchissement de session : `api.interrompable`) et mis en
+file hors ligne (rejeu idempotent) ; file locale indisponible → poste débloqué + message ; synchronisation protégée ;
+douchette : un scan reçu pendant l’envoi du précédent est signalé (son d’erreur + message) au lieu d’être perdu.
 
 ## QR codes étrangers (2026-11-09) ✅
 Contre les QR codes malveillants (lien piégé, Wi‑Fi, texte, commandes d’une douchette) :

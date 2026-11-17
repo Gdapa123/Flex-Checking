@@ -14,6 +14,7 @@ from apps.comptes.permissions import EstAdmin, EstSuperAdmin, evenements_visible
 from apps.comptes.throttles import CacheDeSecours, LimiteSensible
 
 from . import services
+from .filtres import mots_recherche
 from .models import Emargement, Parametres
 from .serializers import EmargementRequeteSerializer, EmargementResultatSerializer, ParametresScanSerializer
 from .validation import sans_controle
@@ -227,7 +228,7 @@ class RechercheBorneView(APIView):
         from django.db.models import Q
 
         evenement = get_object_or_404(evenements_visibles(request.user), pk=pk)
-        mots = [m for m in (request.query_params.get("q") or "").split() if len(m) >= RECHERCHE_BORNE_MIN][:4]
+        mots = [m for m in mots_recherche(request.query_params.get("q"), 8) if len(m) >= RECHERCHE_BORNE_MIN][:4]
         if not mots:
             return Response({"total": 0, "resultats": []})
         qs = evenement.invites.select_related("statut")

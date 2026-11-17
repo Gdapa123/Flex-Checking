@@ -30,6 +30,8 @@ const FERMETURE_COMPTE = 4003;
 // le serveur n'a pas de temps réel (pas de Redis) : nouvel essai espacé, au cas où il serait réactivé
 const FERMETURE_INDISPONIBLE = 4004;
 const ESSAI_SI_INDISPONIBLE_MS = 5 * 60_000;
+// rafraîchissement refusé pour limite de débit ou panne : nouvel essai (l'interrogation de secours prend le relais)
+const ESSAI_APRES_REFUS_RAFRAICHISSEMENT_MS = 30_000;
 const REGROUPEMENT_MS = 250;
 
 // ------------------------------------------------------------------ état partagé
@@ -130,7 +132,10 @@ export function demarrerTempsReel(qc) {
       if (e.code === FERMETURE_SESSION) {
         // jeton d'accès expiré : rafraîchir la session puis se reconnecter aussitôt
         changerEtat('deconnecte');
-        if (await rafraichirSession()) return planifier(0);
+        const renouvelee = await rafraichirSession();
+        if (renouvelee) return planifier(0);
+        // 429, 5xx ou coupure : la session n'est pas expirée, nouvel essai plus tard sans déconnecter l'hôte
+        if (renouvelee === null) return planifier(ESSAI_APRES_REFUS_RAFRAICHISSEMENT_MS);
         return sessionTerminee();
       }
       if (e.code === FERMETURE_INDISPONIBLE) {

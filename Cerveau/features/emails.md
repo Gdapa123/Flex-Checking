@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
+verifie: 2026-11-17
+commit: 244302e
 sources: [backend/apps/noyau/tests/test_corrections_invitation.py, backend/apps/noyau/vues_public.py, backend/templates/emails/invitation.html, backend/templates/emails/magazine.html, backend/apps/noyau/adresses.py, backend/apps/noyau/tests/test_a_contacter.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/emails.py, backend/apps/noyau/tasks.py, backend/apps/noyau/models.py, backend/apps/noyau/migrations/0011_derniere_tentative.py, backend/apps/noyau/migrations/0014_objet_email_1.py, backend/apps/noyau/migrations/0015_email_2_toujours_envoye.py, backend/apps/noyau/cartes_invitation.py, backend/apps/noyau/tests/test_suivi_emails.py, backend/apps/noyau/tests/test_invites.py, backend/apps/noyau/tests/test_emargement.py, backend/templates/emails/, backend/apps/noyau/icones_email.py, backend/apps/noyau/ics.py, backend/apps/noyau/qr.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/sondages.py, backend/apps/noyau/services.py, backend/config/settings.py, frontend/src/features/admin/SuiviEmails.jsx, frontend/src/features/super/Parametres.jsx]
 ---
 
@@ -20,7 +20,10 @@ L’email n°2 **ne repart jamais automatiquement**, même après annulation pui
 
 Renvoi manuel depuis la fiche (`POST /api/invites/<id>/renvoi-email/`, `vues_invites.RenvoiEmailView`, 5/h par
 admin et par invité) : n°2 refusé (`MAGAZINE_INDISPONIBLE`) seulement si l’invité n’est pas Présent (depuis le 2026-11-10 ; avant, aussi
-si le magazine était désactivé ou sans lien) ;
+si le magazine était désactivé ou sans lien) ; si un envoi du même type est encore en
+file (débit limité, nouvel essai programmé, message perdu), **aucun second email n’est créé** (2026-11-17 ; avant, un second
+clic faisait recevoir l’email deux fois) : jamais tenté → remis en file (« envoi relancé ») ; déjà tenté → rien de
+plus, son nouvel essai programmé (≤ 30 min) part à l’adresse actuelle (une seconde chaîne fausserait les tentatives) ;
 n°3 refusé (`SONDAGE_INDISPONIBLE`) si le programme a désactivé le sondage ou si le lien n’est plus renvoyable
 (`sondages.sondage_renvoyable` : lien encore ouvert **et dernier envoi n°3 en ÉCHEC**, indépendamment de la
 réponse). Depuis le 2026-10-22 (`7e0e071`), l’envoi a lieu **que l’invité ait répondu ou non** (réponse, journal
@@ -32,11 +35,19 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
 2. Mise en file Celery **après commit** ; si la file est injoignable, l’action de l’utilisateur réussit quand
    même et l’erreur est enregistrée.
 3. Verrou de cache `email-envoi:<id>` (pas de double envoi concurrent).
-4. Échec → 3 nouvelles tentatives à 30 s, 2 min, 8 min, puis ECHEC (« À renvoyer ») + erreur technique.
+4. Échec → 3 nouvelles tentatives à 30 s, 2 min, **30 min** (8 min avant le 2026-11-17), puis ECHEC (« À renvoyer ») + erreur technique.
+   Débit limité par le worker : `rate_limit` de `tasks.envoyer_email` = `EMAIL_DEBIT_MAX` (**20/m** par défaut,
+   depuis le 2026-11-17). Sans limite, la rafale des sondages de 8 h (297 emails) avait fait couper les connexions
+   par le fournisseur SMTP pendant l’authentification (`SMTPServerDisconnected`). La limite vaut par worker Celery.
+   Valeur mal écrite (« 20/min ») refusée au démarrage (`ImproperlyConfigured`) au lieu de faire planter le worker.
+   Au moment de l’envoi, l’email n°2 ne part qu’à un invité **toujours Présent** : présence annulée pendant l’attente →
+   ECHEC « présence annulée » (2026-11-17, comme le renvoi manuel).
 5. Celery beat toutes les 5 min (`tasks.relancer_emails_en_attente`, ≤ 500) : relance des emails EN_ATTENTE sans
-   tentative créés depuis plus de 15 min, et de ceux qui ont déjà au moins une tentative et dont la **dernière
-   tentative** (`EmailEnvoye.derniere_tentative_le`, migration `0011`, datée à chaque essai par `tasks._envoyer`) date
-   de plus d’1 h — à défaut de cette date (envois antérieurs à la migration), créés depuis plus d’1 h. Le nouvel essai
+   tentative créés depuis plus d’**1 h** (`RELANCE_JAMAIS_PARTI`, 15 min avant le 2026-11-17 : au débit limité, une
+   rafale reste plus de 15 min en file et la relance doublait les tâches), et de ceux qui ont déjà au moins une
+   tentative et dont la **dernière tentative** (`EmailEnvoye.derniere_tentative_le`, migration `0011`, datée à chaque
+   essai par `tasks._envoyer`) date de plus de **2 h** (`RELANCE_ESSAI_PERDU`, 1 h avant le 2026-11-17) — à défaut de
+   cette date (envois antérieurs à la migration), créés depuis plus de 2 h. Le nouvel essai
    programmé a alors été perdu (file Redis vidée ou redémarrée) ; un email en plein cycle de tentatives n’est pas touché.
 6. Sans Redis (Vercel) : envoi dans la requête, une seule tentative.
 7. **`Message-ID` stable** (`emails.construire_message`) :
@@ -107,7 +118,8 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   `backend/apps/noyau/suivi_emails.py`) — remplace l’ancien `ApercuEmails.jsx`, supprimé dans `bd4f807`. En tête
   (2026-11-09), « Invités à contacter » (`suivi_emails.a_contacter`, clé `aContacter`) : invitation jamais envoyée,
   dernier envoi en échec avec sa cause lue dans l’erreur SMTP (`suivi_emails.cause_echec`, côté adresse ou côté
-  envoi), envoi en attente depuis plus de 15 min, adresse probablement mal tapée (`adresses.suggerer_correction`,
+  envoi), envoi « bloqué » selon les critères de la relance automatique (`suivi_emails._attente_anormale` : jamais tenté depuis
+plus d’1 h, ou dernier essai il y a plus de 2 h ; avant le 2026-11-17, toute attente de plus de 15 min), adresse probablement mal tapée (`adresses.suggerer_correction`,
   distance d’édition sur les fournisseurs courants) ; actions « Corriger et renvoyer » (renvoie l’email en échec,
   sinon l’invitation), « Corriger l’adresse » (fiche), « Renvoyer », lien `tel:`. Puis une carte par email (n°1, n°2,
   n°3) avec compteurs envoyés / en attente / échecs (dernier envoi de chaque invité) et renvoi groupé ; aperçu et
@@ -115,6 +127,9 @@ qui a déjà répondu reçoit de nouveau son lien, qui affiche « déjà répond
   [tableau-de-bord](tableau-de-bord.md) § A7. Points d’accès (admin de la cérémonie) :
   `GET evenements/<id>/suivi-emails/`, `POST …/suivi-emails/renvoyer-echecs/` (10/h, `relance_emails`),
   `POST …/suivi-emails/test/` (10/h, `email_test`).
+- Renvoi groupé de l’invitation (tableau des invités, `executer_action_groupee`) : ignore aussi un invité dont une
+  invitation est encore en file ; une invitation en file **jamais tentée depuis plus d’1 h** (message perdu) est
+  remise en file au lieu d’être dupliquée (2026-11-17).
 - Renvoi groupé : seuls les invités dont le **dernier** envoi du type est en échec ; n°2 et n°3 : seulement les
   invités encore présents ; n°3 : seulement si le lien est encore ouvert (24 h), **que l’invité ait répondu ou non**
 (anonymat, `suivi_emails.renvoyer_echecs`) ; refus

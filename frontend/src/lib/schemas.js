@@ -126,7 +126,11 @@ export function erreurChamp(schema, champ, valeurs) {
 
 /** « 0712345678 » → « 07 12 34 56 78 » pendant la saisie. */
 export function formaterTelephone(v) {
-  const d = v.replace(/\D/g, '').slice(0, 10);
+  let d = v.replace(/\D/g, '');
+  // numéro collé avec l'indicatif (« +225 07 12 34 56 78 », 13 chiffres) : indicatif retiré, exactement comme
+  // `valider_telephone` côté serveur
+  if (d.startsWith('225') && d.length === 13) d = d.slice(3);
+  d = d.slice(0, 10);
   return d.replace(/(\d{2})(?=\d)/g, '$1 ');
 }
 

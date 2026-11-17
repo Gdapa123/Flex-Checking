@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-13
-commit: b0db942
-sources: [frontend/src/lib/serviceWorker.js, backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/exceptions.py, frontend/src/lib/signalement.js, frontend/src/components/ui/FiletErreur.jsx, frontend/src/features/super/Erreurs.jsx]
+verifie: 2026-11-17
+commit: 244302e
+sources: [frontend/src/lib/serviceWorker.js, backend/apps/noyau/erreurs.py, backend/apps/noyau/logs.py, backend/apps/comptes/throttles.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/exceptions.py, frontend/src/lib/signalement.js, frontend/src/components/ui/FiletErreur.jsx, frontend/src/features/super/Erreurs.jsx, frontend/src/features/scan/useCamera.js, backend/apps/noyau/tasks.py]
 ---
 
 # Erreurs techniques
@@ -58,3 +58,13 @@ Filtres à traiter / résolues / toutes et par source, détail dépliable (trace
     `nouvelleVersion.js`) : connexion coupée. `FiletErreur` affiche alors « La page n’a pas pu se charger. Vérifiez
     votre connexion internet… » (`signalement.estEchecChargement`) au lieu de « problème d’affichage » ; l’erreur
     reste signalée.
+- 2026-11-17 : erreurs du 15 au 17/11, corrigées (en attente de déploiement) :
+  - « SMTPServerDisconnected · Connection unexpectedly closed » × 297 (email « Sondage de satisfaction », 17/11 à
+    8 h) : rafale de connexions SMTP coupée par le fournisseur pendant l’authentification. Débit limité par
+    `EMAIL_DEBIT_MAX` (voir [emails](emails.md)). Cause « blocage pour excès de connexions » : ❓ à confirmer auprès du
+    fournisseur.
+  - « UnknownError · setPhotoOptions failed » (Samsung Internet, Android 10, `/scan`) : à l’arrêt du scanner,
+    `controls.stop()` de ZXing éteint la torche de façon asynchrone ; refus du téléphone non intercepté par le
+    `try/catch` synchrone. Correctif : `useCamera.arreterLecteur` (test `frontend/tests/useCamera.test.js`).
+  - « Script error. » (PHX, `/i/…`, jusqu’au 15/11) : déjà filtré depuis `0a11d09` (déployé le 13/11) ; occurrences
+    postérieures probablement dues à une ancienne version en cache (❓ à confirmer).

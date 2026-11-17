@@ -417,6 +417,7 @@ class InviteResultatSerializer(serializers.ModelSerializer):
             "nom",
             "nom_complet",
             "entreprise",
+            "fonction",
             "mode_emargement",
         ]
 

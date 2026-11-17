@@ -158,6 +158,11 @@ export function ResultatPleinEcran({ resultat, appareil, progression, pause, dur
             {resultat.nom}
           </div>
         )}
+        {resultat.fonction && (
+          <div className="max-w-[90%] font-semibold leading-[1.3] [text-wrap:balance]" style={{ fontSize: t.meta }}>
+            {resultat.fonction}
+          </div>
+        )}
         <div className="max-w-[560px] leading-[1.45]" style={{ fontSize: t.meta }}>
           {resultat.meta}
         </div>
@@ -185,7 +190,7 @@ export function ResultatPanneau({ resultat, progression, pause, duree, onBascule
     <div
       role="button"
       tabIndex={0}
-      aria-label={`${resultat.titre}${resultat.nom ? ` · ${resultat.nom}` : ''} · ${pause ? 'reprendre' : 'mettre en pause'}`}
+      aria-label={`${resultat.titre}${resultat.nom ? ` · ${resultat.nom}` : ''}${resultat.fonction ? ` · ${resultat.fonction}` : ''} · ${pause ? 'reprendre' : 'mettre en pause'}`}
       onClick={onBasculer}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -204,6 +209,7 @@ export function ResultatPanneau({ resultat, progression, pause, duree, onBascule
       {resultat.nom && (
         <div className="text-[clamp(34px,3.6vw,52px)] font-bold leading-[1.05] tracking-[-0.03em]">{resultat.nom}</div>
       )}
+      {resultat.fonction && <div className="text-[21px] font-semibold">{resultat.fonction}</div>}
       <div className="text-[19px]">{resultat.meta}</div>
       {resultat.note && (
         <span className="inline-flex h-[34px] items-center gap-2 self-start rounded-full bg-blanc-18 px-3 text-[15px] font-medium">
@@ -374,6 +380,11 @@ export function VueRecherche({
               : q.trim()
                 ? `${total} ${total > 1 ? 'résultats' : 'résultat'}`
                 : `Tous les invités · ${total}`}
+          {!court && !chargement && total > resultats.length && resultats.length > 0 && (
+            <strong className="block font-semibold text-g-texte">
+              {`${resultats.length} premiers affichés (ordre alphabétique) : ajoutez le prénom pour trouver la personne.`}
+            </strong>
+          )}
         </p>
         {!indisponible && !court && !chargement && total === 0 && (
           <div className="flex flex-col items-center gap-2.5 px-6 py-12 text-center">
@@ -389,11 +400,19 @@ export function VueRecherche({
         {!indisponible &&
           !court &&
           resultats.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 border-b border-g-surface px-4 py-3">
+            <div
+              key={r.id}
+              // pendant la recherche, la liste précédente (ou « tous les invités ») reste affichée mais grisée et
+              // inactive : un toucher rapide n'émarge pas une autre personne que celle cherchée (2026-11-17)
+              aria-disabled={chargement || undefined}
+              className={`flex items-center gap-3 border-b border-g-surface px-4 py-3 transition-opacity ${chargement ? 'pointer-events-none opacity-40' : ''}`}
+            >
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-[16px] font-semibold">{r.nomComplet}</span>
                 <span className="truncate text-[14px] text-g-texte-2">
-                  {borne ? r.entreprise || 'Particulier' : `${r.entreprise || 'Particulier'} · ${r.email}`}
+                  {borne
+                    ? r.entreprise || 'Particulier'
+                    : [r.fonction, r.entreprise || 'Particulier', r.email].filter(Boolean).join(' · ')}
                 </span>
               </div>
               {r.statut === 'PRESENT' ? (
@@ -409,7 +428,7 @@ export function VueRecherche({
                   <button
                     type="button"
                     onClick={() => onEmarger(r)}
-                    disabled={enCours}
+                    disabled={enCours || chargement}
                     className="btn-principal h-11 cursor-pointer rounded-bouton border-0 px-4 text-[15px] font-semibold active:scale-[.96] disabled:opacity-60"
                   >
                     {borne ? 'C’est moi' : 'Émarger'}

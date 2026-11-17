@@ -1,9 +1,9 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
-sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/taches.py, backend/apps/noyau/rapports.py, backend/apps/noyau/analytique.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, frontend/src/lib/telechargement.js, docker-compose.prod.yml]
+verifie: 2026-11-17
+commit: 244302e
+sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/taches.py, backend/apps/noyau/rapports.py, backend/apps/noyau/analytique.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/urls.py, frontend/src/lib/telechargement.js, docker-compose.prod.yml, frontend/src/features/invites/impression.js, frontend/src/features/invites/GestionInvites.jsx]
 ---
 
 # Exports, rapports et analyses
@@ -17,6 +17,16 @@ sources: [backend/apps/noyau/models.py, backend/apps/noyau/exports.py, backend/a
 | Présences | `/exports/presences/` | super admin | heure, mode, poste, appareil, « émargé par » |
 | Suivi des emails | `/exports/emails/` | super admin | type (libellé `models.libelle_email` : n°1 invitation, n°2 magazine, **n°3 sondage**), statut, tentatives, envoyé le, erreur |
 | Journal | `/exports/journal/` (filtres du journal, 20 000 lignes max) | super admin | date, utilisateur, type, détail |
+
+**Impression** (2026-11-17, ✅) : bouton « Imprimer » à côté de CSV / Excel dans le tableau des invités (cérémonie et
+« Tous les invités »), **mêmes filtres** que l’export (statut — « Présents » donne la liste des présents —, mode,
+recherche, emails, cérémonie). `frontend/src/features/invites/impression.js` lit la liste par la route du tableau
+(100 lignes par page, 3 requêtes à la fois au plus, ordre alphabétique, doublons retirés, 2 000 lignes au plus avec
+avertissement), construit une page A4 (N°, nom, fonction, entreprise, [cérémonie], présence : heure · mode ou case à
+cocher) dans un `iframe` invisible et lance l’impression du navigateur ; si le chargement a fait expirer le geste de
+l’utilisateur (`navigator.userActivation`, iPad / Safari), un dialogue « Liste prête à imprimer » demande un toucher.
+Vue « Tous les invités » filtrée : cérémonie ou programme indiqués sur la feuille. Aucune route ni tâche serveur ajoutée ; données échappées. Contrairement à l’export,
+l’impression n’est pas journalisée (lecture de la liste, comme l’affichage du tableau).
 
 - **CSV** : UTF-8 avec BOM, séparateur « ; » (Excel français). **XLSX** : en-tête sombre, colonnes ajustées,
   volets figés, filtre automatique.

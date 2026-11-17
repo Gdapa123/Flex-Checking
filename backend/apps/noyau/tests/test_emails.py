@@ -84,3 +84,12 @@ def test_invitation_mise_en_garde_qr_piege(evenement, settings):
         assert "inutile de le scanner vous-même" in version.lower()
         assert "jamais de paiement ni de mot de passe" in version
         assert "inscription.mde.ci" in version
+
+
+def test_debit_d_envoi_limite_par_defaut():
+    """Rafale de sondages (17/11/2026) : sans limite, le fournisseur SMTP coupait les connexions."""
+    from django.conf import settings
+
+    from apps.noyau.tasks import envoyer_email
+
+    assert envoyer_email.rate_limit == settings.EMAIL_DEBIT_MAX

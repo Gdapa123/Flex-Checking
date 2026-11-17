@@ -68,6 +68,20 @@ describe('temps réel', () => {
     expect(FauxSocket.instances).toHaveLength(2);
   });
 
+  it('ne déconnecte pas si le rafraîchissement est refusé pour limite ou panne (null) : nouvel essai', async () => {
+    rafraichirSession.mockResolvedValueOnce(null).mockResolvedValue(true);
+    const ecoute = vi.fn();
+    window.addEventListener('fc:session-expiree', ecoute);
+    arreter = demarrerTempsReel(qc);
+    dernier().close(4001);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(ecoute).not.toHaveBeenCalled();
+    expect(FauxSocket.instances).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(FauxSocket.instances).toHaveLength(2);
+    window.removeEventListener('fc:session-expiree', ecoute);
+  });
+
   it('signale la fin de session si le compte est désactivé (4003)', () => {
     const ecoute = vi.fn();
     window.addEventListener('fc:session-expiree', ecoute);

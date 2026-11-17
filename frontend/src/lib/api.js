@@ -18,12 +18,25 @@ function lireCookie(nom) {
     ?.split('=')[1];
 }
 
+// délai maximal des requêtes internes (jeton CSRF, rafraîchissement de session) : sur un Wi-Fi qui accepte la
+// connexion sans répondre, elles ne bloquent pas l'émargement en cours (qui a son propre délai) indéfiniment
+const DELAI_INTERNE_MS = 10_000;
+function fetchAvecDelai(url, options) {
+  const delai = new AbortController();
+  const minuteur = setTimeout(() => delai.abort(), DELAI_INTERNE_MS);
+  return fetch(url, { ...options, signal: delai.signal }).finally(() => clearTimeout(minuteur));
+}
+
 let csrfPret = null;
 async function assurerCsrf() {
   if (lireCookie('fc_csrftoken')) return;
-  csrfPret = csrfPret || fetch('/api/auth/csrf/', { credentials: 'same-origin' });
-  await csrfPret;
-  csrfPret = null;
+  csrfPret = csrfPret || fetchAvecDelai('/api/auth/csrf/', { credentials: 'same-origin' });
+  try {
+    await csrfPret;
+  } finally {
+    // remis à zéro même en cas d'échec : une coupure ponctuelle ne bloque pas toutes les écritures suivantes
+    csrfPret = null;
+  }
 }
 
 let rafraichissement = null;
@@ -34,21 +47,51 @@ async function rafraichir() {
       // le serveur vérifie le jeton CSRF sur le rafraîchissement, comme sur toute requête modifiante
       await assurerCsrf();
       const jeton = lireCookie('fc_csrftoken');
-      return fetch('/api/auth/rafraichir/', {
+      const r = await fetchAvecDelai('/api/auth/rafraichir/', {
         method: 'POST',
         credentials: 'same-origin',
         headers: jeton ? { 'X-CSRFToken': decodeURIComponent(jeton) } : {},
       });
+      // seul le statut est partagé entre les appelants simultanés (le corps ne se lit qu'une fois)
+      return r.status;
     })().finally(() => {
       setTimeout(() => (rafraichissement = null), 0);
     });
-  const r = await rafraichissement;
+  const statut = await rafraichissement;
   // 409 : un autre onglet vient de renouveler la session, ses cookies sont déjà en place
-  return r.ok || r.status === 409;
+  if ((statut >= 200 && statut < 300) || statut === 409) return true;
+  // limite de débit (Wi-Fi partagé de la salle) ou serveur indisponible : la session n'est pas expirée, l'hôte
+  // ne doit pas être renvoyé à la connexion en pleine cérémonie ; l'appelant reçoit une erreur réseau
+  if (statut === 429 || statut >= 500) throw new ApiError(statut, null);
+  return false;
 }
 
-/** Rafraîchit la session (cookie d'accès) ; utilisé aussi par la connexion temps réel. */
-export const rafraichirSession = () => rafraichir().catch(() => false);
+/** Attente interrompue par le signal de l'appelant (délai de l'émargement) : le poste n'attend pas au-delà. */
+function interrompable(promesse, signal) {
+  if (!signal) return promesse;
+  return new Promise((ok, ko) => {
+    const abandon = () => ko(new DOMException('Délai dépassé', 'AbortError'));
+    if (signal.aborted) return abandon();
+    signal.addEventListener('abort', abandon, { once: true });
+    promesse.then(ok, ko).finally(() => signal.removeEventListener('abort', abandon));
+  });
+}
+
+/**
+ * Rafraîchit la session (cookie d'accès) ; utilisé aussi par la connexion temps réel.
+ * Rend true (renouvelée), false (expirée) ou null (serveur limité, indisponible ou injoignable : réessayer).
+ */
+export const rafraichirSession = () => rafraichir().catch(() => null);
+
+/** Rafraîchissement depuis une requête : une panne passagère du rafraîchissement est rendue telle quelle. */
+async function rafraichirOuErreur() {
+  try {
+    return { ok: await rafraichir() };
+  } catch {
+    // traité comme une coupure réseau : message « Connexion impossible », scan mis en file hors ligne
+    return { erreur: new TypeError('rafraîchissement de session indisponible') };
+  }
+}
 
 const ECRITURE = ['POST', 'PUT', 'PATCH', 'DELETE'];
 // un 401 de ces routes ne signifie pas « cookie d'accès expiré » : pas de rafraîchissement
@@ -73,7 +116,7 @@ export async function requete(url, { method = 'GET', body, params, brut = false,
   const headers = { Accept: 'application/json' };
   if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
   if (ECRITURE.includes(method)) {
-    await assurerCsrf();
+    await interrompable(assurerCsrf(), signal);
     const jeton = lireCookie('fc_csrftoken');
     if (jeton) headers['X-CSRFToken'] = decodeURIComponent(jeton);
   }
@@ -87,8 +130,11 @@ export async function requete(url, { method = 'GET', body, params, brut = false,
   if (reponse.status === 401) {
     // /auth/moi/ compris : rouvrir l'application après l'expiration du cookie d'accès renouvelle la session
     const rafraichissable = !SANS_RAFRAICHISSEMENT.some((p) => cible.startsWith(p));
-    if (reessai && rafraichissable && (await rafraichir()))
-      return requete(url, { method, body, params, brut, signal, reessai: false });
+    if (reessai && rafraichissable) {
+      const r = await interrompable(rafraichirOuErreur(), signal);
+      if (r.erreur) throw r.erreur; // 429, 5xx ou coupure : pas de déconnexion (le scan bascule en hors ligne)
+      if (r.ok) return requete(url, { method, body, params, brut, signal, reessai: false });
+    }
     if (!cible.startsWith('/api/auth/')) window.dispatchEvent(new CustomEvent('fc:session-expiree'));
   }
   if (brut) {

@@ -138,7 +138,7 @@ def test_relance_des_emails_restes_en_attente(evenement, monkeypatch):
     monkeypatch.setattr("apps.noyau.tasks.envoyer_email.delay", lambda *a, **k: None)
     inv = nouvel_invite(evenement)
     EmailEnvoye.objects.filter(invite=inv).update(
-        statut=StatutEmail.EN_ATTENTE, tentatives=0, cree_le=timezone.now() - timedelta(minutes=20)
+        statut=StatutEmail.EN_ATTENTE, tentatives=0, cree_le=timezone.now() - timedelta(minutes=70)
     )
     monkeypatch.undo()
     assert relancer_emails_en_attente() == 1

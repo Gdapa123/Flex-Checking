@@ -1,8 +1,8 @@
 ---
 type: api
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
+verifie: 2026-11-17
+commit: 244302e
 sources: [backend/apps/noyau/models.py, backend/apps/noyau/urls.py, backend/config/urls.py, backend/apps/noyau/vues_public.py, backend/apps/noyau/vues_scan.py, backend/apps/noyau/vues_invites.py, backend/apps/noyau/vues_admin.py, backend/apps/noyau/vues_erreurs.py, backend/apps/noyau/vues_sondage.py, backend/apps/noyau/sondages.py, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/serializers.py, backend/apps/comptes/views.py, backend/apps/comptes/throttles.py, backend/config/settings.py, backend/vercel.json]
 ---
 
@@ -48,7 +48,7 @@ en JSON uniquement (415 sinon) ; seule exception, `POST public/sondages/<jeton>/
 ## Scan (`vues_scan.py`)
 | Méthode | Route | Droits | Détail |
 |---|---|---|---|
-| POST | `evenements/<id>/emargement/` | A (borne) | exactement un de `qrToken`, `code`, `inviteId` + `mode`, `poste`, `appareil`, `dateClient`, `choixBorne` → `{resultat, invite, presentLe, poste, mode, evenementAutre, magazineEnvoye, emargementId, presents, inscrits}` ; `resultat` ∈ `PRESENT`, `DEJA_EMARGE`, `CODE_INVALIDE`, `AUTRE_EVENEMENT`, `ANNULE_DEPUIS` (scan rejoué antérieur à une annulation) ; `poste` et `qrToken` sans caractère de contrôle (400) ; `qrToken` d’un autre format que les 32 caractères d’une invitation → `CODE_INVALIDE` sans requête en base (2026-11-09) ; codes invalides : 30 / 10 min par compte et cérémonie, **10 en session borne** (429) ; en borne, `inviteId` exige le jeton signé `choixBorne` rendu par la recherche (valable 5 min après son émission, mesurées à l'heure du passage `dateClient` bornée à l'heure du serveur, rejeu hors ligne accepté jusqu'à 12 h ; sinon 403 `CHOIX_BORNE_INVALIDE`) et 12 passages manuels/min (429) |
+| POST | `evenements/<id>/emargement/` | A (borne) | exactement un de `qrToken`, `code`, `inviteId` + `mode`, `poste`, `appareil`, `dateClient`, `choixBorne` → `{resultat, invite, presentLe, poste, mode, evenementAutre, magazineEnvoye, emargementId, presents, inscrits}` (`invite` : id, civilité, prénom, nom, `nomComplet`, entreprise, **fonction** depuis le 2026-11-17, mode) ; `resultat` ∈ `PRESENT`, `DEJA_EMARGE`, `CODE_INVALIDE`, `AUTRE_EVENEMENT`, `ANNULE_DEPUIS` (scan rejoué antérieur à une annulation) ; `poste` et `qrToken` sans caractère de contrôle (400) ; `qrToken` d’un autre format que les 32 caractères d’une invitation → `CODE_INVALIDE` sans requête en base (2026-11-09) ; codes invalides : 30 / 10 min par compte et cérémonie, **10 en session borne** (429) ; en borne, `inviteId` exige le jeton signé `choixBorne` rendu par la recherche (valable 5 min après son émission, mesurées à l'heure du passage `dateClient` bornée à l'heure du serveur, rejeu hors ligne accepté jusqu'à 12 h ; sinon 403 `CHOIX_BORNE_INVALIDE`) et 12 passages manuels/min (429) |
 | POST | `emargements/<id>/annulation/` | S | `{motif}` (sans caractère de contrôle) → `{resultat: ANNULE, inviteId, nomComplet, presents, inscrits}` |
 | GET | `evenements/<id>/emargements/recents/` | A | 30 derniers passages + compteurs |
 | GET | `parametres/scan/` | A (borne) | durée, son, vibration |

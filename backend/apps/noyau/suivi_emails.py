@@ -15,8 +15,18 @@ from .journal import journaliser
 from .models import EmailEnvoye, InvitationSondage, JournalActivite, Parametres, StatutEmail, TypeEmail
 
 A_CONTACTER_AFFICHES = 200
-# un email sans tentative depuis 15 min est normalement repris par `tasks.relancer_emails_en_attente`
-ATTENTE_ANORMALE = timedelta(minutes=15)
+# un email sans tentative depuis 1 h est repris par `tasks.relancer_emails_en_attente` (`RELANCE_JAMAIS_PARTI`)
+ATTENTE_ANORMALE = timedelta(hours=1)
+# un email déjà tenté l'est à nouveau dans les 30 min ; au-delà de 2 h sans essai, son nouvel essai a été perdu
+ESSAI_ANORMAL = timedelta(hours=2)
+
+
+def _attente_anormale(e, maintenant):
+    """Mêmes critères que la relance automatique : jamais tenté depuis 1 h, ou dernier essai il y a plus de 2 h."""
+    if not e["tentatives"]:
+        return e["cree_le"] < maintenant - ATTENTE_ANORMALE
+    return (e["derniere_tentative_le"] or e["cree_le"]) < maintenant - ESSAI_ANORMAL
+
 
 # Cause d'un échec, lue dans le message d'erreur SMTP (codes RFC 5321 / 3463 et classes d'exception de smtplib).
 # côté « adresse » : l'adresse de l'invité est en cause (à corriger ou à confirmer avec lui) ;
@@ -169,12 +179,12 @@ def a_contacter(evenement, derniers):
                         "le": (e["derniere_tentative_le"] or e["cree_le"]).isoformat(),
                     }
                 )
-            elif e["statut"] == StatutEmail.EN_ATTENTE and e["cree_le"] < maintenant - ATTENTE_ANORMALE:
+            elif e["statut"] == StatutEmail.EN_ATTENTE and _attente_anormale(e, maintenant):
                 problemes.append(
                     {
                         "code": "BLOQUE",
                         "type": type_email,
-                        "libelle": "En attente depuis plus de 15 min (nouvel essai automatique)",
+                        "libelle": "En attente depuis plus d’1 h (nouvel essai automatique)",
                         "cote": "envoi",
                         "le": e["cree_le"].isoformat(),
                     }

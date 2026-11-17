@@ -1,8 +1,8 @@
 ---
 type: architecture
 statut: implémenté
-verifie: 2026-11-10
-commit: 93646d7
+verifie: 2026-11-17
+commit: 244302e
 sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps/noyau/ics.py, backend/apps/noyau/cartes_invitation.py, backend/templates/emails/base.html, backend/apps/noyau/suivi_emails.py, backend/apps/noyau/vues_sondage.py, frontend/src/lib/agenda.js, frontend/src/features/scan/useCamera.js, frontend/vercel.json, backend/vercel.json, docker-compose.yml, backend/config/bases.py, backend/requirements.txt]
 ---
 
@@ -10,14 +10,14 @@ sources: [backend/config/settings.py, backend/apps/noyau/emails.py, backend/apps
 
 | Intégration | Usage | Configuration | Détail |
 |---|---|---|---|
-| **SMTP** | emails n°1, n°2 et n°3 (sondage) ; email de test envoyé de façon synchrone depuis « Suivi des emails » (`suivi_emails.envoyer_test`) | `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `EMAIL_TIMEOUT` (15 s par défaut, depuis le 2026-11-09 : un SMTP muet ne bloque plus l’email de test ni un worker), `DEFAULT_FROM_EMAIL` | dev : console ou Mailpit ; prod : fournisseur ❓ à confirmer ; seul le QR code est intégré au message (`cid:`), le logo et les icônes sont des liens vers `{APP_PUBLIC_URL}/api/public/emails/images/<nom>.png` (`emails.url_image_publique`, [ADR-015](../decisions/ADR-015-images-email-par-lien.md)) : deux pièces jointes seulement (QR, .ics) ; boutons de l’email n°2 : magazine (`Evenement.lien_magazine_effectif`) et brochure (`lien_brochure`, sinon `Parametres.lien_brochure_defaut`) ; `Message-ID` construit avec le domaine de `DEFAULT_FROM_EMAIL` et l’hôte de `APP_PUBLIC_URL` (aucune collision entre test et production) |
+| **SMTP** | emails n°1, n°2 et n°3 (sondage) ; email de test envoyé de façon synchrone depuis « Suivi des emails » (`suivi_emails.envoyer_test`) | `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `EMAIL_TIMEOUT` (15 s par défaut, depuis le 2026-11-09 : un SMTP muet ne bloque plus l’email de test ni un worker), `EMAIL_DEBIT_MAX` (débit maximal d’envoi du worker, 20/m par défaut, 2026-11-17), `DEFAULT_FROM_EMAIL` | dev : console ou Mailpit ; prod : fournisseur ❓ à confirmer ; seul le QR code est intégré au message (`cid:`), le logo et les icônes sont des liens vers `{APP_PUBLIC_URL}/api/public/emails/images/<nom>.png` (`emails.url_image_publique`, [ADR-015](../decisions/ADR-015-images-email-par-lien.md)) : deux pièces jointes seulement (QR, .ics) ; boutons de l’email n°2 : magazine (`Evenement.lien_magazine_effectif`) et brochure (`lien_brochure`, sinon `Parametres.lien_brochure_defaut`) ; `Message-ID` construit avec le domaine de `DEFAULT_FROM_EMAIL` et l’hôte de `APP_PUBLIC_URL` (aucune collision entre test et production) |
 | **Mailpit** | boîte de test (dev Docker) | `docker-compose.yml`, http://localhost:8025 | aucun email ne sort |
 | **Redis** | broker Celery, relais Channels, cache, limites, métriques | `REDIS_URL` (base 0), `REDIS_CACHE_URL` (base 1 par défaut) | absent → mode dégradé (ADR-007) ; client `redis==5.2.1` avec `kombu==5.6.2` figé (kombu 5.7.0 exige redis-py ≥ 6.1) |
 | **Google Agenda / Microsoft 365** | liens « Ajouter à l’agenda » | `lib/agenda.js` | horaires UTC fournis par l’API (`agenda.debut/fin`) ; titre `agenda.titre` (= `Evenement.nom_agenda`, « Cérémonie de Graduation {programme} {année} ») |
 | **Google Maps** | « Itinéraire » | `lib/agenda.js` | destination = lieu ; « Copier l’adresse » en complément |
 | **Fichier .ics** | pièce jointe de l’email n°1, `/agenda.ics` | `noyau/ics.py` | `SUMMARY` = `nom_agenda` ; deux rappels `VALARM` (`RAPPELS` : la veille `-P1D` et 1 h avant `-PT1H`) ; carte d’invitation en `ATTACH` (`cartes_invitation.carte_pour_agenda` : fichier téléversé servi par `/api/public/evenements/<slug>/carte-invitation/`, sinon ancien `lien_carte_invitation`) ; aucune donnée personnelle |
 | **Google Fonts** | police Poppins **dans les emails seulement** | `templates/emails/base.html` | l’application utilise `@fontsource/poppins` auto-hébergée |
-| **Caméra (getUserMedia) + ZXing** | lecture des QR | `scan/useCamera.js` | HTTPS obligatoire hors localhost |
+| **Caméra (getUserMedia) + ZXing** | lecture des QR | `scan/useCamera.js` | HTTPS obligatoire hors localhost ; `stop()` de ZXing éteint la torche de façon asynchrone et peut être refusé (Samsung Internet : « setPhotoOptions failed ») : rejet absorbé par `useCamera.arreterLecteur` (2026-11-17) |
 | **Vercel** | environnement de test | projets `flex-checking` (frontend) et `flex-checking-api` (backend, région `fra1`) | `frontend/vercel.json` relaie `/api` vers le backend ; ses en-têtes de sécurité du site s’appliquent à `/((?!api/).*)` (les réponses de l’API gardent les leurs) |
 | **Vercel Cron** | envoi du sondage sans Celery Beat | `backend/vercel.json` : `/api/taches-planifiees/sondages/?passage=8h` (`0 8 * * *`), `?passage=12h`, `16h` et `20h` (depuis le 2026-11-02) ; variable `CRON_SECRET` (≥ 32 caractères, sinon route désactivée) | `vues_sondage.CronSondagesView` : sondage puis anonymisation des données expirées (pas de Beat sur Vercel) ; horaires des crons en UTC = heure d’Abidjan (UTC+0) |
 | **Pwned Passwords** (Have I Been Pwned) | refus des mots de passe fuités au changement de mot de passe (2026-11-09) | `VERIFIER_MOTS_DE_PASSE_FUITES` ; URL fixe `https://api.pwnedpasswords.com/range/<5 caractères>` | k-anonymat ; délai 3 s ; panne → mot de passe accepté ; sortie HTTPS nécessaire depuis le serveur |

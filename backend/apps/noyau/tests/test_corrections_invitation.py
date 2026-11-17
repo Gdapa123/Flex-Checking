@@ -9,7 +9,7 @@ from django.core import mail
 
 from apps.noyau.emails import Source, construire_message, nom_logo, planifier, rendre
 from apps.noyau.ics import ics_evenement
-from apps.noyau.models import EmailEnvoye, Parametres, TypeEmail
+from apps.noyau.models import EmailEnvoye, Parametres, Statut, TypeEmail
 from apps.noyau.theme import deriver_tokens
 
 from .conftest import nouvel_invite
@@ -86,6 +86,9 @@ def test_magazine_envoye_avec_le_lien_de_la_ceremonie(evenement):
     evenement.lien_magazine = "https://mde.ci/magazine/promo-2026"
     evenement.save()
     inv = nouvel_invite(evenement)
+    # l'email n°2 ne part qu'à un invité présent (vérifié au moment de l'envoi depuis le 2026-11-17)
+    inv.statut = Statut.objects.get(code="PRESENT")
+    inv.save(update_fields=["statut"])
     mail.outbox.clear()
     planifier(inv, TypeEmail.MAGAZINE)
     assert evenement.magazine_disponible

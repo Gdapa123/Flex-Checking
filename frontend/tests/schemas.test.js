@@ -60,6 +60,9 @@ describe('schéma d’inscription (mêmes règles que le backend)', () => {
   it('formate le téléphone pendant la saisie', () => {
     expect(formaterTelephone('0712345678999')).toBe('07 12 34 56 78');
     expect(formaterTelephone('07-12')).toBe('07 12');
+    // indicatif collé : retiré au lieu de tronquer le numéro
+    expect(formaterTelephone('+225 07 12 34 56 78')).toBe('07 12 34 56 78');
+    expect(formaterTelephone('+2250712345678')).toBe('07 12 34 56 78');
   });
 
   it('refuse les adresses non ASCII, comme le serveur', () => {

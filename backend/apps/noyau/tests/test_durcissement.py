@@ -109,7 +109,7 @@ def test_message_id_stable_par_envoi(evenement):
 def test_relance_d_une_tentative_perdue(evenement):
     inv = nouvel_invite(evenement)
     envoi = EmailEnvoye.objects.filter(invite=inv).first()
-    deux_heures = timezone.now() - timedelta(hours=2)
+    deux_heures = timezone.now() - timedelta(hours=3)  # au-delà de RELANCE_ESSAI_PERDU (2 h)
     # en plein cycle de nouvelles tentatives (dernière il y a 1 min) : pas de relance anticipée
     EmailEnvoye.objects.filter(pk=envoi.pk).update(
         statut=StatutEmail.EN_ATTENTE,

@@ -1,8 +1,8 @@
 ---
 type: feature
 statut: implémenté
-verifie: 2026-11-13
-commit: 0a11d09
+verifie: 2026-11-17
+commit: 244302e
 sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, backend/apps/noyau/tests/test_durcissement.py, backend/apps/noyau/tests/test_temps_reel.py, backend/apps/comptes/views.py, backend/apps/comptes/authentication.py, backend/apps/comptes/permissions.py, backend/apps/comptes/throttles.py, backend/config/settings.py, frontend/src/lib/api.js, frontend/src/features/auth/useMoi.js, frontend/src/features/auth/RequireRole.jsx, backend/apps/noyau/tests/test_audit_securite.py, frontend/src/App.jsx, frontend/src/lib/nouvelleVersion.js, frontend/src/main.jsx, infra/Caddyfile.prod]
 ---
 
@@ -106,7 +106,10 @@ sources: [backend/apps/noyau/vues_admin.py, backend/apps/noyau/consumers.py, bac
   les requêtes modifiantes ; `lib/api.js` envoie `X-CSRFToken` et appelle `/api/auth/csrf/` si besoin.
 - 401 → `lib/api.js` tente `/auth/rafraichir/` une fois (rotation + liste noire ; un 409 compte comme un succès,
   les cookies de l'autre onglet étant en place) ; sinon, **ou si la requête rejouée reçoit encore 401**, émet
-  `fc:session-expiree`.
+  `fc:session-expiree`. Depuis le 2026-11-17, un rafraîchissement en **429 ou 5xx** (ou coupé) n'est pas une
+  expiration : la requête échoue comme une coupure réseau (`TypeError`, le scan met le passage en file) sans
+  déconnecter l'hôte. Une récupération du jeton CSRF qui échoue n'est plus mémorisée (nouvel essai à l'écriture
+  suivante).
 - Permission par défaut `CompteUtilisable` : connecté, actif et **sorti du mot de passe temporaire** ; seuls
   `auth/moi/` et `auth/mot-de-passe/` déclarent `IsAuthenticated`.
 

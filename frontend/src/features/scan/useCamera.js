@@ -2,6 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrowserQRCodeReader } from '@zxing/browser';
 
 /**
+ * Arrête le lecteur ZXing sans laisser d'erreur non gérée : `stop()` est asynchrone et éteint la torche
+ * (`switchTorch(false)`) ; certains téléphones refusent (Samsung Internet : « UnknownError: setPhotoOptions failed »),
+ * alors que la caméra est de toute façon libérée (pistes arrêtées par `arreter`).
+ */
+export function arreterLecteur(c) {
+  try {
+    const r = c?.stop();
+    if (typeof r?.catch === 'function') r.catch(() => {});
+  } catch {
+    /* déjà arrêté */
+  }
+}
+
+/**
  * Lecture continue des QR codes avec la caméra (caméra arrière par défaut), sans action de l'hôte.
  * États : autorisation | demarrage | actif | refus | aucune | occupee | erreur | inactif.
  * La caméra est libérée proprement à la sortie (stop des pistes).
@@ -17,11 +31,7 @@ export default function useCamera({ actif, facing = 'environment', onDetect }) {
   rappel.current = onDetect;
 
   const arreter = useCallback(() => {
-    try {
-      controles.current?.stop();
-    } catch {
-      /* déjà arrêtée */
-    }
+    arreterLecteur(controles.current);
     controles.current = null;
     const flux = videoRef.current?.srcObject;
     flux?.getTracks?.().forEach((t) => t.stop());
@@ -69,7 +79,7 @@ export default function useCamera({ actif, facing = 'environment', onDetect }) {
           },
         );
         if (annule) {
-          c.stop();
+          arreterLecteur(c);
           return;
         }
         controles.current = c;
